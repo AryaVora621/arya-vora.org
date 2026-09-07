@@ -1,0 +1,989 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e2]:
+    - navigation "Main navigation" [ref=f12e3]:
+      - generic [ref=f12e5]:
+        - button "Back to top" [ref=f12e6]:
+          - generic [ref=f12e7]: AV
+          - generic [ref=f12e8]: Arya Vora
+        - generic [ref=f12e9]:
+          - link "01About" [ref=f12e10] [cursor=pointer]:
+            - /url: "#about"
+          - link "02Work" [ref=f12e11] [cursor=pointer]:
+            - /url: "#projects"
+          - link "03Timeline" [ref=f12e12] [cursor=pointer]:
+            - /url: "#timeline"
+          - link "04Contact" [ref=f12e13] [cursor=pointer]:
+            - /url: "#contact"
+        - generic [ref=f12e14]:
+          - button "Open command palette" [ref=f12e15]:
+            - generic [ref=f12e18]: K
+          - link "GitHub" [ref=f12e19] [cursor=pointer]:
+            - /url: https://github.com/AryaVora621
+            - img "GitHub" [ref=f12e20]
+          - link "LinkedIn" [ref=f12e22] [cursor=pointer]:
+            - /url: https://linkedin.com/in/aryavora
+            - img "LinkedIn" [ref=f12e23]
+          - link "Twitter" [ref=f12e25] [cursor=pointer]:
+            - /url: https://twitter.com/aryavora621
+            - img "Twitter" [ref=f12e26]
+    - main [ref=f12e29]:
+      - generic [ref=f12e30]:
+        - generic [ref=f12e31]:
+          - paragraph [ref=f12e34]: Portfolio — Arya Vora · Edison, NJ
+          - heading [level=1] [ref=f12e38]:
+            - generic "Arya Vora" [ref=f12e39]:
+              - generic [aria-hidden] [ref=f12e40]: A
+              - generic [aria-hidden] [ref=f12e41]: r
+              - generic [aria-hidden] [ref=f12e42]: "y"
+              - generic [aria-hidden] [ref=f12e43]: a
+              - generic [aria-hidden] [ref=f12e45]: V
+              - generic [aria-hidden] [ref=f12e46]: o
+              - generic [aria-hidden] [ref=f12e47]: r
+              - generic [aria-hidden] [ref=f12e48]: a
+            - generic [ref=f12e49]:
+              - text: builds
+              - emphasis [ref=f12e50]: robots
+              - text: in public.
+          - generic [ref=f12e51]: ▌
+          - paragraph [ref=f12e57]: I captain FTC team 23786, sit on the board of FRC 2554, and ship the software behind both — autonomous routines, scouting systems, and whatever the robot needs next.
+          - generic [ref=f12e60]:
+            - button "See the work Arrow right" [ref=f12e61]:
+              - generic [ref=f12e62]: See the work
+              - img "Arrow right" [ref=f12e64]
+            - link [ref=f12e66] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621
+              - img "GitHub" [ref=f12e67]
+              - text: GitHub — 41 repos
+          - generic [ref=f12e71]:
+            - generic [ref=f12e72]:
+              - term [ref=f12e73]: Role
+              - definition [ref=f12e74]: FTC 23786 Captain
+            - generic [ref=f12e75]:
+              - term [ref=f12e76]: Board
+              - definition [ref=f12e77]: FRC 2554 Warhawks
+            - generic [ref=f12e78]:
+              - term [ref=f12e79]: School
+              - definition [ref=f12e80]: JP Stevens ’26
+          - generic [ref=f12e83]:
+            - link "GitHub" [ref=f12e84] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621
+              - img "GitHub" [ref=f12e85]
+            - link "LinkedIn" [ref=f12e87] [cursor=pointer]:
+              - /url: https://linkedin.com/in/aryavora
+              - img "LinkedIn" [ref=f12e88]
+            - link "Twitter" [ref=f12e90] [cursor=pointer]:
+              - /url: https://twitter.com/aryavora621
+              - img "Twitter" [ref=f12e91]
+            - link "Email" [ref=f12e93] [cursor=pointer]:
+              - /url: mailto:aryavora621@gmail.com
+              - img "Email" [ref=f12e94]
+            - generic [ref=f12e97]: press ⌘K to navigate
+        - generic "Most recently pushed repositories" [ref=f12e99]:
+          - generic [ref=f12e100]:
+            - generic [ref=f12e101]:
+              - link "openultracode 2026-09-07" [ref=f12e102] [cursor=pointer]:
+                - /url: https://github.com/openultracode/openultracode
+                - generic [ref=f12e104]: openultracode
+                - generic [ref=f12e105]: 2026-09-07
+              - link "claude-agy 2026-09-06" [ref=f12e106] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claude-agy
+                - generic [ref=f12e108]: claude-agy
+                - generic [ref=f12e109]: 2026-09-06
+              - link "adhdsat 2026-09-06" [ref=f12e110] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/adhdsat
+                - generic [ref=f12e112]: adhdsat
+                - generic [ref=f12e113]: 2026-09-06
+              - link "m.i.r.a 2026-08-17" [ref=f12e114] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/m.i.r.a
+                - generic [ref=f12e116]: m.i.r.a
+                - generic [ref=f12e117]: 2026-08-17
+              - link "nana-ebook-reader 2026-08-09" [ref=f12e118] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/nana-ebook-reader
+                - generic [ref=f12e120]: nana-ebook-reader
+                - generic [ref=f12e121]: 2026-08-09
+              - link "drone 2026-07-24" [ref=f12e122] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/drone
+                - generic [ref=f12e124]: drone
+                - generic [ref=f12e125]: 2026-07-24
+              - link "claudeshorts 2026-07-14" [ref=f12e126] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claudeshorts
+                - generic [ref=f12e128]: claudeshorts
+                - generic [ref=f12e129]: 2026-07-14
+              - link "orochi 2026-07-13" [ref=f12e130] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/orochi
+                - generic [ref=f12e132]: orochi
+                - generic [ref=f12e133]: 2026-07-13
+              - link "smartAI 2026-07-12" [ref=f12e134] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/smartAI
+                - generic [ref=f12e136]: smartAI
+                - generic [ref=f12e137]: 2026-07-12
+              - link "roboPet 2026-07-11" [ref=f12e138] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/roboPet
+                - generic [ref=f12e140]: roboPet
+                - generic [ref=f12e141]: 2026-07-11
+              - link "openultracode 2026-09-07" [ref=f12e142] [cursor=pointer]:
+                - /url: https://github.com/openultracode/openultracode
+                - generic [ref=f12e144]: openultracode
+                - generic [ref=f12e145]: 2026-09-07
+              - link "claude-agy 2026-09-06" [ref=f12e146] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claude-agy
+                - generic [ref=f12e148]: claude-agy
+                - generic [ref=f12e149]: 2026-09-06
+              - link "adhdsat 2026-09-06" [ref=f12e150] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/adhdsat
+                - generic [ref=f12e152]: adhdsat
+                - generic [ref=f12e153]: 2026-09-06
+              - link "m.i.r.a 2026-08-17" [ref=f12e154] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/m.i.r.a
+                - generic [ref=f12e156]: m.i.r.a
+                - generic [ref=f12e157]: 2026-08-17
+              - link "nana-ebook-reader 2026-08-09" [ref=f12e158] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/nana-ebook-reader
+                - generic [ref=f12e160]: nana-ebook-reader
+                - generic [ref=f12e161]: 2026-08-09
+              - link "drone 2026-07-24" [ref=f12e162] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/drone
+                - generic [ref=f12e164]: drone
+                - generic [ref=f12e165]: 2026-07-24
+              - link "claudeshorts 2026-07-14" [ref=f12e166] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claudeshorts
+                - generic [ref=f12e168]: claudeshorts
+                - generic [ref=f12e169]: 2026-07-14
+              - link "orochi 2026-07-13" [ref=f12e170] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/orochi
+                - generic [ref=f12e172]: orochi
+                - generic [ref=f12e173]: 2026-07-13
+              - link "smartAI 2026-07-12" [ref=f12e174] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/smartAI
+                - generic [ref=f12e176]: smartAI
+                - generic [ref=f12e177]: 2026-07-12
+              - link "roboPet 2026-07-11" [ref=f12e178] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/roboPet
+                - generic [ref=f12e180]: roboPet
+                - generic [ref=f12e181]: 2026-07-11
+            - generic [aria-hidden] [ref=f12e182]:
+              - link [ref=f12e183] [cursor=pointer]:
+                - /url: https://github.com/openultracode/openultracode
+                - generic [ref=f12e185]: openultracode
+                - generic [ref=f12e186]: 2026-09-07
+              - link [ref=f12e187] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claude-agy
+                - generic [ref=f12e189]: claude-agy
+                - generic [ref=f12e190]: 2026-09-06
+              - link [ref=f12e191] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/adhdsat
+                - generic [ref=f12e193]: adhdsat
+                - generic [ref=f12e194]: 2026-09-06
+              - link [ref=f12e195] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/m.i.r.a
+                - generic [ref=f12e197]: m.i.r.a
+                - generic [ref=f12e198]: 2026-08-17
+              - link [ref=f12e199] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/nana-ebook-reader
+                - generic [ref=f12e201]: nana-ebook-reader
+                - generic [ref=f12e202]: 2026-08-09
+              - link [ref=f12e203] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/drone
+                - generic [ref=f12e205]: drone
+                - generic [ref=f12e206]: 2026-07-24
+              - link [ref=f12e207] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claudeshorts
+                - generic [ref=f12e209]: claudeshorts
+                - generic [ref=f12e210]: 2026-07-14
+              - link [ref=f12e211] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/orochi
+                - generic [ref=f12e213]: orochi
+                - generic [ref=f12e214]: 2026-07-13
+              - link [ref=f12e215] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/smartAI
+                - generic [ref=f12e217]: smartAI
+                - generic [ref=f12e218]: 2026-07-12
+              - link [ref=f12e219] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/roboPet
+                - generic [ref=f12e221]: roboPet
+                - generic [ref=f12e222]: 2026-07-11
+              - link [ref=f12e223] [cursor=pointer]:
+                - /url: https://github.com/openultracode/openultracode
+                - generic [ref=f12e225]: openultracode
+                - generic [ref=f12e226]: 2026-09-07
+              - link [ref=f12e227] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claude-agy
+                - generic [ref=f12e229]: claude-agy
+                - generic [ref=f12e230]: 2026-09-06
+              - link [ref=f12e231] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/adhdsat
+                - generic [ref=f12e233]: adhdsat
+                - generic [ref=f12e234]: 2026-09-06
+              - link [ref=f12e235] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/m.i.r.a
+                - generic [ref=f12e237]: m.i.r.a
+                - generic [ref=f12e238]: 2026-08-17
+              - link [ref=f12e239] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/nana-ebook-reader
+                - generic [ref=f12e241]: nana-ebook-reader
+                - generic [ref=f12e242]: 2026-08-09
+              - link [ref=f12e243] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/drone
+                - generic [ref=f12e245]: drone
+                - generic [ref=f12e246]: 2026-07-24
+              - link [ref=f12e247] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/claudeshorts
+                - generic [ref=f12e249]: claudeshorts
+                - generic [ref=f12e250]: 2026-07-14
+              - link [ref=f12e251] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/orochi
+                - generic [ref=f12e253]: orochi
+                - generic [ref=f12e254]: 2026-07-13
+              - link [ref=f12e255] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/smartAI
+                - generic [ref=f12e257]: smartAI
+                - generic [ref=f12e258]: 2026-07-12
+              - link [ref=f12e259] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/roboPet
+                - generic [ref=f12e261]: roboPet
+                - generic [ref=f12e262]: 2026-07-11
+      - generic [ref=f12e264]:
+        - generic [ref=f12e267]:
+          - paragraph [ref=f12e268]: 01 / About
+          - heading [level=2] [ref=f12e269]:
+            - text: Engineer, captain,
+            - emphasis [ref=f12e270]: board member.
+          - paragraph [ref=f12e271]: "I'm Arya — a junior at JP Stevens in Edison, NJ. I captain FTC 23786 MakEMinds, sit on the board of FRC 2554 The Warhawks, and write much of the software both teams run on: autonomous routines, vision pipelines, scouting apps. Nearly all of it lands on GitHub."
+        - generic [ref=f12e274]:
+          - generic [ref=f12e275]:
+            - definition [ref=f12e276]: "0"
+            - term [ref=f12e277]: Public repos
+            - paragraph [ref=f12e278]: snapshot 2026-09-07
+          - generic [ref=f12e279]:
+            - definition [ref=f12e280]: "0"
+            - term [ref=f12e281]: Languages on GitHub
+            - paragraph [ref=f12e282]: by bytes, all time
+          - generic [ref=f12e283]:
+            - definition [ref=f12e284]: 0+
+            - term [ref=f12e285]: Teammates led
+            - paragraph [ref=f12e286]: FTC 23786
+          - generic [ref=f12e287]:
+            - definition [ref=f12e288]: "0"
+            - term [ref=f12e289]: Featured builds
+            - paragraph [ref=f12e290]: below, in §02
+        - generic [ref=f12e293]:
+          - article [ref=f12e296]:
+            - generic [ref=f12e297]:
+              - generic [ref=f12e298]: R.01
+              - heading "FTC 23786 Captain" [level=3] [ref=f12e299]
+              - paragraph [ref=f12e300]: MakEMinds Robotics
+            - paragraph [ref=f12e301]: "I run a 15+ person FTC team: season strategy, robot architecture, autonomous routines, and the vision pipeline — plus the unglamorous work of keeping a build season on schedule."
+            - generic [ref=f12e302]:
+              - generic [ref=f12e303]:
+                - heading "What I actually do" [level=4] [ref=f12e304]
+                - list [ref=f12e305]:
+                  - listitem [ref=f12e306]:
+                    - generic [ref=f12e308]: Led team to NJ State Championship qualification
+                  - listitem [ref=f12e309]:
+                    - generic [ref=f12e311]: Designed award-winning autonomous routines
+                  - listitem [ref=f12e312]:
+                    - generic [ref=f12e314]: Mentored 15+ team members in Java/Kotlin
+                  - listitem [ref=f12e315]:
+                    - generic [ref=f12e317]: Secured $15K+ in sponsorships
+                  - listitem [ref=f12e318]:
+                    - generic [ref=f12e320]: Innovated computer vision pipeline for object detection
+              - generic [ref=f12e321]:
+                - heading "Tools involved" [level=4] [ref=f12e322]
+                - generic [ref=f12e323]:
+                  - generic [ref=f12e324]: Java
+                  - generic [ref=f12e325]: Kotlin
+                  - generic [ref=f12e326]: OpenCV
+                  - generic [ref=f12e327]: TensorFlow Lite
+                  - generic [ref=f12e328]: FTC SDK
+                  - generic [ref=f12e329]: Git
+                  - generic [ref=f12e330]: CAD
+          - article [ref=f12e333]:
+            - generic [ref=f12e334]:
+              - generic [ref=f12e335]: R.02
+              - heading "FRC 2554 Board Member" [level=3] [ref=f12e336]
+              - paragraph [ref=f12e337]: The Warhawks
+            - paragraph [ref=f12e338]: Board seat on a 50+ member FRC team. I work on competition strategy, scouting systems, and outreach — the logistics that decide matches before the robot hits the field.
+            - generic [ref=f12e339]:
+              - generic [ref=f12e340]:
+                - heading "What I actually do" [level=4] [ref=f12e341]
+                - list [ref=f12e342]:
+                  - listitem [ref=f12e343]:
+                    - generic [ref=f12e345]: Strategic planning for 50+ member organization
+                  - listitem [ref=f12e346]:
+                    - generic [ref=f12e348]: Led scouting alliance strategy at competitions
+                  - listitem [ref=f12e349]:
+                    - generic [ref=f12e351]: Managed $50K+ annual budget
+                  - listitem [ref=f12e352]:
+                    - generic [ref=f12e354]: Coordinated outreach impacting 500+ students
+                  - listitem [ref=f12e355]:
+                    - generic [ref=f12e357]: Designed pit display and branding systems
+              - generic [ref=f12e358]:
+                - heading "Tools involved" [level=4] [ref=f12e359]
+                - generic [ref=f12e360]:
+                  - generic [ref=f12e361]: Strategic Leadership
+                  - generic [ref=f12e362]: Scouting Systems
+                  - generic [ref=f12e363]: Budget Management
+                  - generic [ref=f12e364]: Outreach Coordination
+                  - generic [ref=f12e365]: CAD
+                  - generic [ref=f12e366]: Public Speaking
+          - article [ref=f12e369]:
+            - generic [ref=f12e370]:
+              - generic [ref=f12e371]: R.03
+              - heading "Independent builds" [level=3] [ref=f12e372]
+              - paragraph [ref=f12e373]: Nights, weekends, summers
+            - paragraph [ref=f12e374]: Drones, companion robots, agent frameworks, CLIs. Most of it is public on GitHub — including the half-finished experiments, because that's where the learning is.
+            - generic [ref=f12e375]:
+              - generic [ref=f12e376]:
+                - heading "What I actually do" [level=4] [ref=f12e377]
+                - list [ref=f12e378]:
+                  - listitem [ref=f12e379]:
+                    - generic [ref=f12e381]: Autonomous drone navigation with YOLO + ROS2
+                  - listitem [ref=f12e382]:
+                    - generic [ref=f12e384]: RoboPet emotional AI companion robot
+                  - listitem [ref=f12e385]:
+                    - generic [ref=f12e387]: SmartAI multi-agent orchestration framework
+                  - listitem [ref=f12e388]:
+                    - generic [ref=f12e390]: Agent autonomy research in FreeWillAI
+              - generic [ref=f12e391]:
+                - heading "Tools involved" [level=4] [ref=f12e392]
+                - generic [ref=f12e393]:
+                  - generic [ref=f12e394]: Python
+                  - generic [ref=f12e395]: TypeScript
+                  - generic [ref=f12e396]: PyTorch
+                  - generic [ref=f12e397]: ROS2
+                  - generic [ref=f12e398]: OpenCV
+                  - generic [ref=f12e399]: Arduino
+                  - generic [ref=f12e400]: Raspberry Pi
+        - generic [ref=f12e403]:
+          - generic [ref=f12e404]:
+            - heading "The stack" [level=3] [ref=f12e405]
+            - paragraph [ref=f12e406]:
+              - text: Self-assessed, relative depth — not test scores.
+              - generic [ref=f12e407]: Expert = Daily driver — shipped real projects ·
+              - generic [ref=f12e408]: Advanced = Productive independently ·
+              - generic [ref=f12e409]: Proficient = Working knowledge
+          - generic [ref=f12e410]:
+            - generic [ref=f12e411]:
+              - heading "languages" [level=4] [ref=f12e412]
+              - list [ref=f12e413]:
+                - listitem [ref=f12e414]:
+                  - generic [ref=f12e415]: TypeScript
+                  - generic [ref=f12e416]: Expert
+                - listitem [ref=f12e417]:
+                  - generic [ref=f12e418]: Python
+                  - generic [ref=f12e419]: Expert
+                - listitem [ref=f12e420]:
+                  - generic [ref=f12e421]: Java
+                  - generic [ref=f12e422]: Expert
+                - listitem [ref=f12e423]:
+                  - generic [ref=f12e424]: JavaScript
+                  - generic [ref=f12e425]: Expert
+                - listitem [ref=f12e426]:
+                  - generic [ref=f12e427]: Kotlin
+                  - generic [ref=f12e428]: Advanced
+                - listitem [ref=f12e429]:
+                  - generic [ref=f12e430]: Rust
+                  - generic [ref=f12e431]: Proficient
+                - listitem [ref=f12e432]:
+                  - generic [ref=f12e433]: C++
+                  - generic [ref=f12e434]: Proficient
+            - generic [ref=f12e435]:
+              - heading "frameworks" [level=4] [ref=f12e436]
+              - list [ref=f12e437]:
+                - listitem [ref=f12e438]:
+                  - generic [ref=f12e439]: Next.js
+                  - generic [ref=f12e440]: Expert
+                - listitem [ref=f12e441]:
+                  - generic [ref=f12e442]: React
+                  - generic [ref=f12e443]: Expert
+                - listitem [ref=f12e444]:
+                  - generic [ref=f12e445]: Node.js
+                  - generic [ref=f12e446]: Expert
+                - listitem [ref=f12e447]:
+                  - generic [ref=f12e448]: TensorFlow/PyTorch
+                  - generic [ref=f12e449]: Expert
+                - listitem [ref=f12e450]:
+                  - generic [ref=f12e451]: FastAPI
+                  - generic [ref=f12e452]: Advanced
+                - listitem [ref=f12e453]:
+                  - generic [ref=f12e454]: Electron
+                  - generic [ref=f12e455]: Advanced
+                - listitem [ref=f12e456]:
+                  - generic [ref=f12e457]: ROS2
+                  - generic [ref=f12e458]: Proficient
+            - generic [ref=f12e459]:
+              - heading "tools" [level=4] [ref=f12e460]
+              - list [ref=f12e461]:
+                - listitem [ref=f12e462]:
+                  - generic [ref=f12e463]: Git/GitHub
+                  - generic [ref=f12e464]: Expert
+                - listitem [ref=f12e465]:
+                  - generic [ref=f12e466]: Linux
+                  - generic [ref=f12e467]: Expert
+                - listitem [ref=f12e468]:
+                  - generic [ref=f12e469]: Docker
+                  - generic [ref=f12e470]: Expert
+                - listitem [ref=f12e471]:
+                  - generic [ref=f12e472]: CI/CD
+                  - generic [ref=f12e473]: Expert
+                - listitem [ref=f12e474]:
+                  - generic [ref=f12e475]: CAD (OnShape/Fusion)
+                  - generic [ref=f12e476]: Advanced
+                - listitem [ref=f12e477]:
+                  - generic [ref=f12e478]: 3D Printing
+                  - generic [ref=f12e479]: Advanced
+                - listitem [ref=f12e480]:
+                  - generic [ref=f12e481]: Kubernetes
+                  - generic [ref=f12e482]: Proficient
+            - generic [ref=f12e483]:
+              - heading "domains" [level=4] [ref=f12e484]
+              - list [ref=f12e485]:
+                - listitem [ref=f12e486]:
+                  - generic [ref=f12e487]: Robotics (FTC/FRC)
+                  - generic [ref=f12e488]: Expert
+                - listitem [ref=f12e489]:
+                  - generic [ref=f12e490]: Web Development
+                  - generic [ref=f12e491]: Expert
+                - listitem [ref=f12e492]:
+                  - generic [ref=f12e493]: Computer Vision
+                  - generic [ref=f12e494]: Expert
+                - listitem [ref=f12e495]:
+                  - generic [ref=f12e496]: Machine Learning
+                  - generic [ref=f12e497]: Expert
+                - listitem [ref=f12e498]:
+                  - generic [ref=f12e499]: Systems Programming
+                  - generic [ref=f12e500]: Advanced
+                - listitem [ref=f12e501]:
+                  - generic [ref=f12e502]: Embedded Systems
+                  - generic [ref=f12e503]: Advanced
+                - listitem [ref=f12e504]:
+                  - generic [ref=f12e505]: Distributed Systems
+                  - generic [ref=f12e506]: Proficient
+      - generic [ref=f12e508]:
+        - generic [ref=f12e511]:
+          - paragraph [ref=f12e512]: 02 / Selected work
+          - heading [level=2] [ref=f12e513]:
+            - text: Five builds I'd
+            - emphasis [ref=f12e514]: defend
+            - text: in review.
+          - paragraph [ref=f12e515]: The curated set. Everything else — all 41 public repos — is linked below in the workbench, straight from GitHub with nothing invented.
+        - tablist "Project categories" [ref=f12e518]:
+          - tab "01All" [selected] [ref=f12e519]:
+            - generic [ref=f12e520]: "01"
+            - text: All
+          - tab "02Robotics" [ref=f12e521]:
+            - generic [ref=f12e522]: "02"
+            - text: Robotics
+          - tab "03AI" [ref=f12e523]:
+            - generic [ref=f12e524]: "03"
+            - text: AI
+          - tab "04Systems" [ref=f12e525]:
+            - generic [ref=f12e526]: "04"
+            - text: Systems
+        - generic [ref=f12e529]:
+          - article [ref=f12e531]:
+            - paragraph [ref=f12e533]:
+              - generic [ref=f12e534]: P.01
+              - text: Robotics — 2026
+            - heading "MakEMinds Robotics Website" [level=3] [ref=f12e538]
+            - paragraph [ref=f12e539]: Dark, motion-heavy, scroll-driven rebuild of makemindsrobotics.org for FTC Team 23786
+            - generic [ref=f12e540]:
+              - generic [ref=f12e541]: Next.js
+              - generic [ref=f12e542]: TypeScript
+              - generic [ref=f12e543]: Framer Motion
+              - generic [ref=f12e544]: Three.js
+              - generic [ref=f12e545]: GSAP
+              - generic [ref=f12e546]: Tailwind CSS
+            - generic [ref=f12e548]:
+              - generic [ref=f12e549]:
+                - link "View MakEMinds Robotics Website on GitHub" [ref=f12e550] [cursor=pointer]:
+                  - /url: https://github.com/aryavora621/makeminds-site
+                  - img "GitHub" [ref=f12e551]
+                - link "View MakEMinds Robotics Website live" [ref=f12e553] [cursor=pointer]:
+                  - /url: https://makemindsrobotics.org
+                  - img "External link" [ref=f12e554]
+              - button "Details" [ref=f12e558]
+          - article [ref=f12e563]:
+            - paragraph [ref=f12e565]:
+              - generic [ref=f12e566]: P.02
+              - text: Robotics — 2026
+            - heading "Autonomous Drone System" [level=3] [ref=f12e570]
+            - paragraph [ref=f12e571]: Computer vision-based autonomous navigation for drone swarms
+            - generic [ref=f12e572]:
+              - generic [ref=f12e573]: Python
+              - generic [ref=f12e574]: OpenCV
+              - generic [ref=f12e575]: ROS2
+              - generic [ref=f12e576]: YOLO
+              - generic [ref=f12e577]: TensorFlow
+              - generic [ref=f12e578]: ArduPilot
+            - generic [ref=f12e580]:
+              - link "View Autonomous Drone System on GitHub" [ref=f12e582] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/drone
+                - img "GitHub" [ref=f12e583]
+              - button "Details" [ref=f12e585]
+          - article [ref=f12e590]:
+            - paragraph [ref=f12e592]:
+              - generic [ref=f12e593]: P.03
+              - text: Robotics — 2025
+            - heading "RoboPet - AI Companion Robot" [level=3] [ref=f12e597]
+            - paragraph [ref=f12e598]: Emotionally intelligent desktop robot with personality engine
+            - generic [ref=f12e599]:
+              - generic [ref=f12e600]: Python
+              - generic [ref=f12e601]: TensorFlow
+              - generic [ref=f12e602]: OpenCV
+              - generic [ref=f12e603]: Arduino
+              - generic [ref=f12e604]: 3D Printing
+              - generic [ref=f12e605]: ROS
+            - generic [ref=f12e607]:
+              - link "View RoboPet - AI Companion Robot on GitHub" [ref=f12e609] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/roboPet
+                - img "GitHub" [ref=f12e610]
+              - button "Details" [ref=f12e612]
+          - article [ref=f12e617]:
+            - paragraph [ref=f12e619]:
+              - generic [ref=f12e620]: P.04
+              - text: AI — 2025
+            - heading "SmartAI - Multi-Agent Framework" [level=3] [ref=f12e629]
+            - paragraph [ref=f12e630]: Orchestration framework for collaborative AI agents with memory
+            - generic [ref=f12e631]:
+              - generic [ref=f12e632]: Python
+              - generic [ref=f12e633]: LangChain
+              - generic [ref=f12e634]: Vector DB
+              - generic [ref=f12e635]: Redis
+              - generic [ref=f12e636]: FastAPI
+              - generic [ref=f12e637]: Docker
+            - generic [ref=f12e639]:
+              - link "View SmartAI - Multi-Agent Framework on GitHub" [ref=f12e641] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/smartAI
+                - img "GitHub" [ref=f12e642]
+              - button "Details" [ref=f12e644]
+          - article [ref=f12e649]:
+            - paragraph [ref=f12e651]:
+              - generic [ref=f12e652]: P.05
+              - text: AI — 2026
+            - heading "M.I.R.A. - Ambient Intelligence System" [level=3] [ref=f12e661]
+            - paragraph [ref=f12e662]: Multimodal ambient intelligence with proactive assistance
+            - generic [ref=f12e663]:
+              - generic [ref=f12e664]: TypeScript
+              - generic [ref=f12e665]: Electron
+              - generic [ref=f12e666]: Whisper
+              - generic [ref=f12e667]: LLM
+              - generic [ref=f12e668]: Computer Vision
+              - generic [ref=f12e669]: Matter.js
+            - generic [ref=f12e671]:
+              - link "View M.I.R.A. - Ambient Intelligence System on GitHub" [ref=f12e673] [cursor=pointer]:
+                - /url: https://github.com/AryaVora621/m.i.r.a
+                - img "GitHub" [ref=f12e674]
+              - button "Details" [ref=f12e676]
+        - generic [ref=f12e682]:
+          - generic [ref=f12e683]:
+            - heading "From the workbench" [level=3] [ref=f12e684]
+            - paragraph [ref=f12e685]: live from GitHub · snapshot 2026-09-07
+          - paragraph [ref=f12e686]: Unfiltered. Sorted by most recently pushed — this is what I've actually touched lately, not a highlight reel.
+          - generic [ref=f12e687]:
+            - link "01 openultracode Local CLI for parallel coding agents with adaptive model routing. TypeScript yesterday" [ref=f12e688] [cursor=pointer]:
+              - /url: https://github.com/openultracode/openultracode
+              - generic [ref=f12e689]: "01"
+              - generic [ref=f12e690]:
+                - generic [ref=f12e691]: openultracode
+                - generic [ref=f12e692]: Local CLI for parallel coding agents with adaptive model routing.
+              - generic [ref=f12e693]: TypeScript
+              - generic "Pushed 2026-09-07" [ref=f12e696]: yesterday
+            - link "02 notchTerm a visualizer for macbooks to view your terminals at a quick glance Swift 3mo ago" [ref=f12e700] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/notchTerm
+              - generic [ref=f12e701]: "02"
+              - generic [ref=f12e702]:
+                - generic [ref=f12e703]: notchTerm
+                - generic [ref=f12e704]: a visualizer for macbooks to view your terminals at a quick glance
+              - generic [ref=f12e705]: Swift
+              - generic "Pushed 2026-06-06" [ref=f12e708]: 3mo ago
+            - link "03 TeamStat-Insights Ftc Scouting App made by Team 23786 MakEMinds TypeScript 1.3y ago" [ref=f12e712] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/TeamStat-Insights
+              - generic [ref=f12e713]: "03"
+              - generic [ref=f12e714]:
+                - generic [ref=f12e715]: TeamStat-Insights
+                - generic [ref=f12e716]: Ftc Scouting App made by Team 23786 MakEMinds
+              - generic [ref=f12e717]: TypeScript
+              - generic "Pushed 2025-05-25" [ref=f12e720]: 1.3y ago
+            - link "04 shipkit Production-readiness scanner and deployment workflow for AI-built apps TypeScript 5mo ago" [ref=f12e724] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/shipkit
+              - generic [ref=f12e725]: "04"
+              - generic [ref=f12e726]:
+                - generic [ref=f12e727]: shipkit
+                - generic [ref=f12e728]: Production-readiness scanner and deployment workflow for AI-built apps
+              - generic [ref=f12e729]: TypeScript
+              - generic "Pushed 2026-03-31" [ref=f12e732]: 5mo ago
+            - link "05 MakEMindsOutreach Outreach site for FTC 23786 Java 8mo ago" [ref=f12e736] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/MakEMindsOutreach
+              - generic [ref=f12e737]: "05"
+              - generic [ref=f12e738]:
+                - generic [ref=f12e739]: MakEMindsOutreach
+                - generic [ref=f12e740]: Outreach site for FTC 23786
+              - generic [ref=f12e741]: Java
+              - generic "Pushed 2026-01-08" [ref=f12e744]: 8mo ago
+            - link "06 ftc-decode-scouting TypeScript 6mo ago" [ref=f12e748] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/ftc-decode-scouting
+              - generic [ref=f12e749]: "06"
+              - generic [ref=f12e750]: ftc-decode-scouting
+              - generic [ref=f12e752]: TypeScript
+              - generic "Pushed 2026-03-14" [ref=f12e755]: 6mo ago
+            - link "07 stock-research-app Indian Stock Research & Portfolio Management App TypeScript 3mo ago" [ref=f12e759] [cursor=pointer]:
+              - /url: https://github.com/bj1960-del/stock-research-app
+              - generic [ref=f12e760]: "07"
+              - generic [ref=f12e761]:
+                - generic [ref=f12e762]: stock-research-app
+                - generic [ref=f12e763]: Indian Stock Research & Portfolio Management App
+              - generic [ref=f12e764]: TypeScript
+              - generic "Pushed 2026-06-20" [ref=f12e767]: 3mo ago
+            - link "08 multiagent-showcase-openai-live Multi-agent showcase with OpenAI live SSE integration JavaScript 5mo ago" [ref=f12e771] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/multiagent-showcase-openai-live
+              - generic [ref=f12e772]: "08"
+              - generic [ref=f12e773]:
+                - generic [ref=f12e774]: multiagent-showcase-openai-live
+                - generic [ref=f12e775]: Multi-agent showcase with OpenAI live SSE integration
+              - generic [ref=f12e776]: JavaScript
+              - generic "Pushed 2026-04-05" [ref=f12e779]: 5mo ago
+            - link "09 memgine Memory engine experiments for AI agents TypeScript 2mo ago" [ref=f12e783] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/memgine
+              - generic [ref=f12e784]: "09"
+              - generic [ref=f12e785]:
+                - generic [ref=f12e786]: memgine
+                - generic [ref=f12e787]: Memory engine experiments for AI agents
+              - generic [ref=f12e788]: TypeScript
+              - generic "Pushed 2026-07-04" [ref=f12e791]: 2mo ago
+            - link "10 mediapad Github repo for my stardance inspired media controller + visualizer HTML 3mo ago" [ref=f12e795] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/mediapad
+              - generic [ref=f12e796]: "10"
+              - generic [ref=f12e797]:
+                - generic [ref=f12e798]: mediapad
+                - generic [ref=f12e799]: Github repo for my stardance inspired media controller + visualizer
+              - generic [ref=f12e800]: HTML
+              - generic "Pushed 2026-06-07" [ref=f12e803]: 3mo ago
+            - link "11 freeGPT Experiments with free LLM access patterns Python 2mo ago" [ref=f12e807] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/freeGPT
+              - generic [ref=f12e808]: "11"
+              - generic [ref=f12e809]:
+                - generic [ref=f12e810]: freeGPT
+                - generic [ref=f12e811]: Experiments with free LLM access patterns
+              - generic [ref=f12e812]: Python
+              - generic "Pushed 2026-07-10" [ref=f12e815]: 2mo ago
+            - link "12 claudeshorts Automated short-form video creation pipeline using LLMs Python 2mo ago" [ref=f12e819] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/claudeshorts
+              - generic [ref=f12e820]: "12"
+              - generic [ref=f12e821]:
+                - generic [ref=f12e822]: claudeshorts
+                - generic [ref=f12e823]: Automated short-form video creation pipeline using LLMs
+              - generic [ref=f12e824]: Python
+              - generic "Pushed 2026-07-14" [ref=f12e827]: 2mo ago
+            - link "13 freewillai Research into autonomous agent decision-making frameworks Python 3mo ago" [ref=f12e831] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/freewillai
+              - generic [ref=f12e832]: "13"
+              - generic [ref=f12e833]:
+                - generic [ref=f12e834]: freewillai
+                - generic [ref=f12e835]: Research into autonomous agent decision-making frameworks
+              - generic [ref=f12e836]: Python
+              - generic "Pushed 2026-06-09" [ref=f12e839]: 3mo ago
+            - link "14 orochi Distributed task queue experiments — 2mo ago" [ref=f12e843] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/orochi
+              - generic [ref=f12e844]: "14"
+              - generic [ref=f12e845]:
+                - generic [ref=f12e846]: orochi
+                - generic [ref=f12e847]: Distributed task queue experiments
+              - generic [ref=f12e848]: —
+              - generic "Pushed 2026-07-13" [ref=f12e850]: 2mo ago
+        - generic [ref=f12e856]:
+          - generic [ref=f12e857]:
+            - generic [ref=f12e858]:
+              - paragraph [ref=f12e859]: 02.5 / Open source, by the bytes
+              - heading [level=3] [ref=f12e860]:
+                - text: Every byte,
+                - emphasis [ref=f12e861]: accounted for.
+            - paragraph [ref=f12e862]:
+              - text: Aggregated from the language endpoints of all 41 public repos. Includes prose (MDX) — I write a lot. Snapshot 2026-09-07; refresh with
+              - code [ref=f12e863]: npm run data:github
+              - text: .
+          - generic [ref=f12e864]:
+            - generic [ref=f12e865]:
+              - 'img "Languages used across public repositories: Python 37 percent, MDX 30 percent, TypeScript 18 percent, HTML 8 percent, JavaScript 5 percent, Shell 1 percent, CSS 1 percent, 9 more 1 percent" [ref=f12e866]':
+                - generic [ref=f12e867]:
+                  - 'generic "Python: 5.5 MB" [ref=f12e868] [cursor=pointer]'
+                  - 'generic "MDX: 4.4 MB" [ref=f12e869] [cursor=pointer]'
+                  - 'generic "TypeScript: 2.7 MB" [ref=f12e870] [cursor=pointer]'
+                  - 'generic "HTML: 1.2 MB" [ref=f12e871] [cursor=pointer]'
+                  - 'generic "JavaScript: 779 KB" [ref=f12e872] [cursor=pointer]'
+                  - 'generic "Shell: 125 KB" [ref=f12e873] [cursor=pointer]'
+                  - 'generic "CSS: 123 KB" [ref=f12e874] [cursor=pointer]'
+                  - 'generic "9 more: 151 KB" [ref=f12e875] [cursor=pointer]'
+              - generic:
+                - generic: 15.0 MB
+                - generic: code on GitHub
+            - list [ref=f12e876]:
+              - listitem [ref=f12e877]:
+                - button "Highlight Python" [ref=f12e878]:
+                  - generic [ref=f12e880]: Python
+                  - generic [ref=f12e881]: 5.5 MB
+                  - generic [ref=f12e882]: 36.6%
+              - listitem [ref=f12e883]:
+                - button "Highlight MDX" [ref=f12e884]:
+                  - generic [ref=f12e886]: MDX
+                  - generic [ref=f12e887]: 4.4 MB
+                  - generic [ref=f12e888]: 29.5%
+              - listitem [ref=f12e889]:
+                - button "Highlight TypeScript" [ref=f12e890]:
+                  - generic [ref=f12e892]: TypeScript
+                  - generic [ref=f12e893]: 2.7 MB
+                  - generic [ref=f12e894]: 18.3%
+              - listitem [ref=f12e895]:
+                - button "Highlight HTML" [ref=f12e896]:
+                  - generic [ref=f12e898]: HTML
+                  - generic [ref=f12e899]: 1.2 MB
+                  - generic [ref=f12e900]: 7.9%
+              - listitem [ref=f12e901]:
+                - button "Highlight JavaScript" [ref=f12e902]:
+                  - generic [ref=f12e904]: JavaScript
+                  - generic [ref=f12e905]: 779 KB
+                  - generic [ref=f12e906]: 5.1%
+              - listitem [ref=f12e907]:
+                - button "Highlight Shell" [ref=f12e908]:
+                  - generic [ref=f12e910]: Shell
+                  - generic [ref=f12e911]: 125 KB
+                  - generic [ref=f12e912]: 0.8%
+              - listitem [ref=f12e913]:
+                - button "Highlight CSS" [ref=f12e914]:
+                  - generic [ref=f12e916]: CSS
+                  - generic [ref=f12e917]: 123 KB
+                  - generic [ref=f12e918]: 0.8%
+              - listitem [ref=f12e919]:
+                - button "Highlight 9 more" [ref=f12e920]:
+                  - generic [ref=f12e922]: 9 more
+                  - generic [ref=f12e923]: 151 KB
+                  - generic [ref=f12e924]: 1.0%
+          - generic [ref=f12e925]:
+            - generic [ref=f12e926]:
+              - definition [ref=f12e927]: 15.0 MB
+              - term [ref=f12e928]: Code on GitHub
+            - generic [ref=f12e929]:
+              - definition [ref=f12e930]: "0"
+              - term [ref=f12e931]: Public repos
+            - generic [ref=f12e932]:
+              - definition [ref=f12e933]: "0"
+              - term [ref=f12e934]: Languages
+            - generic [ref=f12e935]:
+              - definition [ref=f12e936]: Oct 2023
+              - term [ref=f12e937]: On GitHub since
+          - generic [ref=f12e938]:
+            - heading "Recently pushed" [level=4] [ref=f12e939]
+            - list [ref=f12e940]:
+              - listitem [ref=f12e941]:
+                - link "2026-09-06 claude-agy" [ref=f12e942] [cursor=pointer]:
+                  - /url: https://github.com/AryaVora621/claude-agy
+                  - generic [ref=f12e943]: 2026-09-06
+                  - generic [ref=f12e944]: claude-agy
+              - listitem [ref=f12e945]:
+                - link "2026-09-06 adhdsat" [ref=f12e946] [cursor=pointer]:
+                  - /url: https://github.com/AryaVora621/adhdsat
+                  - generic [ref=f12e947]: 2026-09-06
+                  - generic [ref=f12e948]: adhdsat
+              - listitem [ref=f12e949]:
+                - link "2026-09-06 adhdsat" [ref=f12e950] [cursor=pointer]:
+                  - /url: https://github.com/AryaVora621/adhdsat
+                  - generic [ref=f12e951]: 2026-09-06
+                  - generic [ref=f12e952]: adhdsat
+              - listitem [ref=f12e953]:
+                - link "2026-08-17 m.i.r.a" [ref=f12e954] [cursor=pointer]:
+                  - /url: https://github.com/AryaVora621/m.i.r.a
+                  - generic [ref=f12e955]: 2026-08-17
+                  - generic [ref=f12e956]: m.i.r.a
+              - listitem [ref=f12e957]:
+                - link "2026-08-09 nana-ebook-reader" [ref=f12e958] [cursor=pointer]:
+                  - /url: https://github.com/AryaVora621/nana-ebook-reader
+                  - generic [ref=f12e959]: 2026-08-09
+                  - generic [ref=f12e960]: nana-ebook-reader
+            - paragraph [ref=f12e961]: "latest: openultracode · yesterday"
+      - generic [ref=f12e963]:
+        - generic [ref=f12e966]:
+          - paragraph [ref=f12e967]: 03 / Timeline
+          - heading [level=2] [ref=f12e968]:
+            - text: How I got
+            - emphasis [ref=f12e969]: here.
+          - paragraph [ref=f12e970]: Oldest first — the way it happened. Competitions, builds, and the two teams that shaped all of it.
+        - generic [ref=f12e973]:
+          - generic [ref=f12e976]:
+            - generic [ref=f12e979]: "2024"
+            - generic [ref=f12e981]:
+              - article [ref=f12e985]:
+                - generic [ref=f12e990]:
+                  - generic [ref=f12e991]:
+                    - generic [ref=f12e992]: milestone
+                    - time [ref=f12e993]: Feb 2024
+                  - heading "First FTC Competition" [level=4] [ref=f12e994]
+                  - paragraph [ref=f12e995]: Joined MakEMinds Robotics as programmer, learned Java and FTC SDK
+              - article [ref=f12e999]:
+                - generic [ref=f12e1008]:
+                  - generic [ref=f12e1009]:
+                    - generic [ref=f12e1010]: achievement
+                    - time [ref=f12e1011]: Jun 2024
+                  - heading "FRC 2554 Build Season" [level=4] [ref=f12e1012]
+                  - paragraph [ref=f12e1013]: Contributed to robot design, scouting systems, and competition strategy
+          - generic [ref=f12e1015]:
+            - generic [ref=f12e1018]: "2025"
+            - generic [ref=f12e1020]:
+              - article [ref=f12e1024]:
+                - generic [ref=f12e1030]:
+                  - generic [ref=f12e1031]:
+                    - generic [ref=f12e1032]: project
+                    - time [ref=f12e1033]: Jul 2025
+                  - heading "SmartAI Multi-Agent Framework" [level=4] [ref=f12e1034]
+                  - paragraph [ref=f12e1035]: Developed orchestration framework for collaborative AI agents with persistent memory
+              - article [ref=f12e1039]:
+                - generic [ref=f12e1047]:
+                  - generic [ref=f12e1048]:
+                    - generic [ref=f12e1049]: leadership
+                    - time [ref=f12e1050]: Sep 2025
+                  - heading "FTC 23786 Captain" [level=4] [ref=f12e1051]
+                  - paragraph [ref=f12e1052]: Elected captain of MakEMinds Robotics, leading 15+ members
+              - article [ref=f12e1056]:
+                - generic [ref=f12e1062]:
+                  - generic [ref=f12e1063]:
+                    - generic [ref=f12e1064]: project
+                    - time [ref=f12e1065]: Dec 2025
+                  - heading "RoboPet - AI Companion Robot" [level=4] [ref=f12e1066]
+                  - paragraph [ref=f12e1067]: Built emotionally intelligent desktop robot with personality engine and computer vision
+          - generic [ref=f12e1069]:
+            - generic [ref=f12e1072]: "2026"
+            - generic [ref=f12e1074]:
+              - article [ref=f12e1078]:
+                - generic [ref=f12e1086]:
+                  - generic [ref=f12e1087]:
+                    - generic [ref=f12e1088]: leadership
+                    - time [ref=f12e1089]: Jan 2026
+                  - heading "FRC 2554 Board Member" [level=4] [ref=f12e1090]
+                  - paragraph [ref=f12e1091]: Joined board of The Warhawks, managing strategy, budget, and outreach for 50+ members
+              - article [ref=f12e1095]:
+                - generic [ref=f12e1104]:
+                  - generic [ref=f12e1105]:
+                    - generic [ref=f12e1106]: achievement
+                    - time [ref=f12e1107]: Mar 2026
+                  - heading "FTC 23786 - NJ State Championship" [level=4] [ref=f12e1108]
+                  - paragraph [ref=f12e1109]: Led team to state championship qualification with innovative autonomous routines
+              - article [ref=f12e1113]:
+                - generic [ref=f12e1119]:
+                  - generic [ref=f12e1120]:
+                    - generic [ref=f12e1121]: project
+                    - time [ref=f12e1122]: May 2026
+                  - heading "MakEMinds Robotics Website Launch" [level=4] [ref=f12e1123]
+                  - paragraph [ref=f12e1124]: Rebuilt makemindsrobotics.org with scroll-driven animations, Three.js backgrounds, and GSAP timelines
+        - generic [ref=f12e1127]:
+          - heading "Leadership & recognition" [level=3] [ref=f12e1132]
+          - paragraph [ref=f12e1133]: Only roles I can verify. Placements and scores get added with proof, not before.
+          - generic [ref=f12e1134]:
+            - article [ref=f12e1137]:
+              - generic [ref=f12e1143]:
+                - generic [ref=f12e1144]:
+                  - heading "Captain — FTC Team 23786" [level=4] [ref=f12e1145]
+                  - generic [ref=f12e1146]: 2025–Present
+                - paragraph [ref=f12e1147]: MakEMinds Robotics
+                - paragraph [ref=f12e1148]: Leading 15+ members across robot design, autonomous programming, and competition strategy.
+            - article [ref=f12e1151]:
+              - generic [ref=f12e1157]:
+                - generic [ref=f12e1158]:
+                  - heading "Board Member — FRC Team 2554" [level=4] [ref=f12e1159]
+                  - generic [ref=f12e1160]: 2026–Present
+                - paragraph [ref=f12e1161]: The Warhawks
+                - paragraph [ref=f12e1162]: Strategy, scouting systems, and outreach for a 50+ member FRC organization.
+      - generic [ref=f12e1164]:
+        - generic [ref=f12e1167]:
+          - paragraph [ref=f12e1168]: 04 / Contact
+          - heading [level=2] [ref=f12e1169]:
+            - text: Email me.
+            - emphasis [ref=f12e1170]: I reply.
+          - paragraph [ref=f12e1171]: Mentorship, collaboration, a bug you spotted on this site, or a team that wants to talk autonomous — within a couple of days, usually faster.
+        - generic [ref=f12e1174]:
+          - generic [ref=f12e1176]:
+            - 'link "Email: aryavora621@gmail.com" [ref=f12e1178] [cursor=pointer]':
+              - /url: mailto:aryavora621@gmail.com
+              - img "Email" [ref=f12e1180]
+              - generic [ref=f12e1183]:
+                - generic [ref=f12e1184]: Email
+                - generic [ref=f12e1185]: aryavora621@gmail.com — Fastest. I read everything.
+              - img "Send" [ref=f12e1186]
+            - 'link "GitHub: @AryaVora621" [ref=f12e1190] [cursor=pointer]':
+              - /url: https://github.com/AryaVora621
+              - img "GitHub" [ref=f12e1192]
+              - generic [ref=f12e1194]:
+                - generic [ref=f12e1195]: GitHub
+                - generic [ref=f12e1196]: "@AryaVora621 — 41 public repos and counting."
+              - img "Send" [ref=f12e1197]
+            - 'link "LinkedIn: Arya Vora" [ref=f12e1201] [cursor=pointer]':
+              - /url: https://linkedin.com/in/aryavora
+              - img "LinkedIn" [ref=f12e1203]
+              - generic [ref=f12e1205]:
+                - generic [ref=f12e1206]: LinkedIn
+                - generic [ref=f12e1207]: Arya Vora — For the professional paper trail.
+              - img "Send" [ref=f12e1208]
+            - 'link "Twitter/X: @aryavora621" [ref=f12e1212] [cursor=pointer]':
+              - /url: https://twitter.com/aryavora621
+              - img "Twitter/X" [ref=f12e1214]
+              - generic [ref=f12e1216]:
+                - generic [ref=f12e1217]: Twitter/X
+                - generic [ref=f12e1218]: "@aryavora621 — Build logs and robot opinions."
+              - img "Send" [ref=f12e1219]
+            - 'link "Location: Edison, NJ" [ref=f12e1223] [cursor=pointer]':
+              - /url: "#"
+              - img "Location" [ref=f12e1225]
+              - generic [ref=f12e1228]:
+                - generic [ref=f12e1229]: Location
+                - generic [ref=f12e1230]: Edison, NJ — JP Stevens HS area. Happy to meet IRL.
+              - img "Send" [ref=f12e1231]
+          - generic [ref=f12e1234]:
+            - heading "Send a message" [level=3] [ref=f12e1235]
+            - paragraph [ref=f12e1236]: Goes straight to my inbox
+            - generic [ref=f12e1237]:
+              - generic [ref=f12e1238]:
+                - generic [ref=f12e1239]:
+                  - generic [ref=f12e1240]: Name
+                  - textbox "Name" [ref=f12e1241]:
+                    - /placeholder: Your name
+                - generic [ref=f12e1242]:
+                  - generic [ref=f12e1243]: Email
+                  - textbox "Email" [ref=f12e1244]:
+                    - /placeholder: you@example.com
+              - generic [ref=f12e1245]:
+                - generic [ref=f12e1246]: Subject
+                - textbox "Subject" [ref=f12e1247]:
+                  - /placeholder: What's this about?
+              - generic [ref=f12e1248]:
+                - generic [ref=f12e1249]: Message
+                - textbox "Message" [ref=f12e1250]:
+                  - /placeholder: Say hello, pitch an idea, report a bug…
+              - button "Send message Message" [ref=f12e1251]:
+                - generic [ref=f12e1252]: Send message
+                - img "Message" [ref=f12e1254]
+              - paragraph [ref=f12e1256]: No newsletter. No spam. Just a reply.
+        - generic [ref=f12e1259]:
+          - paragraph [ref=f12e1260]: Currently open to
+          - generic [ref=f12e1261]:
+            - generic [ref=f12e1262]: Robotics internships
+            - generic [ref=f12e1263]: AI research
+            - generic [ref=f12e1264]: Open source
+            - generic [ref=f12e1265]: Mentoring
+            - generic [ref=f12e1266]: Hackathons
+    - contentinfo [ref=f12e1267]:
+      - generic [ref=f12e1268]:
+        - generic [ref=f12e1269]:
+          - generic [ref=f12e1270]:
+            - paragraph [ref=f12e1271]: Arya Vora — fin.
+            - paragraph [ref=f12e1272]:
+              - text: Set in Fraunces, Instrument Sans & IBM Plex Mono.GitHub data snapshot 2026-09-07 · refresh with
+              - code [ref=f12e1273]: npm run data:github
+              - text: .
+          - generic [ref=f12e1274]:
+            - link "view source ↗" [ref=f12e1275] [cursor=pointer]:
+              - /url: https://github.com/AryaVora621/Arya-Vora-Landing-Page
+            - link "email ↗" [ref=f12e1276] [cursor=pointer]:
+              - /url: mailto:aryavora621@gmail.com
+            - link "Back to top" [ref=f12e1277] [cursor=pointer]:
+              - /url: "#top"
+              - text: top ↑
+        - paragraph [ref=f12e1278]: © 2026 Arya Vora · Edison, NJ · 41 public repos and counting
+  - button "Open Next.js Dev Tools" [ref=f12e1284] [cursor=pointer]
