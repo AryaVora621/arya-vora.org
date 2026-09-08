@@ -140,40 +140,30 @@ export function Typewriter({
 
   useEffect(() => {
     const currentText = texts[textIndex];
-    let timeout: NodeJS.Timeout;
+    if (currentText === undefined) return;
+    if (phase === "holding" && !loop && textIndex === texts.length - 1) return;
+    const delay = phase === "typing" ? speed : phase === "holding" ? pauseTime : phase === "deleting" ? deleteSpeed : 400;
 
-    if (phase === "typing") {
-      if (charIndex < currentText.length) {
-        // Keep typing forward one character at a time.
-        timeout = setTimeout(() => {
-          setCharIndex(charIndex + 1);
-          setDisplayText(currentText.substring(0, charIndex + 1));
-        }, speed);
+    // Advance the state machine in the timer that performs the work, rather
+    // than triggering another render synchronously from the effect.
+    const timeout = setTimeout(() => {
+      if (phase === "typing") {
+        const next = Math.min(charIndex + 1, currentText.length);
+        setCharIndex(next);
+        setDisplayText(currentText.substring(0, next));
+        if (next === currentText.length) setPhase("holding");
+      } else if (phase === "holding") {
+        setPhase("deleting");
+      } else if (phase === "deleting") {
+        const next = Math.max(0, charIndex - 1);
+        setCharIndex(next);
+        setDisplayText(currentText.substring(0, next));
+        if (next === 0) setPhase("resting");
       } else {
-        // Full text is on screen — hold it so users can actually read it.
-        setPhase("holding");
-      }
-    } else if (phase === "holding") {
-      timeout = setTimeout(() => setPhase("deleting"), pauseTime);
-    } else if (phase === "deleting") {
-      if (charIndex > 0) {
-        timeout = setTimeout(() => {
-          setCharIndex(charIndex - 1);
-          setDisplayText(currentText.substring(0, charIndex - 1));
-        }, deleteSpeed);
-      } else {
-        // Fully cleared — brief rest, then advance to the next text.
-        setPhase("resting");
-      }
-    } else {
-      timeout = setTimeout(() => {
-        if (loop || textIndex < texts.length - 1) {
-          setTextIndex((prev) => (prev + 1) % texts.length);
-        }
+        setTextIndex((previous) => (previous + 1) % texts.length);
         setPhase("typing");
-      }, 400);
-    }
-
+      }
+    }, delay);
     return () => clearTimeout(timeout);
   }, [charIndex, phase, textIndex, texts, speed, deleteSpeed, pauseTime, loop]);
 

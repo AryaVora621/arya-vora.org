@@ -87,7 +87,6 @@ export function CommandPalette() {
     );
   }, [items, query]);
 
-  useEffect(() => setIndex(0), [query]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -177,7 +176,7 @@ export function CommandPalette() {
               <input
                 ref={inputRef}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => { setQuery(e.target.value); setIndex(0); }}
                 onKeyDown={onInputKey}
                 placeholder="Type a command — projects, sections, actions…"
                 className="w-full bg-transparent py-4 text-[15px] text-paper-50 placeholder:text-paper-600 focus:outline-none"

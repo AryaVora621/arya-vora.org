@@ -40,6 +40,7 @@ const member = own.filter((r) => r.owner?.login !== USER);
 // (empty repos contribute nothing — skip them).
 const languageBytes = {};
 const withCode = own.filter((r) => r.size > 0);
+const unavailableLanguages = [];
 for (const repo of withCode) {
   try {
     const langs = await get(repo.languages_url);
@@ -47,6 +48,7 @@ for (const repo of withCode) {
       languageBytes[lang] = (languageBytes[lang] ?? 0) + bytes;
     }
   } catch (err) {
+    unavailableLanguages.push(repo.full_name);
     console.warn(`skip languages for ${repo.name}: ${err.message}`);
   }
   await sleep(150);
@@ -95,6 +97,11 @@ const data = {
   languageBytes: Object.fromEntries(
     Object.entries(languageBytes).sort((a, b) => b[1] - a[1])
   ),
+  languageCoverage: {
+    requested: withCode.length,
+    fetched: withCode.length - unavailableLanguages.length,
+    unavailable: unavailableLanguages,
+  },
   repos: own.map(pick).sort((a, b) => (a.pushedAt < b.pushedAt ? 1 : -1)),
   ownedCount: owned.length,
   memberRepos: member.map((r) => r.full_name),

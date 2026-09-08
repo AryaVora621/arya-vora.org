@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "playwright test",
     "data:github": "node scripts/fetch-github.mjs"
   },
   "dependencies": {
@@ -24,6 +25,8 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

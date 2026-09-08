@@ -1,4 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Arya Vora — engineering & experiments
+
+A Next.js portfolio with an interactive robot schematic, illustrated project gallery, searchable GitHub workbench, and browser-only pathfinding and agent-workflow demos.
+
+- Design decisions, research sources, and limitations: [docs/redesign.md](docs/redesign.md)
+- Main composition: `src/components/portfolio/Portfolio.tsx`
+- Curated content: `src/data/portfolio.ts`
+- GitHub snapshot refresh: `npm run data:github`
+
+## Checks
+
+```sh
+npm ci
+npx playwright install chromium
+npm run lint
+npm run build
+npm test -- --workers=4
+```
+
+Tests start a production server on port 3100. They cover desktop/mobile interactions, accessibility, reduced motion, no-JavaScript content, and screenshots. Rebuild before running tests after source edits. Regenerate the social card with `node scripts/render-social-image.mjs`.
 
 ## Getting Started
 

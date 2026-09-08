@@ -1,11 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fragment_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
-import { SmoothScroll } from "@/components/effects/SmoothScroll";
-import { CustomCursor } from "@/components/effects/CustomCursor";
-import { MouseGlow } from "@/components/effects/MouseGlow";
-import { ConsoleBanner } from "@/components/effects/ConsoleBanner";
-import { KonamiTerminal } from "@/components/effects/KonamiTerminal";
+import "./portfolio.css";
 
 export const metadataBase = new URL("https://aryavora.com");
 
@@ -33,10 +29,11 @@ const mono = Fragment_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Arya Vora | Robotics Engineer · FTC 23786 Captain · FRC 2554 Board",
+    default: "Arya Vora | Robots, Software & Experiments",
     template: "%s | Arya Vora",
   },
-  description: "Junior at John P. Stevens High School (Edison, NJ) leading award-winning robotics teams, building autonomous systems, and pushing the boundaries of human-robot interaction.",
+  metadataBase,
+  description: "Arya Vora (aryavora621 / frinklyy) builds robots, developer tools, and local-agent experiments. Explore the projects and interactive playground.",
   keywords: [
     "Arya Vora",
     "Robotics",
@@ -60,11 +57,11 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://aryavora.com",
     siteName: "Arya Vora",
-    title: "Arya Vora | Robotics Engineer · FTC 23786 Captain · FRC 2554 Board",
-  description: "Arya Vora — FTC 23786 captain, FRC 2554 board member. Robots, autonomous systems, and software built in public from Edison, NJ.",
+    title: "Arya Vora | Robots, Software & Experiments",
+    description: "Robots, developer tools, and local-agent experiments. Explore the work and interactive playground.",
     images: [
       {
-        url: "/og-image.svg",
+        url: "/portfolio-og.png",
         width: 1200,
         height: 630,
         alt: "Arya Vora - Robotics Engineer",
@@ -73,9 +70,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Arya Vora | Robotics Engineer",
-    description: "FTC 23786 captain, FRC 2554 board member. Robots and software built in public.",
-    images: ["/og-image.svg"],
+    title: "Arya Vora | Robots, Software & Experiments",
+    description: "Robots, developer tools, and ideas you can play with. Built in public by Arya Vora.",
+    images: ["/portfolio-og.png"],
     creator: "@aryavora621",
   },
   icons: {
@@ -86,10 +83,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0f" },
-  ],
+  themeColor: "#101210",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -109,11 +103,6 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://linkedin.com" />
       </head>
       <body className="min-h-full flex flex-col bg-ink-950 text-paper-200">
-        <SmoothScroll />
-        <CustomCursor />
-        <MouseGlow />
-        <ConsoleBanner />
-        <KonamiTerminal />
         {children}
       </body>
     </html>
