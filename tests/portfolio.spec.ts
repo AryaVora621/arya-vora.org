@@ -216,6 +216,9 @@ test("contact has honest email links and clipboard failure feedback", async ({
   await contact.getByRole("button", { name: "Copied", exact: true }).click();
   await expect(contact.getByText(/Clipboard unavailable/)).toBeVisible();
   await expect(contact.locator("form")).toHaveCount(0);
+  await expect(contact.getByRole("link", { name: /Instagram/ })).toHaveAttribute("href", "https://www.instagram.com/aryavora621/");
+  await expect(contact.getByRole("link", { name: /Hugging Face/ })).toHaveAttribute("href", "https://huggingface.co/Frinklyy");
+  await expect(contact.getByRole("link", { name: /X \/ Twitter/ })).toHaveAttribute("href", "https://x.com/aryavora621");
 });
 
 test("reduced motion disables decorative animation and completes route without movement", async ({
@@ -270,6 +273,32 @@ test("mobile navigation, section anchors, and small viewport layout", async ({
     );
   expect(outside).toEqual([]);
 });
+
+for (const preference of ["pause", "reduce"] as const) {
+  test(`active route completes immediately when motion changes to ${preference}`, async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Clear walls" }).click();
+    // Use the browser clock to hold an active route instead of racing its timer.
+    await page.clock.install({ time: new Date("2026-09-08T12:00:00Z") });
+    await page.clock.pauseAt(new Date("2026-09-08T12:00:01Z"));
+    await page.getByRole("button", { name: "Find path", exact: true }).click();
+    await expect(page.getByText(/Following route/)).toBeVisible();
+    const initialCells = await page.locator(".path-cell.route").count();
+    expect(initialCells).toBeLessThan(13);
+    if (preference === "pause") await page.getByRole("button", { name: "Pause effects" }).click();
+    else await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect(page.getByText(/12 moves .* Goal reached/)).toBeVisible();
+    await expect(page.locator(".path-cell.route")).toHaveCount(13);
+    await page.clock.fastForward(800);
+    await expect(page.locator(".path-cell.route")).toHaveCount(13);
+    if (preference === "pause") await page.getByRole("button", { name: "Enable effects" }).click();
+    else await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.clock.fastForward(800);
+    await expect(page.getByText(/Goal reached/)).toBeVisible();
+    await page.getByRole("button", { name: "Clear walls" }).click();
+    await expect(page.locator(".path-cell.route")).toHaveCount(0);
+  });
+}
 
 test("scroll effects respond to position and stop when paused", async ({ page }) => {
   await page.goto("/");

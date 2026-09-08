@@ -29,6 +29,24 @@ function PathLab() {
   const arrived = !!result?.path.length && step === result.path.length - 1;
   useEffect(() => {
     if (!running || !result?.path.length) return;
+    const preference = matchMedia("(prefers-reduced-motion: reduce)");
+    const finishWithoutAnimation = () => {
+      if (preference.matches || document.documentElement.dataset.motion === "paused") {
+        setRunning(false);
+        setStep(result.path.length - 1);
+      }
+    };
+    // Both the system preference and the global toggle can change mid-route.
+    preference.addEventListener("change", finishWithoutAnimation);
+    const observer = new MutationObserver(finishWithoutAnimation);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });
+    return () => {
+      preference.removeEventListener("change", finishWithoutAnimation);
+      observer.disconnect();
+    };
+  }, [running, result]);
+  useEffect(() => {
+    if (!running || !result?.path.length) return;
     const timer = window.setTimeout(() => {
       if (step >= result.path.length - 2) setRunning(false);
       setStep(Math.min(step + 1, result.path.length - 1));

@@ -106,6 +106,16 @@ export const socialLinks = [
   {
     label: "X / Twitter",
     handle: "@aryavora621",
-    url: "https://twitter.com/aryavora621",
+    url: "https://x.com/aryavora621",
+  },
+  {
+    label: "Instagram",
+    handle: "@aryavora621",
+    url: "https://www.instagram.com/aryavora621/",
+  },
+  {
+    label: "Hugging Face",
+    handle: "Frinklyy",
+    url: "https://huggingface.co/Frinklyy",
   },
 ] as const;
