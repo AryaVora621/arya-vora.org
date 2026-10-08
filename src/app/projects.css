@@ -765,5 +765,5 @@ html[data-motion="paused"] .notch-line i {
 .feature-photo img[src*="exploded-still"] {
   object-fit: contain;
   object-position: 50% 50%;
-  padding: 6%;
+  padding: 4%;
 }

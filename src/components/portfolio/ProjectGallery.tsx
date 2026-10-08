@@ -19,8 +19,8 @@ function FeatureMedia({ work }: { work: Work }) {
           <Image
             src="/robopet/exploded-still.webp"
             alt="Exploded view of the roboPet model: shell lifted off, control boards and battery pack above the chassis, four servo legs pulled out to the sides."
-            width={2583}
-            height={1452}
+            width={1169}
+            height={1147}
             sizes="(max-width: 760px) 100vw, 60vw"
           />
         </div>

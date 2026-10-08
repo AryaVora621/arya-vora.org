@@ -215,7 +215,7 @@ export function RoboPetExploded() {
             }
             const lift = key !== null && partKey === key && lit.userData.baseEmissive === 0;
             lit.emissive.setHex(lift ? 0x6d28d9 : lit.userData.baseEmissive);
-            lit.emissiveIntensity = lift ? 0.22 : lit.userData.baseIntensity;
+            lit.emissiveIntensity = lift ? 0.12 : lit.userData.baseIntensity;
           });
         });
         // Dolly toward the selected subsystem so even small boards read clearly.
@@ -420,8 +420,8 @@ export function RoboPetExploded() {
               className="exploded-still"
               src="/robopet/exploded-still.webp"
               alt=""
-              width={2583}
-              height={1452}
+              width={1169}
+              height={1147}
               loading="lazy"
             />
           )}
