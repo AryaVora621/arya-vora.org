@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fragment_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import "./portfolio.css";
+import "./robopet.css";
 
 export const metadataBase = new URL("https://aryavora.com");
 
@@ -83,7 +84,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#101210",
+  themeColor: "#07070c",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

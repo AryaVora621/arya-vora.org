@@ -21,6 +21,16 @@
 - [x] Console banner + Konami-code terminal (whoami/stack/repos/robots, real GitHub data)
 - [ ] 3D CAD robot hero — blocked on Arya's model upload
 
+## v6 upgrade (2026-10-07) - see PLAN.md
+- [x] Snapshot v5 as git tag `v5-snapshot` (pushed); main fast-forwarded to v5
+- [x] Palette restored to v4 ink/violet per Arya (scripts/remap-palette.py)
+- [x] Gemini concept render + Veo turntable -> Real-ESRGAN/graded WebP sequence (scripts/build-sequence.py)
+- [x] RoboPetFilm: pinned canvas scrub with README-sourced spec beats, static fallback
+- [x] ScrollChoreography: SplitText masked headings, hero load sequence, shutter reveals
+- [ ] [IN_PROGRESS] img2threejs procedural roboPet (background agent) -> exploded-view section
+- [ ] Reviewer loop: score >= 8/10
+- [ ] Tests updated + lint/build clean, then commit to main (ask before push: push may deploy)
+
 ## Done
 - [x] Full site structure with all 5 sections
 - [x] Custom SVG icon system

@@ -56,8 +56,8 @@ export function RobotSchematic({
             y2="340"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#394c45" />
-            <stop offset="1" stopColor="#111c19" />
+            <stop stopColor="#383a4d" />
+            <stop offset="1" stopColor="#10121d" />
           </linearGradient>
         </defs>
         <g className="orbit-lines" stroke="currentColor" opacity=".18">
@@ -82,53 +82,53 @@ export function RobotSchematic({
           cy="384"
           rx="148"
           ry="24"
-          fill="#c8fa72"
+          fill="#a78bfa"
           opacity=".06"
         />
         <g className="robot-body">
-          <g stroke="#83a598" strokeWidth="2">
+          <g stroke="#8185a7" strokeWidth="2">
             <path
               d="m190 263-36 36 15 65 26 9 2-14-19-9-2-41 37-29"
-              fill="#14251e"
+              fill="#131526"
             />
             <path
               d="m320 268 45 34 17 60 28-6-1-14-12 1-11-58-47-33"
-              fill="#14251e"
+              fill="#131526"
             />
             <path
               d="m225 282-23 38 25 58 28 4 2-14-17-5-13-43 26-28"
-              fill="#24372e"
+              fill="#232538"
             />
             <path
               d="m353 259 53 32 12 50 28-5-2-14-15 1-6-48-53-35"
-              fill="#24372e"
+              fill="#232538"
             />
             <path
               d="m166 221 113-59 117 57-108 73z"
               fill={`url(#${interactive ? "body-hero" : "body-card"})`}
             />
-            <path d="m166 221 122 71v37l-122-71z" fill="#1b2d25" />
-            <path d="m288 292 108-73v38l-108 72z" fill="#101d17" />
+            <path d="m166 221 122 71v37l-122-71z" fill="#1a1c2e" />
+            <path d="m288 292 108-73v38l-108 72z" fill="#0f111e" />
             <path d="m210 218 70-35 65 31-65 42z" strokeDasharray="4 4" />
           </g>
           <g className="robot-head">
             <path
               d="m177 157 63-36 92 34v87l-68 42-87-38z"
-              fill="#34483e"
-              stroke="#a5b9ab"
+              fill="#333549"
+              stroke="#a4a6ba"
               strokeWidth="2"
             />
             <path
               d="m177 157 87 33 68-35M264 190v94"
-              stroke="#82978b"
+              stroke="#818398"
               strokeWidth="2"
             />
             <path
               d="m186 171 64 26v65l-64-24z"
-              fill="#0b100d"
-              stroke="#658571"
+              fill="#0b0b10"
+              stroke="#636787"
             />
-            <g className="robot-eyes" fill="#c8fa72">
+            <g className="robot-eyes" fill="#a78bfa">
               {mode === "Sleepy" ? (
                 <>
                   <path d="m198 211 14 5v4l-14-5z" />
@@ -155,11 +155,11 @@ export function RobotSchematic({
             </g>
             <path
               d="m284 204 28-16m-28 25 28-16m-28 25 28-16"
-              stroke="#6c8c78"
+              stroke="#6a6e8e"
               strokeWidth="3"
             />
-            <path d="M239 132v-28" stroke="#c8fa72" strokeWidth="2" />
-            <circle cx="239" cy="99" r="5" fill="#c8fa72" />
+            <path d="M239 132v-28" stroke="#a78bfa" strokeWidth="2" />
+            <circle cx="239" cy="99" r="5" fill="#a78bfa" />
           </g>
           {[
             [183, 278],
@@ -172,18 +172,18 @@ export function RobotSchematic({
               cx={cx}
               cy={cy}
               r="7"
-              fill="#101913"
-              stroke="#c8fa72"
+              fill="#101119"
+              stroke="#a78bfa"
               strokeWidth="2"
             />
           ))}
         </g>
-        <g stroke="#c8fa72" opacity=".65">
+        <g stroke="#a78bfa" opacity=".65">
           <path d="M324 132h92l22-22M144 315H74l-20 20" />
           <circle cx="324" cy="132" r="3" />
           <circle cx="144" cy="315" r="3" />
         </g>
-        <g fill="#9daea2" fontSize="10" fontFamily="monospace">
+        <g fill="#9c9eaf" fontSize="10" fontFamily="monospace">
           <text x="395" y="99">
             PERCEPTION
           </text>

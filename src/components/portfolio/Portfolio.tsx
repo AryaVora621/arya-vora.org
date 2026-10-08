@@ -12,11 +12,14 @@ import { RobotSchematic } from "./RobotSchematic";
 import { ProjectGallery } from "./ProjectGallery";
 import { Playground } from "./Playground";
 import { ContactPanel } from "./ContactPanel";
+import { RoboPetFilm } from "@/components/robopet/RoboPetFilm";
+import { ScrollChoreography } from "./ScrollChoreography";
 
 export function Portfolio() {
   return (
     <div id="top" className="portfolio">
       <PortfolioNav />
+      <ScrollChoreography />
       <main id="main-content" tabIndex={-1}>
         <section
           className="portfolio-hero site-shell"
@@ -85,6 +88,7 @@ export function Portfolio() {
             BUILD. BREAK. UNDERSTAND. <span>BUILD AGAIN.</span> BUILD. BREAK.
           </div>
         </div>
+        <RoboPetFilm />
         <ProjectGallery />
         <Playground />
         <section id="about" tabIndex={-1} className="about-section section-pad">
