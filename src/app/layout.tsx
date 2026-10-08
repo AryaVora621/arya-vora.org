@@ -5,7 +5,7 @@ import "./portfolio.css";
 import "./robopet.css";
 import "./projects.css";
 
-export const metadataBase = new URL("https://aryavora.com");
+export const metadataBase = new URL("https://www.arya-vora.org");
 
 const display = Fragment_Mono({
   variable: "--font-display",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://aryavora.com",
+    url: "https://www.arya-vora.org",
     siteName: "Arya Vora",
     title: "Arya Vora | Robots, Software & Experiments",
     description: "Robots, developer tools, and local-agent experiments. Explore the work and interactive playground.",

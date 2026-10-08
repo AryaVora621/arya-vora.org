@@ -185,7 +185,7 @@ export function Portfolio() {
           <p>© {new Date().getFullYear()} Arya Vora · Built with curiosity.</p>
           <div>
             <a
-              href="https://github.com/AryaVora621/aryavora.com"
+              href="https://github.com/AryaVora621/arya-vora.org"
               target="_blank"
               rel="noopener noreferrer"
             >

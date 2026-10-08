@@ -148,7 +148,7 @@ function PathLab() {
         <span>S / Start</span>
         <span>G / Goal</span>
         <span>× / Wall</span>
-        <span>Green / Route</span>
+        <span>Route</span>
       </div>
       <div className="lab-controls">
         <button className="primary-button" onClick={run}>
