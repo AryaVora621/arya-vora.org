@@ -30,9 +30,11 @@
 - [x] img2threejs procedural roboPet -> exploded view (act two) + 3D hero (replaces SVG)
 - [x] Deployed 3f6138c to production (live domain: www.arya-vora.org; aryavora.com has no DNS)
 - [x] Round 2 fixes committed locally (c8b4d13 amended); 29/29 tests pass
-- [ ] Apex arya-vora.org not attached in Vercel (only www) - ask Arya
-- [ ] [IN_PROGRESS] Reviewer loop: r1 6.5/10 -> r2 pending (target >= 8)
-- [ ] Tests updated + lint/build clean, then commit to main (ask before push: push may deploy)
+- [x] Apex arya-vora.org attached as 308 -> www.arya-vora.org
+- [x] Reviewer loop: 6.5 -> 7.5 -> 7.8 -> 8.1/10 (target >= 8 met), live at 3c9c516
+- [x] Tests updated + lint/build clean; pushed to main (Vercel auto-deploys main)
+- [ ] Open reviewer items: film->3D hand-off (overlap sections, match camera angle); mobile chips overlap exploded model during tour; per-chip static stills
+- [ ] Waiting on Arya: real notchTerm screenshot/recording for the notchTerm feature row
 
 ## Done
 - [x] Full site structure with all 5 sections
