@@ -242,7 +242,7 @@ export function RoboPetFilm() {
         { scale: 0.86, opacity: 0.15, duration: 0.06, ease: "power2.in" },
         0.94,
       );
-      timeline.to(".film-outro, .film-hud", { opacity: 0, duration: 0.04 }, 0.96);
+      timeline.to(".film-outro, .film-hud", { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.94);
       timeline.fromTo(".film-progress-bar", { scaleX: 0 }, { scaleX: 1, duration: 1 }, 0);
     }, section);
 

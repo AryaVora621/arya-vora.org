@@ -6,31 +6,65 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
 import { shouldUseStill } from "./gpu";
 
-type PartInfo = { id: string; label: string; detail: string };
+// UI-side part data (README-sourced) so the explainer works without WebGL. `ids` maps a
+// chip to model part ids; the four legs are one subsystem.
+const PARTS = [
+  {
+    key: "shell",
+    label: "Shell",
+    ids: ["shell-top", "status-led"],
+    detail: "PLA shell printed on a Bambu A1 Mini, with a single WS2812 status and mood LED.",
+  },
+  {
+    key: "face",
+    label: "OLED face",
+    ids: ["face"],
+    detail: "SSD1306 OLED behind a printed bezel. Draws the eyes; driven over I2C by the Pico.",
+  },
+  {
+    key: "camera",
+    label: "PiCam",
+    ids: ["camera"],
+    detail: "Camera module for the Zero 2W, the brain's eyes for perception.",
+  },
+  {
+    key: "electronics",
+    label: "Pico + Zero 2W",
+    ids: ["electronics"],
+    detail:
+      "The Pico runs the real-time loop for all 12 servos. The Zero 2W is the brain. An MPU6050 IMU feeds balance.",
+  },
+  {
+    key: "power",
+    label: "Power",
+    ids: ["power"],
+    detail: "3-cell pack into two XL4016 buck converters: about 7.2 V for servos, 5 V for logic.",
+  },
+  {
+    key: "legs",
+    label: "Legs ×4",
+    ids: ["leg-fl", "leg-fr", "leg-rl", "leg-rr"],
+    detail: "Three MG996R servos per leg (hip, upper leg, lower leg) on printed PLA segments.",
+  },
+  {
+    key: "chassis",
+    label: "Chassis",
+    ids: ["shell-bottom"],
+    detail: "Lower shell carrying the hip mounts, battery tray and board standoffs.",
+  },
+] as const;
+type PartKey = (typeof PARTS)[number]["key"];
 
-// Ordered the way the hardware README explains the build: structure, control, power, legs.
-const PART_ORDER = [
-  "shell-top",
-  "face",
-  "camera",
-  "status-led",
-  "electronics",
-  "power",
-  "shell-bottom",
-  "leg-fl",
-  "leg-fr",
-  "leg-rl",
-  "leg-rr",
-];
+const EXPLODE_END = 0.55;
 
 export function RoboPetExploded() {
   const motion = useMotionAllowed();
   const sectionRef = useRef<HTMLElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
-  const [parts, setParts] = useState<PartInfo[]>([]);
-  const [active, setActive] = useState<string | null>(null);
+  const [active, setActive] = useState<PartKey | null>(null);
   const [failed, setFailed] = useState(false);
-  const selectRef = useRef<(id: string | null) => void>(() => {});
+  const highlightRef = useRef<(key: PartKey | null) => void>(() => {});
+  const userPicked = useRef(false);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -41,7 +75,10 @@ export function RoboPetExploded() {
 
     const start = async () => {
       const THREE = await import("three");
-      const { createRoboPetModel, setRoboPetExplode } = await import(
+      const { RoomEnvironment } = await import(
+        "three/examples/jsm/environments/RoomEnvironment.js"
+      );
+      const { createRoboPetModel, disposeRoboPetModel, setRoboPetExplode } = await import(
         "./createRoboPetModel"
       );
       if (disposed) return;
@@ -62,50 +99,50 @@ export function RoboPetExploded() {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       mount.appendChild(renderer.domElement);
 
+      // Same studio as the hero so the robot looks identical across sections.
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
       const pmrem = new THREE.PMREMGenerator(renderer);
-      const { RoomEnvironment } = await import(
-        "three/examples/jsm/environments/RoomEnvironment.js"
+      const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environment = env;
+      scene.environmentIntensity = 0.3;
+      const key = new THREE.DirectionalLight("#ffead2", 2.6);
+      key.position.set(-1.6, 4.2, 4.6);
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024);
+      Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3 });
+      key.shadow.bias = -0.0004;
+      const rim = new THREE.DirectionalLight("#c4b5fd", 1.6);
+      rim.position.set(3.5, 2.5, -3.5);
+      scene.add(key, rim, new THREE.HemisphereLight("#e8ecff", "#0a0a10", 0.25));
+      const floor = new THREE.Mesh(
+        new THREE.CircleGeometry(5, 48),
+        new THREE.ShadowMaterial({ opacity: 0.4 }),
       );
-      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-      const key = new THREE.DirectionalLight(0xffffff, 1.6);
-      key.position.set(3, 5, 4);
-      const rim = new THREE.DirectionalLight(0xa78bfa, 1.2);
-      rim.position.set(-4, 2, -3);
-      scene.add(key, rim, new THREE.AmbientLight(0xffffff, 0.15));
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
 
-      const model = createRoboPetModel();
+      const model = createRoboPetModel({ shadows: true });
       const pivot = new THREE.Group();
       pivot.add(model);
       scene.add(pivot);
+      const center = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3());
+      model.position.x -= center.x;
+      model.position.z -= center.z;
 
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      model.position.sub(new THREE.Vector3(center.x, 0, center.z));
-      const radius = box.getSize(new THREE.Vector3()).length();
+      // Frame the fully exploded silhouette, then reassemble.
+      setRoboPetExplode(model, 1);
+      const explodedBox = new THREE.Box3().setFromObject(model);
+      const sphere = explodedBox.getBoundingSphere(new THREE.Sphere());
+      const halfWidth = explodedBox.getSize(new THREE.Vector3()).x / 2;
+      setRoboPetExplode(model, 0);
 
-      const found: PartInfo[] = [];
-      const pickables: import("three").Object3D[] = [];
-      model.traverse((object) => {
-        const part = object.userData?.part as PartInfo | undefined;
-        if (part && !found.some((p) => p.id === part.id)) {
-          found.push(part);
-          pickables.push(object);
-        }
-      });
-      found.sort(
-        (a, b) =>
-          (PART_ORDER.indexOf(a.id) + 99) % 99 - (PART_ORDER.indexOf(b.id) + 99) % 99,
-      );
-      setParts(found);
-
-      const state = { explode: motion ? 0 : 0.7, yaw: -0.6, pitch: 0.22 };
-      let highlighted: string | null = null;
-      const original = new Map<import("three").Material, number>();
+      const state = { explode: motion ? 0 : 1, yaw: motion ? -0.35 : -0.15 };
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
 
       const partOf = (object: import("three").Object3D | null) => {
         while (object) {
@@ -114,45 +151,75 @@ export function RoboPetExploded() {
         }
         return null;
       };
+      const keyOf = (id: string | null) =>
+        PARTS.find((part) => (part.ids as readonly string[]).includes(id ?? ""))?.key ?? null;
 
-      // Dim everything except the selected subsystem so it reads like a callout.
-      const applyHighlight = (id: string | null) => {
-        highlighted = id;
-        model.traverse((object) => {
-          const mesh = object as import("three").Mesh;
-          if (!mesh.isMesh) return;
+      // Dim everything except the chosen subsystem so it reads like a callout.
+      const original = new Map<import("three").Material, number>();
+      const meshParts = new Map<import("three").Mesh, PartKey | null>();
+      // The model shares materials across parts (one PLA for shell, chassis and face), so
+      // give each subsystem its own copies; otherwise dimming one part dims them all.
+      const perPart = new Map<string, import("three").Material>();
+      const cloneFor = (material: import("three").Material, key: PartKey | null) => {
+        const id = `${material.uuid}:${key}`;
+        if (!perPart.has(id)) perPart.set(id, material.clone());
+        return perPart.get(id)!;
+      };
+      model.traverse((object) => {
+        const mesh = object as import("three").Mesh;
+        if (!mesh.isMesh) return;
+        const key = keyOf(partOf(mesh));
+        meshParts.set(mesh, key);
+        mesh.material = Array.isArray(mesh.material)
+          ? mesh.material.map((material) => cloneFor(material, key))
+          : cloneFor(mesh.material, key);
+      });
+      let highlighted: PartKey | null = null;
+      const applyHighlight = (key: PartKey | null) => {
+        if (key === highlighted) return;
+        highlighted = key;
+        meshParts.forEach((partKey, mesh) => {
+          const dim = key !== null && partKey !== key;
           const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          const dim = id !== null && partOf(mesh) !== id;
           materials.forEach((material) => {
             if (!original.has(material)) original.set(material, material.opacity);
             material.transparent = dim || original.get(material)! < 1;
-            material.opacity = dim ? 0.16 : original.get(material)!;
+            material.opacity = dim ? 0.22 : original.get(material)!;
             material.depthWrite = !dim;
+            // Toggling transparency changes the shader program.
+            material.needsUpdate = true;
           });
+          mesh.castShadow = !dim;
         });
         render();
       };
-      selectRef.current = (id) => applyHighlight(id === highlighted ? null : id);
+      highlightRef.current = applyHighlight;
 
       const resize = () => {
         const { clientWidth: w, clientHeight: h } = mount;
+        if (!w || !h) return;
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
-        // Distance is sized for the fully exploded silhouette, not the assembled robot.
         const portrait = w < h;
-        const fit = radius * (portrait ? 3.1 : 2.15);
-        camera.position.set(0, fit * 0.3, fit);
-        camera.lookAt(0, radius * 0.1, 0);
-        // Shift the frame instead of the model so rotation stays centred on the robot:
-        // right of the copy column on desktop, below the title on phones.
-        camera.setViewOffset(w, h, portrait ? 0 : -w * 0.16, portrait ? -h * 0.04 : 0, w, h);
+        // Fit the exploded sphere into the tighter of the two field-of-view axes.
+        const vFov = THREE.MathUtils.degToRad(camera.fov);
+        const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+        const usable = portrait ? 0.92 : 0.74; // desktop leaves the copy column free
+        // Phones are width-bound and the teardown is mostly lateral, so fit its width
+        // directly; the sphere fit wastes most of a narrow screen.
+        const dist = portrait
+          ? (halfWidth * 1.08) / Math.tan(hFov / 2) + sphere.radius * 0.35
+          : sphere.radius / Math.sin(Math.min(vFov * 1.02, hFov * usable) / 2);
+        camera.position.set(0, sphere.center.y + dist * 0.26, dist);
+        camera.lookAt(0, sphere.center.y, 0);
+        camera.setViewOffset(w, h, portrait ? 0 : -w * 0.17, portrait ? h * 0.1 : -h * 0.02, w, h);
         camera.updateProjectionMatrix();
         render();
       };
 
       function render() {
         setRoboPetExplode(model, state.explode);
-        pivot.rotation.set(state.pitch * state.explode * 0.5, state.yaw, 0);
+        pivot.rotation.y = state.yaw;
         renderer.render(scene, camera);
       }
 
@@ -165,10 +232,11 @@ export function RoboPetExploded() {
           -((event.clientY - rect.top) / rect.height) * 2 + 1,
         );
         raycaster.setFromCamera(pointer, camera);
-        const hit = raycaster.intersectObjects(pickables, true)[0];
-        const id = hit ? partOf(hit.object) : null;
-        setActive((current) => (id === current ? null : id));
-        applyHighlight(id === highlighted ? null : id);
+        const hit = raycaster.intersectObject(model, true)[0];
+        const key = hit ? keyOf(partOf(hit.object)) : null;
+        userPicked.current = key !== null;
+        setActive(key);
+        applyHighlight(key);
       };
       renderer.domElement.addEventListener("pointerup", onClick);
 
@@ -179,21 +247,37 @@ export function RoboPetExploded() {
       let ctx: gsap.Context | null = null;
       if (motion) {
         gsap.registerPlugin(ScrollTrigger);
+        const portrait = mount.clientWidth < mount.clientHeight;
+        let lastTour: PartKey | null = null;
         ctx = gsap.context(() => {
-          gsap
-            .timeline({
-              defaults: { ease: "none" },
-              scrollTrigger: {
-                trigger: section,
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 0.7,
+          const timeline = gsap.timeline({
+            defaults: { ease: "none" },
+            scrollTrigger: {
+              trigger: section,
+              start: "top top",
+              end: "bottom bottom",
+              scrub: 0.7,
+              onUpdate: (self) => {
+                // After the teardown holds, scrolling walks through each subsystem until
+                // the visitor picks one themselves.
+                if (userPicked.current) return;
+                const t = (self.progress - EXPLODE_END) / (1 - EXPLODE_END);
+                const next =
+                  t < 0 ? null : PARTS[Math.min(PARTS.length - 1, Math.floor(t * PARTS.length))].key;
+                if (next !== lastTour) {
+                  lastTour = next;
+                  setActive(next);
+                  applyHighlight(next);
+                }
               },
-              onUpdate: render,
-            })
-            .to(state, { yaw: 0.5, duration: 1 }, 0)
-            .to(state, { explode: 1, duration: 0.55, ease: "power2.inOut" }, 0.12)
-            .to(state, { explode: 0.85, duration: 0.2 }, 0.8);
+            },
+            onUpdate: render,
+          });
+          timeline
+            .to(state, { yaw: 0.15, duration: 1 }, 0)
+            .to(state, { explode: 1, duration: EXPLODE_END - 0.1, ease: "power2.inOut" }, 0.08);
+          if (portrait)
+            timeline.to(".exploded-copy", { opacity: 0, y: -24, duration: 0.08 }, 0.08);
         }, section);
       }
 
@@ -201,19 +285,11 @@ export function RoboPetExploded() {
         ctx?.revert();
         resizeObserver.disconnect();
         renderer.domElement.removeEventListener("pointerup", onClick);
-        scene.traverse((object) => {
-          const mesh = object as import("three").Mesh;
-          if (!mesh.isMesh) return;
-          mesh.geometry.dispose();
-          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          materials.forEach((material) => {
-            Object.values(material).forEach((value) => {
-              if (value instanceof THREE.Texture) value.dispose();
-            });
-            material.dispose();
-          });
-        });
-        scene.environment?.dispose();
+        disposeRoboPetModel(model);
+        perPart.forEach((material) => material.dispose());
+        floor.geometry.dispose();
+        (floor.material as import("three").Material).dispose();
+        env.dispose();
         pmrem.dispose();
         renderer.dispose();
         renderer.domElement.remove();
@@ -238,14 +314,15 @@ export function RoboPetExploded() {
     };
   }, [motion]);
 
-  const activePart = parts.find((part) => part.id === active);
+  const activePart = PARTS.find((part) => part.key === active);
+  const live = motion && !failed;
 
   return (
     <section
       ref={sectionRef}
       id="exploded"
       className="exploded"
-      data-mode={motion ? "scrub" : "static"}
+      data-mode={live ? "scrub" : "static"}
       aria-labelledby="exploded-title"
     >
       <div className="exploded-stage">
@@ -260,8 +337,8 @@ export function RoboPetExploded() {
             <span className="muted-text">on purpose.</span>
           </h2>
           <p className="exploded-lede">
-            A procedural Three.js reconstruction, built in code from the concept render.
-            Scroll to pull it apart. Pick a part to see what it does.
+            A procedural Three.js reconstruction, built in code from the concept render.{" "}
+            {live ? "Scroll to pull it apart, or pick a part." : "Pick a part to see what it does."}
           </p>
         </div>
         <div ref={mountRef} className="exploded-canvas" aria-hidden="true">
@@ -271,22 +348,24 @@ export function RoboPetExploded() {
               className="exploded-still"
               src="/robopet/exploded-still.webp"
               alt=""
-              width={1376}
-              height={768}
+              width={2583}
+              height={1452}
               loading="lazy"
             />
           )}
         </div>
         <div className="exploded-parts site-shell">
           <ul aria-label="roboPet subsystems">
-            {parts.map((part) => (
-              <li key={part.id}>
+            {PARTS.map((part) => (
+              <li key={part.key}>
                 <button
                   type="button"
-                  aria-pressed={active === part.id}
+                  aria-pressed={active === part.key}
                   onClick={() => {
-                    setActive(active === part.id ? null : part.id);
-                    selectRef.current(part.id);
+                    const next = active === part.key ? null : part.key;
+                    userPicked.current = next !== null;
+                    setActive(next);
+                    highlightRef.current(next);
                   }}
                 >
                   {part.label}
@@ -295,15 +374,16 @@ export function RoboPetExploded() {
             ))}
           </ul>
           <div className="exploded-detail" aria-live="polite">
-            {activePart ? (
-              <>
-                <span className="micro">{activePart.id.toUpperCase()}</span>
-                <h3>{activePart.label}</h3>
-                <p>{activePart.detail}</p>
-              </>
-            ) : (
-              <p className="micro">SELECT A PART. INTERNALS ARE INFERRED, NOT MEASURED.</p>
-            )}
+            <span className="micro">
+              {activePart
+                ? `${String(PARTS.indexOf(activePart) + 1).padStart(2, "0")} / ${String(PARTS.length).padStart(2, "0")}`
+                : "INTERNALS ARE INFERRED, NOT MEASURED"}
+            </span>
+            <h3>{activePart?.label ?? "Seven subsystems"}</h3>
+            <p>
+              {activePart?.detail ??
+                "Structure, face, perception, control, power and locomotion. Each one is a decision documented in the build log."}
+            </p>
           </div>
         </div>
       </div>

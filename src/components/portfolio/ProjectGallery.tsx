@@ -17,14 +17,14 @@ function FeatureMedia({ work }: { work: Work }) {
       <>
         <div className="feature-parallax feature-photo">
           <Image
-            src="/sequence/robopet/lg/054.webp"
-            alt="roboPet concept render: a cream capsule-shaped body with a small screen face, standing on four servo-driven legs."
-            width={1920}
-            height={1080}
+            src="/robopet/exploded-still.webp"
+            alt="Exploded view of the roboPet model: shell lifted off, control boards and battery pack above the chassis, four servo legs pulled out to the sides."
+            width={2583}
+            height={1452}
             sizes="(max-width: 760px) 100vw, 60vw"
           />
         </div>
-        <p className="feature-note">Concept render</p>
+        <p className="feature-note">Procedural model, exploded</p>
       </>
     );
   return (

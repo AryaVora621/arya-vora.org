@@ -556,8 +556,8 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const shellTop = part(
     "shell-top",
     "Upper shell",
-    "PLA top half printed on a Bambu A1 Mini. Rounded-rectangle tube, 0.4 mm layer lines.",
-    new THREE.Vector3(0, 1.15, 0),
+    "PLA top half printed on a Bambu A1 Mini.",
+    new THREE.Vector3(0, 1.45, 0),
   );
   const shellBottom = part(
     "shell-bottom",
@@ -603,7 +603,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     "face",
     "Face plate + OLED",
     "SSD1306 OLED behind a printed bezel. Draws the eyes; driven over I2C by the Pico.",
-    new THREE.Vector3(0, 0, 0.75),
+    new THREE.Vector3(0, 0, 0.85),
   );
   face.position.set(0, yC, BODY.len / 2 - 0.03);
   const SCREEN = { w: 0.44, h: 0.33, y: -0.04 };
@@ -629,8 +629,8 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const camera = part(
     "camera",
     "PiCam",
-    "Camera module on the Zero 2W CSI port. Used for person tracking and look-at behaviour.",
-    new THREE.Vector3(0, 0.32, 0.95),
+    "Camera module for the Zero 2W, the brain's eyes for perception.",
+    new THREE.Vector3(0, 0, 1.35),
   );
   camera.position.set(0, yC + CAMSLOT.y, BODY.len / 2 - 0.03 + capFront - 0.05);
   const camPcb = mk(new RoundedBoxGeometry(CAMSLOT.w - 0.012, CAMSLOT.h - 0.012, 0.01, 1, 0.003), pcbDark, camera, "cam-pcb");
@@ -656,8 +656,8 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const statusLed = part(
     "status-led",
     "Status LED",
-    "Single WS2812 on the upper rear flank. Colour shows mood, battery and connection state.",
-    new THREE.Vector3(0.45, 0.35, 0),
+    "Single WS2812 addressable LED: status and mood indicator.",
+    new THREE.Vector3(0, 1.45, 0),
   );
   {
     const a = Math.asin(0.07 / BODY.r);
@@ -689,7 +689,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     "electronics",
     "Pico + Zero 2W + IMU",
     "Raspberry Pi Pico runs the 12-servo real-time loop; Pi Zero 2W is the brain; MPU6050 IMU for balance.",
-    new THREE.Vector3(0, 0.72, 0),
+    new THREE.Vector3(0, 0.95, 0),
   );
   electronics.position.set(0, yC + 0.02, 0);
   {
@@ -756,7 +756,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     "power",
     "Battery + buck converters",
     "3-cell pack feeding two XL4016 bucks: ~7.2 V servo rail and a 5 V logic rail.",
-    new THREE.Vector3(0, 0.36, 0),
+    new THREE.Vector3(0, 0.45, 0),
   );
   power.position.set(0, yC - BODY.h / 2 + BODY.wall + 0.06, 0);
   {
@@ -874,8 +874,9 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     const leg = part(
       def.id,
       def.label,
-      "3 x MG996R (hip roll, hip pitch, knee), printed thigh plate and shank, rubber foot.",
-      new THREE.Vector3(def.side * 0.6, -0.02, Math.sign(def.z) * 0.32),
+      "3 x MG996R (hip, upper leg, lower leg), printed PLA segments, rubber foot.",
+      // Straight out on the lateral axis only, so the teardown reads as engineered.
+      new THREE.Vector3(def.side * 0.8, 0, 0),
     );
     leg.position.set(def.side * (BODY.w / 2 - 0.01), yC + HIP_DROP, def.z);
     if (def.side < 0) leg.scale.x = -1; // reflection, not rotation (renderer flips winding)

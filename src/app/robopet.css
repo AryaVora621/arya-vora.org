@@ -4,7 +4,7 @@
   --film-bg: #07070c;
   background: var(--film-bg);
   position: relative;
-  border-block: 1px solid #262b3f66;
+  border-top: 1px solid #262b3f66;
 }
 .film-stage {
   position: relative;
@@ -75,7 +75,7 @@
 
 /* Scrub mode */
 .film[data-mode="scrub"] {
-  height: 560vh;
+  height: 480vh;
 }
 .film[data-mode="scrub"] .film-stage {
   position: sticky;
@@ -297,7 +297,7 @@
   font-size: 14px;
 }
 .exploded[data-mode="scrub"] {
-  height: 340vh;
+  height: 260vh;
 }
 .exploded[data-mode="scrub"] .exploded-stage {
   position: sticky;
@@ -339,11 +339,7 @@
     display: none;
   }
   .exploded-parts ul {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    margin-inline: -16px;
-    padding-inline: 16px;
+    gap: 6px;
   }
   .exploded-parts button {
     white-space: nowrap;

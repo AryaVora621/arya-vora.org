@@ -59,7 +59,7 @@ export function HeroRobot() {
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       host.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
@@ -72,7 +72,6 @@ export function HeroRobot() {
       key.castShadow = true;
       key.shadow.mapSize.set(1024, 1024);
       Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5 });
-      key.shadow.radius = 6;
       key.shadow.bias = -0.0004;
       const rim = new THREE.DirectionalLight("#c4b5fd", 1.6);
       rim.position.set(3.5, 2.5, -3.5);
