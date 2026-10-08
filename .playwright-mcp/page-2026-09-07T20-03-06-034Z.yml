@@ -1,0 +1,803 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - navigation "Main navigation" [ref=f5e3]:
+      - generic [ref=f5e5]:
+        - generic [ref=f5e6]: Arya Vora
+        - generic [ref=f5e12]:
+          - link "About" [ref=f5e13] [cursor=pointer]:
+            - /url: "#about"
+          - link "Projects" [ref=f5e14] [cursor=pointer]:
+            - /url: "#projects"
+          - link "Timeline" [ref=f5e15] [cursor=pointer]:
+            - /url: "#timeline"
+          - link "Contact" [ref=f5e16] [cursor=pointer]:
+            - /url: "#contact"
+        - generic [ref=f5e17]:
+          - link "GitHub" [ref=f5e18] [cursor=pointer]:
+            - /url: https://github.com/aryavora621
+            - img "GitHub" [ref=f5e19]
+          - link "LinkedIn" [ref=f5e21] [cursor=pointer]:
+            - /url: https://linkedin.com/in/aryavora
+            - img "LinkedIn" [ref=f5e22]
+          - link "Twitter" [ref=f5e24] [cursor=pointer]:
+            - /url: https://twitter.com/aryavora621
+            - img "Twitter" [ref=f5e25]
+    - main [ref=f5e28]:
+      - generic [ref=f5e29]:
+        - button "Scroll to next section" [ref=f5e30]
+        - generic [ref=f5e34]:
+          - generic [ref=f5e35]: Robotics Engineer · FTC 23786 Captain · FRC 2554 Board
+          - heading "Hi, I'm Arya Vora" [level=1] [ref=f5e42]:
+            - generic [ref=f5e43]: Hi, I'm
+            - generic "Arya Vora" [ref=f5e44]:
+              - generic [aria-hidden] [ref=f5e45]: A
+              - generic [aria-hidden] [ref=f5e46]: r
+              - generic [aria-hidden] [ref=f5e47]: "y"
+              - generic [aria-hidden] [ref=f5e48]: a
+              - generic [aria-hidden] [ref=f5e50]: V
+              - generic [aria-hidden] [ref=f5e51]: o
+              - generic [aria-hidden] [ref=f5e52]: r
+              - generic [aria-hidden] [ref=f5e53]: a
+          - generic [ref=f5e54]: _
+          - paragraph [ref=f5e60]: Junior at John P. Stevens High School (Edison, NJ) leading award-winning robotics teams, building autonomous systems, and pushing the boundaries of human-robot interaction.
+          - generic [ref=f5e63]:
+            - button "View My Work Arrow right" [ref=f5e64]:
+              - generic [ref=f5e65]: View My Work
+              - img "Arrow right" [ref=f5e67]
+            - button "GitHub GitHub" [ref=f5e69]:
+              - img "GitHub" [ref=f5e71]
+              - generic [ref=f5e73]: GitHub
+          - generic [ref=f5e76]:
+            - generic [ref=f5e77]: FTC 23786 Captain
+            - generic [ref=f5e83]: FRC 2554 Board
+            - generic [ref=f5e89]: AI/ML Engineer
+            - generic [ref=f5e95]: Team Leader
+          - generic [ref=f5e104]:
+            - link "GitHub" [ref=f5e105] [cursor=pointer]:
+              - /url: https://github.com/aryavora621
+              - img "GitHub" [ref=f5e106]
+            - link "LinkedIn" [ref=f5e108] [cursor=pointer]:
+              - /url: https://linkedin.com/in/aryavora
+              - img "LinkedIn" [ref=f5e109]
+            - link "Twitter" [ref=f5e111] [cursor=pointer]:
+              - /url: https://twitter.com/aryavora621
+              - img "Twitter" [ref=f5e112]
+            - link "Email" [ref=f5e114] [cursor=pointer]:
+              - /url: mailto:aryavora621@gmail.com
+              - img "Email" [ref=f5e115]
+      - generic [ref=f5e119]:
+        - generic [ref=f5e122]:
+          - generic [ref=f5e123]: "[01] ABOUT ME"
+          - heading "Who I Am Engineer · Leader · Innovator" [level=2] [ref=f5e124]:
+            - generic [ref=f5e125]: Who I Am
+            - generic [ref=f5e126]: Engineer · Leader · Innovator
+          - paragraph [ref=f5e128]: I'm a junior at John P. Stevens High School in Edison, NJ, passionate about building intelligent systems that bridge the gap between humans and machines. From leading championship robotics teams to researching autonomous AI agents, I thrive at the intersection of hardware, software, and human creativity.
+        - generic [ref=f5e131]:
+          - generic [ref=f5e134]:
+            - generic [ref=f5e139]: 41+
+            - generic [ref=f5e140]: GitHub Repos
+          - generic [ref=f5e143]:
+            - generic [ref=f5e150]: 15+
+            - generic [ref=f5e151]: Team Members Led
+          - generic [ref=f5e154]:
+            - generic [ref=f5e159]: "8"
+            - generic [ref=f5e160]: Major Projects
+          - generic [ref=f5e163]:
+            - generic [ref=f5e173]: 5+
+            - generic [ref=f5e174]: Years Coding
+        - generic [ref=f5e177]:
+          - generic [ref=f5e181]:
+            - generic [ref=f5e188]:
+              - heading "FTC 23786 Captain" [level=3] [ref=f5e189]
+              - paragraph [ref=f5e190]: MakEMinds Robotics
+            - generic [ref=f5e191]:
+              - paragraph [ref=f5e192]: Leading 15+ members in designing, building, and programming competitive FTC robots. Responsible for autonomous routines, computer vision pipelines, and team strategy.
+              - generic [ref=f5e193]:
+                - heading "Key Achievements" [level=4] [ref=f5e194]
+                - list [ref=f5e195]:
+                  - listitem [ref=f5e196]:
+                    - generic [ref=f5e197]: Led team to NJ State Championship qualification
+                  - listitem [ref=f5e198]:
+                    - generic [ref=f5e199]: Designed award-winning autonomous routines
+                  - listitem [ref=f5e200]:
+                    - generic [ref=f5e201]: Mentored 15+ team members in Java/Kotlin
+                  - listitem [ref=f5e202]:
+                    - generic [ref=f5e203]: Secured $15K+ in sponsorships
+                  - listitem [ref=f5e204]:
+                    - generic [ref=f5e205]: Innovated computer vision pipeline for object detection
+              - generic [ref=f5e206]:
+                - heading "Technologies" [level=4] [ref=f5e207]
+                - generic [ref=f5e208]:
+                  - generic [ref=f5e209]: Java
+                  - generic [ref=f5e210]: Kotlin
+                  - generic [ref=f5e211]: OpenCV
+                  - generic [ref=f5e212]: TensorFlow Lite
+                  - generic [ref=f5e213]: FTC SDK
+                  - generic [ref=f5e214]: Git
+                  - generic [ref=f5e215]: CAD
+          - generic [ref=f5e219]:
+            - generic [ref=f5e226]:
+              - heading "FRC 2554 Board Member" [level=3] [ref=f5e227]
+              - paragraph [ref=f5e228]: The Warhawks
+            - generic [ref=f5e229]:
+              - paragraph [ref=f5e230]: Strategic leadership for 50+ member FRC team. Managing competition strategy, scouting systems, $50K+ budget, and outreach programs impacting 500+ students annually.
+              - generic [ref=f5e231]:
+                - heading "Key Achievements" [level=4] [ref=f5e232]
+                - list [ref=f5e233]:
+                  - listitem [ref=f5e234]:
+                    - generic [ref=f5e235]: Strategic planning for 50+ member organization
+                  - listitem [ref=f5e236]:
+                    - generic [ref=f5e237]: Led scouting alliance strategy at competitions
+                  - listitem [ref=f5e238]:
+                    - generic [ref=f5e239]: Managed $50K+ annual budget
+                  - listitem [ref=f5e240]:
+                    - generic [ref=f5e241]: Coordinated outreach impacting 500+ students
+                  - listitem [ref=f5e242]:
+                    - generic [ref=f5e243]: Designed pit display and branding systems
+              - generic [ref=f5e244]:
+                - heading "Technologies" [level=4] [ref=f5e245]
+                - generic [ref=f5e246]:
+                  - generic [ref=f5e247]: Strategic Leadership
+                  - generic [ref=f5e248]: Scouting Systems
+                  - generic [ref=f5e249]: Budget Management
+                  - generic [ref=f5e250]: Outreach Coordination
+                  - generic [ref=f5e251]: CAD
+                  - generic [ref=f5e252]: Public Speaking
+          - generic [ref=f5e256]:
+            - generic [ref=f5e268]:
+              - heading "AI & Robotics Engineer" [level=3] [ref=f5e269]
+              - paragraph [ref=f5e270]: Independent Research
+            - generic [ref=f5e271]:
+              - paragraph [ref=f5e272]: Developing autonomous systems, multi-agent frameworks, and human-robot interaction platforms. Focus on computer vision, reinforcement learning, and embedded AI deployment.
+              - generic [ref=f5e273]:
+                - heading "Key Achievements" [level=4] [ref=f5e274]
+                - list [ref=f5e275]:
+                  - listitem [ref=f5e276]:
+                    - generic [ref=f5e277]: Built autonomous drone navigation with YOLO + ROS2
+                  - listitem [ref=f5e278]:
+                    - generic [ref=f5e279]: Created RoboPet emotional AI companion robot
+                  - listitem [ref=f5e280]:
+                    - generic [ref=f5e281]: Developed SmartAI multi-agent orchestration framework
+                  - listitem [ref=f5e282]:
+                    - generic [ref=f5e283]: Researching agent autonomy in FreeWillAI project
+              - generic [ref=f5e284]:
+                - heading "Technologies" [level=4] [ref=f5e285]
+                - generic [ref=f5e286]:
+                  - generic [ref=f5e287]: Python
+                  - generic [ref=f5e288]: TensorFlow
+                  - generic [ref=f5e289]: PyTorch
+                  - generic [ref=f5e290]: ROS2
+                  - generic [ref=f5e291]: OpenCV
+                  - generic [ref=f5e292]: Arduino
+                  - generic [ref=f5e293]: Raspberry Pi
+        - generic [ref=f5e296]:
+          - heading "Core Competencies" [level=3] [ref=f5e297]
+          - paragraph [ref=f5e300]:
+            - text: Self-assessed, relative hands-on depth — not test scores.
+            - generic [ref=f5e301]:
+              - text: Expert
+              - generic [ref=f5e302]: = Daily driver — shipped real projects
+              - text: ·
+            - generic [ref=f5e303]:
+              - text: Advanced
+              - generic [ref=f5e304]: = Productive independently
+              - text: ·
+            - generic [ref=f5e305]:
+              - text: Proficient
+              - generic [ref=f5e306]: = Working knowledge
+          - generic [ref=f5e307]:
+            - generic [ref=f5e309]:
+              - heading "languages" [level=3] [ref=f5e311]
+              - generic [ref=f5e313]:
+                - generic [ref=f5e314]:
+                  - generic [ref=f5e315]:
+                    - generic [ref=f5e316]: TypeScript
+                    - generic [ref=f5e317]: Expert
+                  - 'img "TypeScript: Expert" [ref=f5e318]'
+                - generic [ref=f5e319]:
+                  - generic [ref=f5e320]:
+                    - generic [ref=f5e321]: Python
+                    - generic [ref=f5e322]: Expert
+                  - 'img "Python: Expert" [ref=f5e323]'
+                - generic [ref=f5e324]:
+                  - generic [ref=f5e325]:
+                    - generic [ref=f5e326]: Java
+                    - generic [ref=f5e327]: Expert
+                  - 'img "Java: Expert" [ref=f5e328]'
+                - generic [ref=f5e329]:
+                  - generic [ref=f5e330]:
+                    - generic [ref=f5e331]: JavaScript
+                    - generic [ref=f5e332]: Expert
+                  - 'img "JavaScript: Expert" [ref=f5e333]'
+                - generic [ref=f5e334]:
+                  - generic [ref=f5e335]:
+                    - generic [ref=f5e336]: Kotlin
+                    - generic [ref=f5e337]: Advanced
+                  - 'img "Kotlin: Advanced" [ref=f5e338]'
+                - generic [ref=f5e339]:
+                  - generic [ref=f5e340]:
+                    - generic [ref=f5e341]: Rust
+                    - generic [ref=f5e342]: Proficient
+                  - 'img "Rust: Proficient" [ref=f5e343]'
+                - generic [ref=f5e344]:
+                  - generic [ref=f5e345]:
+                    - generic [ref=f5e346]: C++
+                    - generic [ref=f5e347]: Proficient
+                  - 'img "C++: Proficient" [ref=f5e348]'
+            - generic [ref=f5e350]:
+              - heading "frameworks" [level=3] [ref=f5e352]
+              - generic [ref=f5e354]:
+                - generic [ref=f5e355]:
+                  - generic [ref=f5e356]:
+                    - generic [ref=f5e357]: Next.js
+                    - generic [ref=f5e358]: Expert
+                  - 'img "Next.js: Expert" [ref=f5e359]'
+                - generic [ref=f5e360]:
+                  - generic [ref=f5e361]:
+                    - generic [ref=f5e362]: React
+                    - generic [ref=f5e363]: Expert
+                  - 'img "React: Expert" [ref=f5e364]'
+                - generic [ref=f5e365]:
+                  - generic [ref=f5e366]:
+                    - generic [ref=f5e367]: Node.js
+                    - generic [ref=f5e368]: Expert
+                  - 'img "Node.js: Expert" [ref=f5e369]'
+                - generic [ref=f5e370]:
+                  - generic [ref=f5e371]:
+                    - generic [ref=f5e372]: TensorFlow/PyTorch
+                    - generic [ref=f5e373]: Expert
+                  - 'img "TensorFlow/PyTorch: Expert" [ref=f5e374]'
+                - generic [ref=f5e375]:
+                  - generic [ref=f5e376]:
+                    - generic [ref=f5e377]: FastAPI
+                    - generic [ref=f5e378]: Advanced
+                  - 'img "FastAPI: Advanced" [ref=f5e379]'
+                - generic [ref=f5e380]:
+                  - generic [ref=f5e381]:
+                    - generic [ref=f5e382]: Electron
+                    - generic [ref=f5e383]: Advanced
+                  - 'img "Electron: Advanced" [ref=f5e384]'
+                - generic [ref=f5e385]:
+                  - generic [ref=f5e386]:
+                    - generic [ref=f5e387]: ROS2
+                    - generic [ref=f5e388]: Proficient
+                  - 'img "ROS2: Proficient" [ref=f5e389]'
+            - generic [ref=f5e391]:
+              - heading "tools" [level=3] [ref=f5e393]
+              - generic [ref=f5e395]:
+                - generic [ref=f5e396]:
+                  - generic [ref=f5e397]:
+                    - generic [ref=f5e398]: Git/GitHub
+                    - generic [ref=f5e399]: Expert
+                  - 'img "Git/GitHub: Expert" [ref=f5e400]'
+                - generic [ref=f5e401]:
+                  - generic [ref=f5e402]:
+                    - generic [ref=f5e403]: Linux
+                    - generic [ref=f5e404]: Expert
+                  - 'img "Linux: Expert" [ref=f5e405]'
+                - generic [ref=f5e406]:
+                  - generic [ref=f5e407]:
+                    - generic [ref=f5e408]: Docker
+                    - generic [ref=f5e409]: Expert
+                  - 'img "Docker: Expert" [ref=f5e410]'
+                - generic [ref=f5e411]:
+                  - generic [ref=f5e412]:
+                    - generic [ref=f5e413]: CI/CD
+                    - generic [ref=f5e414]: Expert
+                  - 'img "CI/CD: Expert" [ref=f5e415]'
+                - generic [ref=f5e416]:
+                  - generic [ref=f5e417]:
+                    - generic [ref=f5e418]: CAD (OnShape/Fusion)
+                    - generic [ref=f5e419]: Advanced
+                  - 'img "CAD (OnShape/Fusion): Advanced" [ref=f5e420]'
+                - generic [ref=f5e421]:
+                  - generic [ref=f5e422]:
+                    - generic [ref=f5e423]: 3D Printing
+                    - generic [ref=f5e424]: Advanced
+                  - 'img "3D Printing: Advanced" [ref=f5e425]'
+                - generic [ref=f5e426]:
+                  - generic [ref=f5e427]:
+                    - generic [ref=f5e428]: Kubernetes
+                    - generic [ref=f5e429]: Proficient
+                  - 'img "Kubernetes: Proficient" [ref=f5e430]'
+            - generic [ref=f5e432]:
+              - heading "domains" [level=3] [ref=f5e434]
+              - generic [ref=f5e436]:
+                - generic [ref=f5e437]:
+                  - generic [ref=f5e438]:
+                    - generic [ref=f5e439]: Robotics (FTC/FRC)
+                    - generic [ref=f5e440]: Expert
+                  - 'img "Robotics (FTC/FRC): Expert" [ref=f5e441]'
+                - generic [ref=f5e442]:
+                  - generic [ref=f5e443]:
+                    - generic [ref=f5e444]: Web Development
+                    - generic [ref=f5e445]: Expert
+                  - 'img "Web Development: Expert" [ref=f5e446]'
+                - generic [ref=f5e447]:
+                  - generic [ref=f5e448]:
+                    - generic [ref=f5e449]: Computer Vision
+                    - generic [ref=f5e450]: Expert
+                  - 'img "Computer Vision: Expert" [ref=f5e451]'
+                - generic [ref=f5e452]:
+                  - generic [ref=f5e453]:
+                    - generic [ref=f5e454]: Machine Learning
+                    - generic [ref=f5e455]: Expert
+                  - 'img "Machine Learning: Expert" [ref=f5e456]'
+                - generic [ref=f5e457]:
+                  - generic [ref=f5e458]:
+                    - generic [ref=f5e459]: Systems Programming
+                    - generic [ref=f5e460]: Advanced
+                  - 'img "Systems Programming: Advanced" [ref=f5e461]'
+                - generic [ref=f5e462]:
+                  - generic [ref=f5e463]:
+                    - generic [ref=f5e464]: Embedded Systems
+                    - generic [ref=f5e465]: Advanced
+                  - 'img "Embedded Systems: Advanced" [ref=f5e466]'
+                - generic [ref=f5e467]:
+                  - generic [ref=f5e468]:
+                    - generic [ref=f5e469]: Distributed Systems
+                    - generic [ref=f5e470]: Proficient
+                  - 'img "Distributed Systems: Proficient" [ref=f5e471]'
+      - generic [ref=f5e473]:
+        - generic [ref=f5e476]:
+          - generic [ref=f5e477]: "[02] PROJECTS"
+          - heading "Selected Work" [level=2] [ref=f5e478]:
+            - generic [ref=f5e479]: Selected
+            - generic [ref=f5e480]: Work
+          - paragraph [ref=f5e482]: A collection of robotics, AI, and systems projects built over the years. Each represents a deep dive into complex technical challenges.
+        - tablist "Project categories" [ref=f5e485]:
+          - tab "All" [selected] [ref=f5e486]
+          - tab "Robotics" [ref=f5e487]
+          - tab "AI" [ref=f5e488]
+          - tab "Systems" [ref=f5e489]
+        - generic [ref=f5e492]:
+          - generic [ref=f5e496]:
+            - generic [ref=f5e497]:
+              - generic [ref=f5e498]: Robotics
+              - generic [ref=f5e502]: "2026"
+            - heading "MakEMinds Robotics Website" [level=3] [ref=f5e504]
+            - generic [ref=f5e505]:
+              - paragraph [ref=f5e506]: Dark, motion-heavy, scroll-driven rebuild of makemindsrobotics.org for FTC Team 23786
+              - generic [ref=f5e507]:
+                - generic [ref=f5e508]: Next.js
+                - generic [ref=f5e509]: TypeScript
+                - generic [ref=f5e510]: Framer Motion
+                - generic [ref=f5e511]: Three.js
+                - generic [ref=f5e512]: GSAP
+                - generic [ref=f5e513]: Tailwind CSS
+            - generic [ref=f5e515]:
+              - generic [ref=f5e516]:
+                - link "View MakEMinds Robotics Website on GitHub" [ref=f5e517] [cursor=pointer]:
+                  - /url: https://github.com/aryavora621/makeminds-site
+                  - img "GitHub" [ref=f5e518]
+                - link "View MakEMinds Robotics Website live" [ref=f5e520] [cursor=pointer]:
+                  - /url: https://makemindsrobotics.org
+                  - img "External link" [ref=f5e521]
+              - button "Details" [ref=f5e525]
+          - generic [ref=f5e532]:
+            - generic [ref=f5e533]:
+              - generic [ref=f5e534]: Robotics
+              - generic [ref=f5e538]: "2026"
+            - heading "Autonomous Drone System" [level=3] [ref=f5e540]
+            - generic [ref=f5e541]:
+              - paragraph [ref=f5e542]: Computer vision-based autonomous navigation for drone swarms
+              - generic [ref=f5e543]:
+                - generic [ref=f5e544]: Python
+                - generic [ref=f5e545]: OpenCV
+                - generic [ref=f5e546]: ROS2
+                - generic [ref=f5e547]: YOLO
+                - generic [ref=f5e548]: TensorFlow
+                - generic [ref=f5e549]: ArduPilot
+            - generic [ref=f5e551]:
+              - link "View Autonomous Drone System on GitHub" [ref=f5e553] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/drone
+                - img "GitHub" [ref=f5e554]
+              - button "Details" [ref=f5e556]
+          - generic [ref=f5e563]:
+            - generic [ref=f5e564]:
+              - generic [ref=f5e565]: Robotics
+              - generic [ref=f5e569]: "2025"
+            - heading "RoboPet - AI Companion Robot" [level=3] [ref=f5e571]
+            - generic [ref=f5e572]:
+              - paragraph [ref=f5e573]: Emotionally intelligent desktop robot with personality engine
+              - generic [ref=f5e574]:
+                - generic [ref=f5e575]: Python
+                - generic [ref=f5e576]: TensorFlow
+                - generic [ref=f5e577]: OpenCV
+                - generic [ref=f5e578]: Arduino
+                - generic [ref=f5e579]: 3D Printing
+                - generic [ref=f5e580]: ROS
+            - generic [ref=f5e582]:
+              - link "View RoboPet - AI Companion Robot on GitHub" [ref=f5e584] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/roboPet
+                - img "GitHub" [ref=f5e585]
+              - button "Details" [ref=f5e587]
+          - generic [ref=f5e594]:
+            - generic [ref=f5e595]:
+              - generic [ref=f5e596]: AI
+              - generic [ref=f5e605]: "2025"
+            - heading "SmartAI - Multi-Agent Framework" [level=3] [ref=f5e607]
+            - generic [ref=f5e608]:
+              - paragraph [ref=f5e609]: Orchestration framework for collaborative AI agents with memory
+              - generic [ref=f5e610]:
+                - generic [ref=f5e611]: Python
+                - generic [ref=f5e612]: LangChain
+                - generic [ref=f5e613]: Vector DB
+                - generic [ref=f5e614]: Redis
+                - generic [ref=f5e615]: FastAPI
+                - generic [ref=f5e616]: Docker
+            - generic [ref=f5e618]:
+              - link "View SmartAI - Multi-Agent Framework on GitHub" [ref=f5e620] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/smartAI
+                - img "GitHub" [ref=f5e621]
+              - button "Details" [ref=f5e623]
+          - generic [ref=f5e630]:
+            - generic [ref=f5e631]:
+              - generic [ref=f5e632]: AI
+              - generic [ref=f5e641]: "2026"
+            - heading "M.I.R.A. - Ambient Intelligence System" [level=3] [ref=f5e643]
+            - generic [ref=f5e644]:
+              - paragraph [ref=f5e645]: Multimodal ambient intelligence with proactive assistance
+              - generic [ref=f5e646]:
+                - generic [ref=f5e647]: TypeScript
+                - generic [ref=f5e648]: Electron
+                - generic [ref=f5e649]: Whisper
+                - generic [ref=f5e650]: LLM
+                - generic [ref=f5e651]: Computer Vision
+                - generic [ref=f5e652]: Matter.js
+            - generic [ref=f5e654]:
+              - link "View M.I.R.A. - Ambient Intelligence System on GitHub" [ref=f5e656] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/mira
+                - img "GitHub" [ref=f5e657]
+              - button "Details" [ref=f5e659]
+        - generic [ref=f5e665]:
+          - heading "Other Projects (3)" [level=3] [ref=f5e666]:
+            - generic [ref=f5e667]: Other Projects
+            - generic [ref=f5e668]: (3)
+          - generic [ref=f5e669]:
+            - generic [ref=f5e672]:
+              - generic [ref=f5e673]:
+                - generic [ref=f5e674]: Systems
+                - generic [ref=f5e678]: "2026"
+              - heading "Orochi - Distributed Computing" [level=3] [ref=f5e680]
+              - paragraph [ref=f5e682]: High-performance distributed task queue with adaptive routing
+              - generic [ref=f5e683]:
+                - generic [ref=f5e684]: Rust
+                - generic [ref=f5e685]: Tokio
+                - generic [ref=f5e686]: gRPC
+                - generic [ref=f5e687]: Redis
+                - generic [ref=f5e688]: "+2"
+              - link "View Orochi - Distributed Computing on GitHub" [ref=f5e692] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/orochi
+                - img "GitHub" [ref=f5e693]
+            - generic [ref=f5e697]:
+              - generic [ref=f5e698]:
+                - generic [ref=f5e699]: AI
+                - generic [ref=f5e708]: "2025"
+              - heading "ClaudeShorts - AI Video Generation" [level=3] [ref=f5e710]
+              - paragraph [ref=f5e712]: Automated short-form video creation pipeline using LLMs
+              - generic [ref=f5e713]:
+                - generic [ref=f5e714]: Python
+                - generic [ref=f5e715]: MoviePy
+                - generic [ref=f5e716]: OpenAI API
+                - generic [ref=f5e717]: ElevenLabs
+                - generic [ref=f5e718]: "+2"
+              - link "View ClaudeShorts - AI Video Generation on GitHub" [ref=f5e722] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/claudeshorts
+                - img "GitHub" [ref=f5e723]
+            - generic [ref=f5e727]:
+              - generic [ref=f5e728]:
+                - generic [ref=f5e729]: AI
+                - generic [ref=f5e738]: "2025"
+              - heading "FreeWillAI - Agent Autonomy" [level=3] [ref=f5e740]
+              - paragraph [ref=f5e742]: Research into autonomous agent decision-making frameworks
+              - generic [ref=f5e743]:
+                - generic [ref=f5e744]: Python
+                - generic [ref=f5e745]: PyTorch
+                - generic [ref=f5e746]: Gymnasium
+                - generic [ref=f5e747]: Ray
+                - generic [ref=f5e748]: "+2"
+              - link "View FreeWillAI - Agent Autonomy on GitHub" [ref=f5e752] [cursor=pointer]:
+                - /url: https://github.com/aryavora621/freewillai
+                - img "GitHub" [ref=f5e753]
+        - generic [ref=f5e757]:
+          - heading "Tech Stack Deep Dive" [level=3] [ref=f5e758]
+          - paragraph [ref=f5e761]: The same stack as above, grouped for project context — tiers are self-assessed (Expert / Advanced / Proficient), not benchmark scores.
+          - generic [ref=f5e762]:
+            - generic [ref=f5e764]:
+              - heading "languages" [level=3] [ref=f5e766]
+              - generic [ref=f5e767]:
+                - generic [ref=f5e773]:
+                  - generic [ref=f5e774]:
+                    - generic [ref=f5e775]: TypeScript
+                    - generic [ref=f5e776]: Expert
+                  - 'img "TypeScript: Expert" [ref=f5e777]'
+                - generic [ref=f5e783]:
+                  - generic [ref=f5e784]:
+                    - generic [ref=f5e785]: Python
+                    - generic [ref=f5e786]: Expert
+                  - 'img "Python: Expert" [ref=f5e787]'
+                - generic [ref=f5e792]:
+                  - generic [ref=f5e793]:
+                    - generic [ref=f5e794]: Java
+                    - generic [ref=f5e795]: Expert
+                  - 'img "Java: Expert" [ref=f5e796]'
+                - generic [ref=f5e802]:
+                  - generic [ref=f5e803]:
+                    - generic [ref=f5e804]: JavaScript
+                    - generic [ref=f5e805]: Expert
+                  - 'img "JavaScript: Expert" [ref=f5e806]'
+                - generic [ref=f5e811]:
+                  - generic [ref=f5e812]:
+                    - generic [ref=f5e813]: Kotlin
+                    - generic [ref=f5e814]: Advanced
+                  - 'img "Kotlin: Advanced" [ref=f5e815]'
+                - generic [ref=f5e816]: +2 more technologies
+            - generic [ref=f5e818]:
+              - heading "frameworks" [level=3] [ref=f5e820]
+              - generic [ref=f5e821]:
+                - generic [ref=f5e827]:
+                  - generic [ref=f5e828]:
+                    - generic [ref=f5e829]: Next.js
+                    - generic [ref=f5e830]: Expert
+                  - 'img "Next.js: Expert" [ref=f5e831]'
+                - generic [ref=f5e838]:
+                  - generic [ref=f5e839]:
+                    - generic [ref=f5e840]: React
+                    - generic [ref=f5e841]: Expert
+                  - 'img "React: Expert" [ref=f5e842]'
+                - generic [ref=f5e847]:
+                  - generic [ref=f5e848]:
+                    - generic [ref=f5e849]: Node.js
+                    - generic [ref=f5e850]: Expert
+                  - 'img "Node.js: Expert" [ref=f5e851]'
+                - generic [ref=f5e862]:
+                  - generic [ref=f5e863]:
+                    - generic [ref=f5e864]: TensorFlow/PyTorch
+                    - generic [ref=f5e865]: Expert
+                  - 'img "TensorFlow/PyTorch: Expert" [ref=f5e866]'
+                - generic [ref=f5e871]:
+                  - generic [ref=f5e872]:
+                    - generic [ref=f5e873]: FastAPI
+                    - generic [ref=f5e874]: Advanced
+                  - 'img "FastAPI: Advanced" [ref=f5e875]'
+                - generic [ref=f5e876]: +2 more technologies
+            - generic [ref=f5e878]:
+              - heading "tools" [level=3] [ref=f5e880]
+              - generic [ref=f5e881]:
+                - generic [ref=f5e888]:
+                  - generic [ref=f5e889]:
+                    - generic [ref=f5e890]: Git/GitHub
+                    - generic [ref=f5e891]: Expert
+                  - 'img "Git/GitHub: Expert" [ref=f5e892]'
+                - generic [ref=f5e897]:
+                  - generic [ref=f5e898]:
+                    - generic [ref=f5e899]: Linux
+                    - generic [ref=f5e900]: Expert
+                  - 'img "Linux: Expert" [ref=f5e901]'
+                - generic [ref=f5e907]:
+                  - generic [ref=f5e908]:
+                    - generic [ref=f5e909]: Docker
+                    - generic [ref=f5e910]: Expert
+                  - 'img "Docker: Expert" [ref=f5e911]'
+                - generic [ref=f5e919]:
+                  - generic [ref=f5e920]:
+                    - generic [ref=f5e921]: CI/CD
+                    - generic [ref=f5e922]: Expert
+                  - 'img "CI/CD: Expert" [ref=f5e923]'
+                - generic [ref=f5e929]:
+                  - generic [ref=f5e930]:
+                    - generic [ref=f5e931]: CAD (OnShape/Fusion)
+                    - generic [ref=f5e932]: Advanced
+                  - 'img "CAD (OnShape/Fusion): Advanced" [ref=f5e933]'
+                - generic [ref=f5e934]: +2 more technologies
+            - generic [ref=f5e936]:
+              - heading "domains" [level=3] [ref=f5e938]
+              - generic [ref=f5e939]:
+                - generic [ref=f5e945]:
+                  - generic [ref=f5e946]:
+                    - generic [ref=f5e947]: Robotics (FTC/FRC)
+                    - generic [ref=f5e948]: Expert
+                  - 'img "Robotics (FTC/FRC): Expert" [ref=f5e949]'
+                - generic [ref=f5e955]:
+                  - generic [ref=f5e956]:
+                    - generic [ref=f5e957]: Web Development
+                    - generic [ref=f5e958]: Expert
+                  - 'img "Web Development: Expert" [ref=f5e959]'
+                - generic [ref=f5e965]:
+                  - generic [ref=f5e966]:
+                    - generic [ref=f5e967]: Computer Vision
+                    - generic [ref=f5e968]: Expert
+                  - 'img "Computer Vision: Expert" [ref=f5e969]'
+                - generic [ref=f5e980]:
+                  - generic [ref=f5e981]:
+                    - generic [ref=f5e982]: Machine Learning
+                    - generic [ref=f5e983]: Expert
+                  - 'img "Machine Learning: Expert" [ref=f5e984]'
+                - generic [ref=f5e990]:
+                  - generic [ref=f5e991]:
+                    - generic [ref=f5e992]: Systems Programming
+                    - generic [ref=f5e993]: Advanced
+                  - 'img "Systems Programming: Advanced" [ref=f5e994]'
+                - generic [ref=f5e995]: +2 more technologies
+      - generic [ref=f5e997]:
+        - generic [ref=f5e1000]:
+          - generic [ref=f5e1001]: "[03] JOURNEY"
+          - heading "My Timeline" [level=2] [ref=f5e1002]:
+            - generic [ref=f5e1003]: My
+            - generic [ref=f5e1004]: Timeline
+          - paragraph [ref=f5e1006]: Key milestones, achievements, and turning points that shaped my path in robotics and AI.
+        - generic [ref=f5e1009]:
+          - generic [ref=f5e1012]:
+            - generic [ref=f5e1015]: "2024"
+            - generic [ref=f5e1017]:
+              - generic [ref=f5e1026]:
+                - generic [ref=f5e1027]:
+                  - generic [ref=f5e1028]: Milestone
+                  - time [ref=f5e1029]: Feb 2024
+                - heading "First FTC Competition" [level=4] [ref=f5e1030]
+                - paragraph [ref=f5e1031]: Joined MakEMinds Robotics as programmer, learned Java and FTC SDK
+              - generic [ref=f5e1044]:
+                - generic [ref=f5e1045]:
+                  - generic [ref=f5e1046]: Achievement
+                  - time [ref=f5e1047]: Jun 2024
+                - heading "FRC 2554 Build Season" [level=4] [ref=f5e1048]
+                - paragraph [ref=f5e1049]: Contributed to robot design, scouting systems, and competition strategy
+          - generic [ref=f5e1051]:
+            - generic [ref=f5e1054]: "2025"
+            - generic [ref=f5e1056]:
+              - generic [ref=f5e1066]:
+                - generic [ref=f5e1067]:
+                  - generic [ref=f5e1068]: Project
+                  - time [ref=f5e1069]: Jul 2025
+                - heading "SmartAI Multi-Agent Framework" [level=4] [ref=f5e1070]
+                - paragraph [ref=f5e1071]: Developed orchestration framework for collaborative AI agents with persistent memory
+              - generic [ref=f5e1083]:
+                - generic [ref=f5e1084]:
+                  - generic [ref=f5e1085]: Leadership
+                  - time [ref=f5e1086]: Sep 2025
+                - heading "FTC 23786 Captain" [level=4] [ref=f5e1087]
+                - paragraph [ref=f5e1088]: Elected captain of MakEMinds Robotics, leading 15+ members
+              - generic [ref=f5e1098]:
+                - generic [ref=f5e1099]:
+                  - generic [ref=f5e1100]: Project
+                  - time [ref=f5e1101]: Dec 2025
+                - heading "RoboPet - AI Companion Robot" [level=4] [ref=f5e1102]
+                - paragraph [ref=f5e1103]: Built emotionally intelligent desktop robot with personality engine and computer vision
+          - generic [ref=f5e1105]:
+            - generic [ref=f5e1108]: "2026"
+            - generic [ref=f5e1110]:
+              - generic [ref=f5e1122]:
+                - generic [ref=f5e1123]:
+                  - generic [ref=f5e1124]: Leadership
+                  - time [ref=f5e1125]: Jan 2026
+                - heading "FRC 2554 Board Member" [level=4] [ref=f5e1126]
+                - paragraph [ref=f5e1127]: Joined board of The Warhawks, managing strategy, budget, and outreach for 50+ members
+              - generic [ref=f5e1140]:
+                - generic [ref=f5e1141]:
+                  - generic [ref=f5e1142]: Achievement
+                  - time [ref=f5e1143]: Mar 2026
+                - heading "FTC 23786 - NJ State Championship" [level=4] [ref=f5e1144]
+                - paragraph [ref=f5e1145]: Led team to state championship qualification with innovative autonomous routines
+              - generic [ref=f5e1155]:
+                - generic [ref=f5e1156]:
+                  - generic [ref=f5e1157]: Project
+                  - time [ref=f5e1158]: May 2026
+                - heading "MakEMinds Robotics Website Launch" [level=4] [ref=f5e1159]
+                - paragraph [ref=f5e1160]: Rebuilt makemindsrobotics.org with scroll-driven animations, Three.js backgrounds, and GSAP timelines
+        - generic [ref=f5e1163]:
+          - heading "Leadership & Recognition" [level=3] [ref=f5e1164]
+          - generic [ref=f5e1168]:
+            - generic [ref=f5e1178]:
+              - generic [ref=f5e1179]:
+                - heading "Captain — FTC Team 23786" [level=4] [ref=f5e1180]
+                - generic [ref=f5e1181]: 2025–Present
+              - paragraph [ref=f5e1182]: MakEMinds Robotics
+              - paragraph [ref=f5e1183]: Leading 15+ members across robot design, autonomous programming, and competition strategy.
+            - generic [ref=f5e1193]:
+              - generic [ref=f5e1194]:
+                - heading "Board Member — FRC Team 2554" [level=4] [ref=f5e1195]
+                - generic [ref=f5e1196]: 2026–Present
+              - paragraph [ref=f5e1197]: The Warhawks
+              - paragraph [ref=f5e1198]: Strategy, scouting systems, and outreach for a 50+ member FRC organization.
+      - generic [ref=f5e1200]:
+        - generic [ref=f5e1203]:
+          - generic [ref=f5e1204]: "[04] CONNECT"
+          - heading "Let's Work Together" [level=2] [ref=f5e1205]:
+            - generic [ref=f5e1206]: Let's
+            - generic [ref=f5e1207]: Work Together
+          - paragraph [ref=f5e1209]: Have a project in mind? Looking for a robotics collaborator? Want to discuss AI? I'm always open to interesting conversations and new opportunities.
+        - generic [ref=f5e1212]:
+          - generic [ref=f5e1213]:
+            - heading "Get In Touch" [level=3] [ref=f5e1214]
+            - paragraph [ref=f5e1215]: Whether you're a fellow robotics enthusiast, a potential mentor, or someone with an exciting project idea — I'd love to hear from you. I typically respond within 24-48 hours.
+            - generic [ref=f5e1216]:
+              - 'link "Email: aryavora621@gmail.com" [ref=f5e1218] [cursor=pointer]':
+                - /url: mailto:aryavora621@gmail.com
+                - img "Email" [ref=f5e1220]
+                - generic [ref=f5e1223]:
+                  - generic [ref=f5e1224]: Email
+                  - generic [ref=f5e1225]: aryavora621@gmail.com
+                  - generic [ref=f5e1226]: Best for project inquiries & collaborations
+                - img "Send" [ref=f5e1227]
+              - 'link "GitHub: @aryavora621" [ref=f5e1231] [cursor=pointer]':
+                - /url: https://github.com/aryavora621
+                - img "GitHub" [ref=f5e1233]
+                - generic [ref=f5e1235]:
+                  - generic [ref=f5e1236]: GitHub
+                  - generic [ref=f5e1237]: "@aryavora621"
+                  - generic [ref=f5e1238]: Explore my repositories & contributions
+                - img "Send" [ref=f5e1239]
+              - 'link "LinkedIn: Arya Vora" [ref=f5e1243] [cursor=pointer]':
+                - /url: https://linkedin.com/in/aryavora
+                - img "LinkedIn" [ref=f5e1245]
+                - generic [ref=f5e1247]:
+                  - generic [ref=f5e1248]: LinkedIn
+                  - generic [ref=f5e1249]: Arya Vora
+                  - generic [ref=f5e1250]: Professional network & connections
+                - img "Send" [ref=f5e1251]
+              - 'link "Twitter/X: @aryavora621" [ref=f5e1255] [cursor=pointer]':
+                - /url: https://twitter.com/aryavora621
+                - img "Twitter/X" [ref=f5e1257]
+                - generic [ref=f5e1259]:
+                  - generic [ref=f5e1260]: Twitter/X
+                  - generic [ref=f5e1261]: "@aryavora621"
+                  - generic [ref=f5e1262]: Thoughts on robotics, AI & tech
+                - img "Send" [ref=f5e1263]
+              - 'link "Location: Edison, NJ" [ref=f5e1267] [cursor=pointer]':
+                - /url: "#"
+                - img "Location" [ref=f5e1269]
+                - generic [ref=f5e1272]:
+                  - generic [ref=f5e1273]: Location
+                  - generic [ref=f5e1274]: Edison, NJ
+                  - generic [ref=f5e1275]: John P. Stevens High School area
+                - img "Send" [ref=f5e1276]
+          - generic [ref=f5e1280]:
+            - generic [ref=f5e1281]:
+              - heading "Send a Message" [level=3] [ref=f5e1282]
+              - paragraph [ref=f5e1283]: Direct line to my inbox
+            - generic [ref=f5e1286]:
+              - generic [ref=f5e1287]:
+                - generic [ref=f5e1288]:
+                  - generic [ref=f5e1289]: Name
+                  - textbox "Name" [ref=f5e1290]:
+                    - /placeholder: Arya Vora
+                - generic [ref=f5e1291]:
+                  - generic [ref=f5e1292]: Email
+                  - textbox "Email" [ref=f5e1293]:
+                    - /placeholder: arya@example.com
+              - generic [ref=f5e1294]:
+                - generic [ref=f5e1295]: Subject
+                - textbox "Subject" [ref=f5e1296]:
+                  - /placeholder: Project collaboration / Robotics mentorship / Just saying hi
+              - generic [ref=f5e1297]:
+                - generic [ref=f5e1298]: Message
+                - textbox "Message" [ref=f5e1299]:
+                  - /placeholder: Tell me about your project, idea, or just say hello...
+              - button "Send Message Message" [ref=f5e1300]:
+                - generic [ref=f5e1301]: Send Message
+                - img "Message" [ref=f5e1303]
+              - paragraph [ref=f5e1305]: By submitting, you agree to my privacy policy. No spam, ever.
+        - generic [ref=f5e1308]:
+          - paragraph [ref=f5e1309]: "Currently open to:"
+          - generic [ref=f5e1310]:
+            - generic [ref=f5e1311]: Robotics Internships
+            - generic [ref=f5e1312]: AI Research
+            - generic [ref=f5e1313]: Open Source
+            - generic [ref=f5e1314]: Mentoring
+            - generic [ref=f5e1315]: Freelance Projects
+            - generic [ref=f5e1316]: Hackathons
+          - paragraph [ref=f5e1317]:
+            - text: Built with Next.js 15, TypeScript, Tailwind, Framer Motion & Three.js·
+            - link "View Source" [ref=f5e1318] [cursor=pointer]:
+              - /url: https://github.com/aryavora621/Arya-Vora-Landing-Page
+    - contentinfo [ref=f5e1319]:
+      - generic [ref=f5e1320]:
+        - paragraph [ref=f5e1321]: © 2026 Arya Vora. Built with Next.js 15, TypeScript, Tailwind, Framer Motion & Three.js.
+        - paragraph [ref=f5e1322]:
+          - link "View Source" [ref=f5e1323] [cursor=pointer]:
+            - /url: https://github.com/aryavora621/Arya-Vora-Landing-Page
+          - text: ·
+          - link "Contact" [ref=f5e1324] [cursor=pointer]:
+            - /url: mailto:aryavora621@gmail.com
+  - button "Open Next.js Dev Tools" [ref=f5e1330] [cursor=pointer]

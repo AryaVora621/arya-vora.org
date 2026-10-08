@@ -1,78 +1,44 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { RoboPetFigure, type PartKey } from "@/components/robopet/RoboPetFigure";
+import { useEffect, useRef } from "react";
+import type { RoboPetEyeMode } from "@/components/robopet/createRoboPetModel";
+import { mountRoboPetStage } from "@/components/robopet/roboPetStage";
 
 declare global {
   interface Window {
-    __roboPet?: { ready: boolean; capture?: (exploded: boolean) => string };
+    __roboPet?: { ready: boolean; triangles: number; drawCalls: number; parts: unknown; bounds: unknown };
   }
 }
 
-const KEYS: PartKey[] = ["shell", "face", "camera", "electronics", "power", "legs", "chassis"];
+const BG = "#07070c";
 
-/** Still size: 700 x 525 CSS px drawn at 1600 x 1200, so edges land near 1 CSS px on a desktop figure. */
-const CAPTURE = { width: 700, height: 525, pixelRatio: 1600 / 700 };
+/**
+ * Dev-only review canvas for the roboPet model. Fixed camera (no orbit controls).
+ * Query params: ?az=<deg from +Z toward +X, default 30>&el=<deg, default 11>&explode=<0..1>
+ * &eyes=<open|blink|happy|sleepy|off>&dist=<camera distance>
+ */
+export default function RoboPetPreview() {
+  const hostRef = useRef<HTMLDivElement | null>(null);
 
-function CaptureStage() {
-  const hostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    let dispose = () => {};
-    let cancelled = false;
-    import("@/components/robopet/roboPetStage").then(({ mountRoboPetStage }) => {
-      if (cancelled) return;
-      const stage = mountRoboPetStage(host, { exploded: false, selected: null, pixelRatio: CAPTURE.pixelRatio });
-      if (!stage) {
-        window.__roboPet = { ready: false };
-        return;
-      }
-      dispose = stage.dispose;
-      window.__roboPet = {
-        ready: true,
-        capture: (exploded) => {
-          stage.setExploded(exploded, { immediate: true });
-          return stage.capture();
-        },
-      };
-    });
-    return () => {
-      cancelled = true;
-      dispose();
+    const q = new URLSearchParams(window.location.search);
+    const num = (k: string) => {
+      const v = Number(q.get(k));
+      return q.has(k) && Number.isFinite(v) ? v : undefined;
     };
+    const stage = mountRoboPetStage(host, {
+      az: num("az"),
+      el: num("el"),
+      dist: num("dist"),
+      explode: num("explode"),
+      eyes: (q.get("eyes") as RoboPetEyeMode | null) ?? undefined,
+      background: BG,
+    });
+    window.__roboPet = { ready: true, ...stage.stats };
+    return () => stage.dispose();
   }, []);
-  return <div ref={hostRef} style={{ width: CAPTURE.width, height: CAPTURE.height }} />;
-}
 
-export default function RoboPetPreview({ capture }: { capture: boolean }) {
-  const [selected, setSelected] = useState<PartKey | null>(null);
-  const [exploded, setExploded] = useState(false);
-
-  if (capture) return <CaptureStage />;
-
-  return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "48px 16px" }}>
-      <RoboPetFigure selected={selected} exploded={exploded} onSelect={setSelected} />
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
-        <button type="button" className="button" aria-pressed={exploded} onClick={() => setExploded((v) => !v)}>
-          Exploded view
-        </button>
-        {KEYS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            className="button"
-            aria-pressed={selected === key}
-            onClick={() => setSelected((current) => (current === key ? null : key))}
-          >
-            {key}
-          </button>
-        ))}
-      </div>
-      <p className="meta" style={{ marginTop: 16 }}>
-        Selected: <span data-testid="selected">{selected ?? "none"}</span>
-      </p>
-    </main>
-  );
+  return <div ref={hostRef} style={{ position: "fixed", inset: 0, background: BG }} />;
 }

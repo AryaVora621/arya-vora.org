@@ -44,17 +44,3 @@ next-env.d.ts
 
 # img2threejs working files (renders, specs) stay local
 /assets-src/robopet/img2threejs/
-
-# Agent working files: local notes, logs and audits, never part of the site.
-# The rules the site follows are tracked in /DESIGN.md and /.vale.ini.
-/.playwright-mcp/
-/.opencode/
-/.remember/
-/CHECKPOINT_LAST.md
-/PLAN.md
-/TASK_QUEUE.md
-/TRACKER.md
-/PRODUCT.md
-/.impeccable/
-/.vale/
-/docs/ai-tells-research.md
