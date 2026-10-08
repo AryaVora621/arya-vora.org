@@ -27,8 +27,11 @@
 - [x] Gemini concept render + Veo turntable -> Real-ESRGAN/graded WebP sequence (scripts/build-sequence.py)
 - [x] RoboPetFilm: pinned canvas scrub with README-sourced spec beats, static fallback
 - [x] ScrollChoreography: SplitText masked headings, hero load sequence, shutter reveals
-- [ ] [IN_PROGRESS] img2threejs procedural roboPet (background agent) -> exploded-view section
-- [ ] Reviewer loop: score >= 8/10
+- [x] img2threejs procedural roboPet -> exploded view (act two) + 3D hero (replaces SVG)
+- [x] Deployed 3f6138c to production (live domain: www.arya-vora.org; aryavora.com has no DNS)
+- [x] Round 2 fixes committed locally (c8b4d13 amended); 29/29 tests pass
+- [ ] Apex arya-vora.org not attached in Vercel (only www) - ask Arya
+- [ ] [IN_PROGRESS] Reviewer loop: r1 6.5/10 -> r2 pending (target >= 8)
 - [ ] Tests updated + lint/build clean, then commit to main (ask before push: push may deploy)
 
 ## Done

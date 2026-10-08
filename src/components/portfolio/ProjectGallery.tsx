@@ -1,102 +1,187 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUpRight, Check, Search, Terminal } from "lucide-react";
+import Image from "next/image";
+import { ArrowDown, ArrowUpRight, Search } from "lucide-react";
 import { selectedWork } from "@/data/portfolio";
 import { github } from "@/data/github";
-import { RobotSchematic } from "./RobotSchematic";
 
-function ProjectVisual({
-  kind,
-}: {
-  kind: (typeof selectedWork)[number]["visual"];
-}) {
-  if (kind === "robot") return <RobotSchematic />;
-  if (kind === "notch")
+type Work = (typeof selectedWork)[number];
+
+// The two projects with real visual material get full-width rows; the rest form an index.
+const FEATURED_IDS: readonly string[] = ["robopet", "notchterm"];
+
+function FeatureMedia({ work }: { work: Work }) {
+  if (work.visual === "robot")
     return (
-      <div className="notch-preview" aria-hidden="true">
-        <div className="notch-desktop">
-          <div className="notch-island">
-            <div className="notch-camera" />
-            <span>2 SESSIONS</span>
-            <div className="notch-session">
-              <i />
-              Claude<span>implementing…</span>
-            </div>
-            <div className="notch-session">
-              <i />
-              Codex<span>reviewing…</span>
-            </div>
-            <div className="notch-prompt">
-              Ask your agents <span>↵</span>
-            </div>
-          </div>
-          <span className="preview-note">macOS / SwiftUI</span>
+      <>
+        <div className="feature-parallax feature-photo">
+          <Image
+            src="/sequence/robopet/lg/054.webp"
+            alt="roboPet concept render: a cream capsule-shaped body with a small screen face, standing on four servo-driven legs."
+            width={1920}
+            height={1080}
+            sizes="(max-width: 760px) 100vw, 60vw"
+          />
         </div>
-      </div>
+        <p className="feature-note">Concept render</p>
+      </>
     );
-  if (kind === "scouting")
-    return (
-      <div className="scout-preview" aria-hidden="true">
-        <div className="preview-toolbar">
-          23786 / MATCH INTELLIGENCE<span>ILLUSTRATIVE DATA</span>
-        </div>
-        <div className="scout-chart">
-          {[45, 70, 55, 84, 68, 93, 76, 100].map((height, i) => (
-            <div key={i}>
-              <span style={{ height: `${height}%` }} />
-              <small>{i + 1}</small>
+  return (
+    <>
+      <div className="feature-parallax feature-notch" aria-hidden="true">
+        <div className="notch-windows">
+          {["claude", "codex"].map((label, i) => (
+            <div className="notch-window" key={label}>
+              <p>
+                <i />
+                <i />
+                <i />
+                {label}
+              </p>
+              {[72, 48, 86, 40, 64].map((w, j) => (
+                <span
+                  key={j}
+                  className={j === (i ? 3 : 2) ? "is-live" : undefined}
+                  style={{ width: `${w}%` }}
+                />
+              ))}
             </div>
           ))}
         </div>
-        <div className="scout-footer">
-          <span>AUTO</span>
-          <span>TELEOP</span>
-          <span>ENDGAME</span>
+        <div className="notch-screen">
+          <div className="notch-menubar">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="notch-panel">
+            <div className="notch-lens" />
+            <p className="notch-label">2 sessions</p>
+            <div className="notch-line">
+              <i />
+              Claude
+              <span>implementing</span>
+            </div>
+            <div className="notch-line">
+              <i className="is-idle" />
+              Codex
+              <span>reviewing</span>
+            </div>
+            <div className="notch-ask">
+              Ask your agents<span>return</span>
+            </div>
+          </div>
         </div>
       </div>
+      <p className="feature-note">Illustration, not a screenshot</p>
+    </>
+  );
+}
+
+// Small, deliberately different sketches for the index. Each says one true thing
+// about the project's shape rather than pretending to be a product screenshot.
+function IndexGlyph({ kind }: { kind: Work["visual"] }) {
+  if (kind === "agents")
+    return (
+      <svg viewBox="0 0 168 96" className="glyph-svg">
+        <path className="g-base" d="M6 48 H162" />
+        <path className="g-branch" d="M28 48 C44 48 44 18 62 18 H112 C130 18 130 48 146 48" />
+        <path className="g-branch" d="M28 48 C44 48 44 33 62 33 H112 C130 33 130 48 146 48" />
+        <path className="g-branch" d="M28 48 C44 48 44 78 62 78 H112 C130 78 130 48 146 48" />
+        {[18, 33, 78].map((y) => (
+          <g key={y}>
+            <circle className="g-node" cx="76" cy={y} r="3.5" />
+            <circle className="g-node" cx="98" cy={y} r="3.5" />
+          </g>
+        ))}
+        <circle className="g-hub" cx="28" cy="48" r="4.5" />
+        <circle className="g-hub" cx="146" cy="48" r="4.5" />
+      </svg>
+    );
+  if (kind === "scouting")
+    return (
+      <svg viewBox="0 0 168 96" className="glyph-svg">
+        {Array.from({ length: 12 }, (_, i) => (
+          <path key={i} className="g-tick" d={`M${8 + i * 13.5} 20 V30`} />
+        ))}
+        <rect className="g-seg is-auto" x="6" y="44" width="30" height="20" rx="2" />
+        <rect className="g-seg" x="40" y="44" width="88" height="20" rx="2" />
+        <rect className="g-seg is-end" x="132" y="44" width="30" height="20" rx="2" />
+        <path className="g-base" d="M6 80 H162" />
+        <path className="g-playhead" d="M96 38 V86" />
+      </svg>
     );
   if (kind === "scanner")
     return (
-      <div className="scanner-preview" aria-hidden="true">
-        <div className="preview-toolbar">
-          <Terminal size={17} />
-          shipkit / readiness report
-        </div>
-        {["Security", "Deployment", "Code quality"].map((label, i) => (
-          <div className="scan-row" key={label}>
-            <Check size={18} />
-            <span>{label}</span>
-            <div>
-              <i style={{ width: `${88 - i * 12}%` }} />
-            </div>
-          </div>
+      <div className="glyph-checklist">
+        <span className="glyph-prompt">$ shipkit</span>
+        {["security", "deploy", "quality"].map((label, i) => (
+          <span key={label} className={i < 2 ? "is-done" : undefined}>
+            <i />
+            {label}
+          </span>
         ))}
-        <span className="preview-note">
-          ILLUSTRATIVE REPORT / NOT A LIVE SCAN
-        </span>
       </div>
     );
+  // Queen and swarm: one cell among many.
+  const hex = (cx: number, cy: number) => {
+    const r = 13;
+    return Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 3) * i + Math.PI / 6;
+      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
+    }).join(" ");
+  };
+  const w = 13 * Math.sqrt(3);
+  const cells = [
+    [84, 48, "queen"],
+    [84 - w, 48, ""],
+    [84 + w, 48, "busy"],
+    [84 - w / 2, 28.5, ""],
+    [84 + w / 2, 28.5, ""],
+    [84 - w / 2, 67.5, "busy"],
+    [84 + w / 2, 67.5, ""],
+    [84 - w * 2, 48, "faint"],
+    [84 + w * 2, 48, "faint"],
+    [84 + w * 1.5, 28.5, "faint"],
+    [84 - w * 1.5, 67.5, "faint"],
+  ] as const;
   return (
-    <div
-      className={`agents-preview ${kind === "swarm" ? "swarm-preview" : ""}`}
-      aria-hidden="true"
-    >
-      <div className="agent-orbit orbit-a" />
-      <div className="agent-orbit orbit-b" />
-      <div className="agent-hub">{kind === "swarm" ? "QUEEN" : "ouc"}</div>
-      {["PLAN", "BUILD", "REVIEW", "VERIFY"].map((label, i) => (
-        <div className={`satellite satellite-${i}`} key={label}>
-          <span>0{i + 1}</span>
-          {label}
-        </div>
+    <svg viewBox="0 0 168 96" className="glyph-svg">
+      {cells.map(([cx, cy, state]) => (
+        <polygon
+          key={`${cx}-${cy}`}
+          className={`g-hex ${state ? `is-${state}` : ""}`}
+          points={hex(cx, cy)}
+        />
       ))}
-      <span className="preview-note">
-        {kind === "swarm"
-          ? "LOCAL-FIRST / AGENT SWARM"
-          : "ISOLATED WORK / SHARED GOAL"}
-      </span>
-    </div>
+    </svg>
+  );
+}
+
+const glyphCaption: Partial<Record<Work["visual"], string>> = {
+  agents: "Isolated worktrees, one patch",
+  scouting: "Auto, teleop, endgame",
+  scanner: "Checklist sketch, not a scan",
+  swarm: "One queen, many workers",
+};
+
+function UnderTheHood({ work }: { work: Work }) {
+  return (
+    <details className="work-details">
+      <summary>
+        Under the hood <span aria-hidden="true" />
+      </summary>
+      <p>{work.detail}</p>
+      <a
+        className="text-link"
+        href={work.url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Repository <ArrowUpRight size={16} aria-hidden="true" />
+      </a>
+    </details>
   );
 }
 
@@ -107,6 +192,8 @@ export function ProjectGallery() {
   const featured = selectedWork.filter(
     (work) => category === "All" || work.category === category,
   );
+  const features = featured.filter((work) => FEATURED_IDS.includes(work.id));
+  const indexed = featured.filter((work) => !FEATURED_IDS.includes(work.id));
   const repos = useMemo(
     () =>
       github.repos.filter((repo) =>
@@ -161,54 +248,89 @@ export function ProjectGallery() {
         <p className="sr-only" role="status">
           {featured.length} selected projects shown
         </p>
-        <div className="project-grid">
-          {featured.map((work) => (
-            <article
-              className={`project-card project-${work.visual}`}
-              key={work.id}
-            >
-              <div className="project-visual">
-                <ProjectVisual kind={work.visual} />
-              </div>
-              <div className="project-copy">
-                <div className="project-meta micro">
-                  <span>
-                    {work.number} / {work.category}
-                  </span>
-                  <span>{work.status}</span>
+
+        {features.length > 0 && (
+          <div className="work-features">
+            {features.map((work) => (
+              <article
+                className={`project-card work-feature work-feature-${work.id}`}
+                key={work.id}
+              >
+                <div className="project-visual work-feature-media">
+                  <FeatureMedia work={work} />
                 </div>
-                <h3>
-                  <a href={work.url} target="_blank" rel="noopener noreferrer">
-                    {work.name}
-                    <ArrowUpRight size={22} aria-hidden="true" />
-                  </a>
-                </h3>
-                <p className="project-headline">{work.headline}</p>
-                <p className="project-description">{work.description}</p>
-                <div className="tech-tags">
-                  {work.stack.map((tech) => (
-                    <span key={tech}>{tech}</span>
-                  ))}
+                <div className="work-feature-copy">
+                  <p className="work-kicker">
+                    <span>{work.number}</span>
+                    {work.category}
+                    <span aria-hidden="true">/</span>
+                    {work.status}
+                  </p>
+                  <h3>
+                    <a href={work.url} target="_blank" rel="noopener noreferrer">
+                      {work.name}
+                      <ArrowUpRight size={26} aria-hidden="true" />
+                    </a>
+                  </h3>
+                  <p className="work-headline">{work.headline}</p>
+                  <p className="work-description">{work.description}</p>
+                  <p className="work-stack">
+                    <span className="sr-only">Built with </span>
+                    {work.stack.join("  ·  ")}
+                  </p>
+                  <UnderTheHood work={work} />
                 </div>
-                <details>
-                  <summary>
-                    Under the hood <span aria-hidden="true">+</span>
-                  </summary>
-                  <p>{work.detail}</p>
-                  <a
-                    className="text-link"
-                    href={work.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Explore repository{" "}
-                    <ArrowUpRight size={16} aria-hidden="true" />
-                  </a>
-                </details>
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {indexed.length > 0 && (
+          <div className="work-index">
+            <div className="work-index-head" aria-hidden="true">
+              <span>No.</span>
+              <span>Also on the bench</span>
+              <span>Field</span>
+            </div>
+            <ol>
+              {indexed.map((work) => (
+                <li
+                  className={`project-card work-row work-row-${work.visual}`}
+                  key={work.id}
+                >
+                  <span className="work-row-number">{work.number}</span>
+                  <div className="work-row-main">
+                    <h3>
+                      <a
+                        href={work.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {work.name}
+                        <ArrowUpRight size={20} aria-hidden="true" />
+                      </a>
+                    </h3>
+                    <p className="work-row-headline">{work.headline}</p>
+                    <p className="work-row-description">{work.description}</p>
+                  </div>
+                  <p className="work-row-meta">
+                    <span>{work.category}</span>
+                    <span>{work.status}</span>
+                    <span className="work-row-stack">
+                      {work.stack.join(" · ")}
+                    </span>
+                  </p>
+                  <figure className="work-glyph" aria-hidden="true">
+                    <IndexGlyph kind={work.visual} />
+                    <figcaption>{glyphCaption[work.visual]}</figcaption>
+                  </figure>
+                  <UnderTheHood work={work} />
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         <div id="open-source" className="repository-shelf reveal">
           <div className="shelf-header">
             <div>

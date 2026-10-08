@@ -39,25 +39,15 @@ export function MotionExperience() {
         document
           .querySelectorAll(".reveal")
           .forEach((element) => observer.observe(element));
+        // Translate only: rotating would tilt the mood controls inside .hero-art.
         gsap.to(".hero-art", {
           y: 85,
-          rotate: 4,
           ease: "none",
           scrollTrigger: {
             trigger: ".portfolio-hero",
             start: "top top",
             end: "bottom top",
             scrub: 0.8,
-          },
-        });
-        gsap.to(".scroll-statement-track", {
-          xPercent: -18,
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".scroll-statement",
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 0.6,
           },
         });
         gsap.fromTo(

@@ -226,11 +226,13 @@ test("reduced motion disables decorative animation and completes route without m
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
+  // The 3D hero renders a single still frame instead of running its pointer loop.
+  await expect(page.locator(".hero-art .hero-robot-stage")).toBeVisible();
   expect(
-    await page
-      .locator(".hero-art .robot-body")
-      .evaluate((el) => getComputedStyle(el).animationName),
-  ).toBe("none");
+    await page.evaluate(
+      () => document.getAnimations().filter((a) => a.playState === "running").length,
+    ),
+  ).toBe(0);
   await page.getByRole("button", { name: "Find path", exact: true }).click();
   await expect(page.getByText(/Goal reached/)).toBeVisible();
   await page.getByRole("button", { name: "Pause effects" }).click();

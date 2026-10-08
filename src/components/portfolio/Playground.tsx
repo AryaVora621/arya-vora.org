@@ -293,7 +293,7 @@ export function Playground() {
       className="section-pad playground-section"
     >
       <div className="site-shell">
-        <div className="section-heading reveal">
+        <div className="section-heading">
           <p className="eyebrow">02 / THE PLAYGROUND</p>
           <h2>
             Less scrolling.

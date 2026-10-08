@@ -8,11 +8,12 @@ import {
 } from "lucide-react";
 import { github } from "@/data/github";
 import { PortfolioNav } from "./PortfolioNav";
-import { RobotSchematic } from "./RobotSchematic";
+import { HeroRobot } from "@/components/robopet/HeroRobot";
 import { ProjectGallery } from "./ProjectGallery";
 import { Playground } from "./Playground";
 import { ContactPanel } from "./ContactPanel";
 import { RoboPetFilm } from "@/components/robopet/RoboPetFilm";
+import { RoboPetExploded } from "@/components/robopet/RoboPetExploded";
 import { ScrollChoreography } from "./ScrollChoreography";
 
 export function Portfolio() {
@@ -61,7 +62,7 @@ export function Portfolio() {
               </p>
             </div>
             <div className="hero-art">
-              <RobotSchematic interactive />
+              <HeroRobot />
             </div>
           </div>
           <div className="hero-foot">
@@ -83,17 +84,13 @@ export function Portfolio() {
             </a>
           </div>
         </section>
-        <div className="scroll-statement" aria-hidden="true">
-          <div className="scroll-statement-track">
-            BUILD. BREAK. UNDERSTAND. <span>BUILD AGAIN.</span> BUILD. BREAK.
-          </div>
-        </div>
         <RoboPetFilm />
+        <RoboPetExploded />
         <ProjectGallery />
         <Playground />
         <section id="about" tabIndex={-1} className="about-section section-pad">
           <div className="site-shell about-grid">
-            <div className="about-intro reveal">
+            <div className="about-intro">
               <p className="eyebrow">03 / THE PERSON BEHIND THE COMMITS</p>
               <h2>
                 A builder.
@@ -106,9 +103,9 @@ export function Portfolio() {
                 what happens when an idea has to work outside a screen.
               </p>
               <p>
-                My portfolio includes captaining FTC 23786 MakEMinds and serving
-                on the board of FRC 2554 The Warhawks. Away from the field, I
-                work on companion robots and tools for developers.
+                I captain FTC 23786 MakEMinds and serve on the board of FRC
+                2554 The Warhawks. Away from the field, I work on companion
+                robots and tools for developers.
               </p>
               <div className="about-signature">
                 Arya Vora<span>ALSO AROUND AS FRINKLYY</span>
@@ -150,7 +147,7 @@ export function Portfolio() {
                   tags: ["GitHub", "Local agents", "Iteration"],
                 },
               ].map((item) => (
-                <article className="journey-card reveal" key={item.number}>
+                <article className="journey-card" key={item.number}>
                   <div className="journey-kicker">
                     <span>
                       {item.number} / {item.label}
@@ -169,7 +166,7 @@ export function Portfolio() {
             </div>
           </div>
         </section>
-        <div className="site-shell closing-note reveal">
+        <div className="site-shell closing-note">
           <span className="micro">THE THROUGH LINE</span>
           <p>
             Curiosity is the starting point.

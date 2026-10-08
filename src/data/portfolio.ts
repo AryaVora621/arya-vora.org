@@ -54,7 +54,7 @@ export const selectedWork = [
     description:
       "An FTC scouting app made by Team 23786 MakEMinds. Competition software for the people behind the robot.",
     detail:
-      "The repository identifies this as an FTC scouting app by Team 23786. The card uses illustrative match data, not actual team results or competition statistics.",
+      "The repository identifies this as an FTC scouting app by Team 23786. The sketch shows match phases only, not actual team results or competition statistics.",
     stack: ["TypeScript", "Next.js", "FTC"],
     status: "Team software",
     url: "https://github.com/AryaVora621/TeamStat-Insights",

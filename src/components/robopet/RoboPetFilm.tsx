@@ -78,10 +78,10 @@ export function RoboPetFilm() {
       // Landscape: contain with margin so callouts sit beside the robot, not on it; the
       // frame background matches --film-bg so the letterbox is invisible. Portrait: the
       // robot spans the middle ~55% of the source, so crop the sides to fill the width.
-      const scale =
-        width >= height
-          ? Math.min(width / image.naturalWidth, height / image.naturalHeight) * 0.86
-          : (width * 1.7) / image.naturalWidth;
+      const portrait = width < height;
+      const scale = portrait
+        ? (width * 1.25) / image.naturalWidth
+        : Math.min(width / image.naturalWidth, height / image.naturalHeight) * 0.86;
       const w = image.naturalWidth * scale;
       const h = image.naturalHeight * scale;
       context.imageSmoothingEnabled = true;
@@ -89,28 +89,34 @@ export function RoboPetFilm() {
       context.fillStyle = "#07070c";
       context.fillRect(0, 0, width, height);
       const x = (width - w) / 2;
-      const y = (height - h) / 2;
+      // Portrait keeps the robot in the upper-middle so the beat copy owns the bottom.
+      const y = portrait ? height * 0.38 - h / 2 : (height - h) / 2;
       context.drawImage(image, x, y, w, h);
       // The lit floor makes the frame's own edges visible against the letterbox, so
       // feather every edge of the drawn frame into the stage colour.
-      const feather = (x0: number, y0: number, x1: number, y1: number) => {
-        const gradient = context.createLinearGradient(x0, y0, x1, y1);
+      // Each band starts 2px outside the frame so no source edge pixel survives.
+      const fx = w * 0.14;
+      const fy = h * 0.16;
+      const band = (
+        rx: number,
+        ry: number,
+        rw: number,
+        rh: number,
+        gx0: number,
+        gy0: number,
+        gx1: number,
+        gy1: number,
+      ) => {
+        const gradient = context.createLinearGradient(gx0, gy0, gx1, gy1);
         gradient.addColorStop(0, "#07070c");
         gradient.addColorStop(1, "#07070c00");
         context.fillStyle = gradient;
-        context.fillRect(
-          Math.min(x0, x1) - 1,
-          Math.min(y0, y1) - 1,
-          Math.abs(x1 - x0) || w + 2,
-          Math.abs(y1 - y0) || h + 2,
-        );
+        context.fillRect(rx, ry, rw, rh);
       };
-      const fx = w * 0.14;
-      const fy = h * 0.16;
-      feather(x, y, x + fx, y);
-      feather(x + w, y, x + w - fx, y);
-      feather(x, y, x, y + fy);
-      feather(x, y + h, x, y + h - fy);
+      band(x - 2, y - 2, fx + 2, h + 4, x, 0, x + fx, 0);
+      band(x + w - fx, y - 2, fx + 2, h + 4, x + w, 0, x + w - fx, 0);
+      band(x - 2, y - 2, w + 4, fy + 2, 0, y, 0, y + fy);
+      band(x - 2, y + h - fy, w + 4, fy + 2, 0, y + h, 0, y + h - fy);
       if (counterRef.current)
         counterRef.current.textContent = String(index + 1).padStart(3, "0");
     };
@@ -136,18 +142,25 @@ export function RoboPetFilm() {
     const loadAll = () => {
       if (loadingStarted) return;
       loadingStarted = true;
-      // Coarse pass first so any scroll position has a nearby frame, then fill gaps.
-      for (let i = 0; i < FRAME_COUNT; i += 8) load(i);
       for (let i = 0; i < FRAME_COUNT; i++) load(i);
     };
 
     load(0);
     resize();
+    // Two-stage loading: a coarse 1-in-8 pass as the film approaches, the full set only
+    // once it is actually on screen, so visitors who never scroll this far pay little.
+    const coarse = () => {
+      for (let i = 0; i < FRAME_COUNT; i += 8) load(i);
+    };
     const nearObserver = new IntersectionObserver(
+      (entries) => entries.some((e) => e.isIntersecting) && coarse(),
+      { rootMargin: "100% 0px" },
+    );
+    const onObserver = new IntersectionObserver(
       (entries) => entries.some((e) => e.isIntersecting) && loadAll(),
-      { rootMargin: "150% 0px" },
     );
     nearObserver.observe(section);
+    onObserver.observe(section);
     window.addEventListener("resize", resize);
 
     const ctx = gsap.context(() => {
@@ -158,6 +171,10 @@ export function RoboPetFilm() {
           start: "top top",
           end: "bottom bottom",
           scrub: 0.5,
+          // The HUD has its own progress rail; hide the nav's while pinned.
+          onToggle: (self) => {
+            document.documentElement.dataset.film = self.isActive ? "on" : "off";
+          },
         },
       });
       timeline.to(
@@ -179,8 +196,22 @@ export function RoboPetFilm() {
         { yPercent: 0, scale: 1, duration: 0.16, ease: "power1.inOut" },
         0,
       );
+      // A slow push-in across the middle act, so the camera is never static.
+      timeline.to(".film-canvas", { scale: 1.08, duration: 0.6, ease: "sine.inOut" }, 0.18);
+      const wide = window.innerWidth >= 760;
       beats.forEach((beat) => {
         const selector = `.film-beat[data-beat="${beat.id}"]`;
+        // The product moves out of the way of the copy, not the other way round.
+        if (wide)
+          timeline.to(
+            ".film-canvas",
+            {
+              xPercent: beat.side === "left" ? 9 : -9,
+              duration: 0.1,
+              ease: "power2.inOut",
+            },
+            beat.at - 0.1,
+          );
         timeline.fromTo(
           selector,
           { opacity: 0, y: 40 },
@@ -193,18 +224,33 @@ export function RoboPetFilm() {
           beat.at + 0.1,
         );
       });
+      if (wide)
+        timeline.to(
+          ".film-canvas",
+          { xPercent: 0, duration: 0.1, ease: "power2.inOut" },
+          0.8,
+        );
       timeline.fromTo(
         ".film-outro",
         { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" },
-        0.86,
+        { opacity: 1, y: 0, duration: 0.06, ease: "power2.out" },
+        0.84,
       );
+      // Exit: pull back and dim so the hand-off to the next section is deliberate.
+      timeline.to(
+        ".film-canvas",
+        { scale: 0.86, opacity: 0.15, duration: 0.06, ease: "power2.in" },
+        0.94,
+      );
+      timeline.to(".film-outro, .film-hud", { opacity: 0, duration: 0.04 }, 0.96);
       timeline.fromTo(".film-progress-bar", { scaleX: 0 }, { scaleX: 1, duration: 1 }, 0);
     }, section);
 
     return () => {
       ctx.revert();
       nearObserver.disconnect();
+      onObserver.disconnect();
+      delete document.documentElement.dataset.film;
       window.removeEventListener("resize", resize);
       frames.forEach((image) => (image.onload = null));
     };

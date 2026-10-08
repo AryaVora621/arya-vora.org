@@ -155,7 +155,7 @@
   align-items: center;
   gap: 20px;
   font-family: var(--font-mono), monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   color: var(--muted);
 }
@@ -338,9 +338,77 @@
   .exploded[data-mode="scrub"] .exploded-lede {
     display: none;
   }
-  .exploded-parts button {
-    font-size: 10px;
-    padding: 6px 10px;
-    min-height: 36px;
+  .exploded-parts ul {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -16px;
+    padding-inline: 16px;
   }
+  .exploded-parts button {
+    white-space: nowrap;
+    font-size: 11px;
+    padding: 6px 12px;
+    min-height: 40px;
+  }
+  .exploded[data-mode="scrub"] .exploded-parts {
+    gap: 14px;
+  }
+  .exploded-detail {
+    min-height: 92px;
+  }
+}
+
+html[data-film="on"] .reading-progress {
+  opacity: 0;
+}
+.reading-progress {
+  transition: opacity 0.3s;
+}
+@media (max-width: 760px) {
+  .film[data-mode="scrub"] {
+    height: 400vh;
+  }
+}
+
+/* Hero roboPet (3D) */
+.hero-robot {
+  border-radius: 0;
+  background-image: none;
+}
+.hero-robot-stage {
+  position: relative;
+  aspect-ratio: 6 / 5;
+  width: 100%;
+}
+.hero-robot-still,
+.hero-robot-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-robot-still {
+  object-fit: contain;
+  transition: opacity 0.6s;
+}
+.hero-robot-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.hero-robot-stage[data-ready="true"] .hero-robot-canvas canvas {
+  opacity: 1;
+}
+.hero-robot-stage[data-ready="true"] .hero-robot-still {
+  opacity: 0;
+}
+.exploded-still {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }

@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# img2threejs working files (renders, specs) stay local
+/assets-src/robopet/img2threejs/

@@ -19,7 +19,7 @@ export function ContactPanel() {
   };
   return (
     <section id="contact" tabIndex={-1} className="contact-section section-pad">
-      <div className="site-shell reveal">
+      <div className="site-shell">
         <p className="eyebrow">04 / OPEN A CONVERSATION</p>
         <h2>
           Got something

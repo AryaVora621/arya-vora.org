@@ -3,6 +3,7 @@ import { Fragment_Mono, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import "./portfolio.css";
 import "./robopet.css";
+import "./projects.css";
 
 export const metadataBase = new URL("https://aryavora.com");
 
