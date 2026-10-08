@@ -408,3 +408,57 @@ html[data-film="on"] .reading-progress {
   height: 100%;
   object-fit: contain;
 }
+
+/* Tour phase (desktop): the heading yields to a large card for the active part. */
+.exploded-tour {
+  display: none;
+}
+@media (min-width: 761px) {
+  .exploded[data-mode="scrub"] .exploded-copy,
+  .exploded[data-mode="scrub"] .exploded-tour > div {
+    transition:
+      opacity 0.5s,
+      transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .exploded[data-mode="scrub"] .exploded-tour {
+    display: block;
+    position: absolute;
+    inset-inline: 0;
+    top: max(120px, 15vh);
+    margin: 0 auto;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .exploded-tour > div {
+    max-width: 380px;
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  .exploded-tour .micro {
+    color: var(--accent);
+  }
+  .exploded-tour-title {
+    font-size: clamp(40px, 4.2vw, 64px);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    margin: 14px 0 18px;
+  }
+  .exploded-tour p:not(.exploded-tour-title) {
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  .exploded[data-phase="tour"] .exploded-copy {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  .exploded[data-phase="tour"] .exploded-tour > div {
+    opacity: 1;
+    transform: none;
+  }
+  /* Opacity, not visibility: the panel stays the screen-reader live region. */
+  .exploded[data-phase="tour"] .exploded-detail {
+    opacity: 0;
+  }
+}

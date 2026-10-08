@@ -118,12 +118,11 @@ export function RoboPetExploded() {
       const rim = new THREE.DirectionalLight("#c4b5fd", 1.6);
       rim.position.set(3.5, 2.5, -3.5);
       scene.add(key, rim, new THREE.HemisphereLight("#e8ecff", "#0a0a10", 0.25));
-      const floor = new THREE.Mesh(
-        new THREE.CircleGeometry(5, 48),
-        new THREE.ShadowMaterial({ opacity: 0.4 }),
-      );
+      const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.4, depthWrite: false });
+      const floor = new THREE.Mesh(new THREE.CircleGeometry(5, 48), floorMaterial);
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
+      floor.renderOrder = -1;
       scene.add(floor);
 
       const model = createRoboPetModel({ shadows: true });
@@ -134,14 +133,21 @@ export function RoboPetExploded() {
       model.position.x -= center.x;
       model.position.z -= center.z;
 
-      // Frame the fully exploded silhouette, then reassemble.
+      // Measure both states: the camera blends from an assembled fit (robot fills the
+      // stage) to an exploded fit (every part in frame) as the teardown progresses.
+      const assembledSphere = new THREE.Box3()
+        .setFromObject(model)
+        .getBoundingSphere(new THREE.Sphere());
       setRoboPetExplode(model, 1);
       const explodedBox = new THREE.Box3().setFromObject(model);
       const sphere = explodedBox.getBoundingSphere(new THREE.Sphere());
       const halfWidth = explodedBox.getSize(new THREE.Vector3()).x / 2;
+      const partCenters = new Map<PartKey, import("three").Vector3>();
       setRoboPetExplode(model, 0);
 
-      const state = { explode: motion ? 0 : 1, yaw: motion ? -0.35 : -0.15 };
+      const state = { explode: motion ? 0 : 1, yaw: motion ? -0.35 : -0.15, focus: 0 };
+      const focusTarget = new THREE.Vector3();
+      const fits = { assembled: 1, exploded: 1, portrait: false };
       const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
 
       const partOf = (object: import("three").Object3D | null) => {
@@ -154,8 +160,15 @@ export function RoboPetExploded() {
       const keyOf = (id: string | null) =>
         PARTS.find((part) => (part.ids as readonly string[]).includes(id ?? ""))?.key ?? null;
 
-      // Dim everything except the chosen subsystem so it reads like a callout.
-      const original = new Map<import("three").Material, number>();
+      // Unselected parts become a flat violet ghost (an x-ray, not muddy glass); the
+      // selected one keeps its real material with a faint violet lift.
+      const ghost = new THREE.MeshBasicMaterial({
+        color: "#a78bfa",
+        transparent: true,
+        opacity: 0.07,
+        depthWrite: false,
+      });
+      const realMaterial = new Map<import("three").Mesh, import("three").Mesh["material"]>();
       const meshParts = new Map<import("three").Mesh, PartKey | null>();
       // The model shares materials across parts (one PLA for shell, chassis and face), so
       // give each subsystem its own copies; otherwise dimming one part dims them all.
@@ -173,23 +186,46 @@ export function RoboPetExploded() {
         mesh.material = Array.isArray(mesh.material)
           ? mesh.material.map((material) => cloneFor(material, key))
           : cloneFor(mesh.material, key);
+        realMaterial.set(mesh, mesh.material);
       });
+      // Part centres in the exploded pose, for the tour's camera dolly.
+      setRoboPetExplode(model, 1);
+      PARTS.forEach((part) => {
+        const box = new THREE.Box3();
+        meshParts.forEach((key, mesh) => key === part.key && box.expandByObject(mesh));
+        if (!box.isEmpty()) partCenters.set(part.key, box.getCenter(new THREE.Vector3()));
+      });
+      setRoboPetExplode(model, 0);
+      let focusTween: gsap.core.Tween | null = null;
       let highlighted: PartKey | null = null;
       const applyHighlight = (key: PartKey | null) => {
         if (key === highlighted) return;
         highlighted = key;
         meshParts.forEach((partKey, mesh) => {
           const dim = key !== null && partKey !== key;
+          mesh.material = dim ? ghost : realMaterial.get(mesh)!;
+          mesh.castShadow = !dim;
           const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           materials.forEach((material) => {
-            if (!original.has(material)) original.set(material, material.opacity);
-            material.transparent = dim || original.get(material)! < 1;
-            material.opacity = dim ? 0.22 : original.get(material)!;
-            material.depthWrite = !dim;
-            // Toggling transparency changes the shader program.
-            material.needsUpdate = true;
+            const lit = material as import("three").MeshStandardMaterial;
+            if (!lit.isMeshStandardMaterial || dim) return;
+            if (lit.userData.baseEmissive === undefined) {
+              lit.userData.baseEmissive = lit.emissive.getHex();
+              lit.userData.baseIntensity = lit.emissiveIntensity;
+            }
+            const lift = key !== null && partKey === key && lit.userData.baseEmissive === 0;
+            lit.emissive.setHex(lift ? 0x6d28d9 : lit.userData.baseEmissive);
+            lit.emissiveIntensity = lift ? 0.22 : lit.userData.baseIntensity;
           });
-          mesh.castShadow = !dim;
+        });
+        // Dolly toward the selected subsystem so even small boards read clearly.
+        if (key && partCenters.has(key)) focusTarget.copy(partCenters.get(key)!);
+        focusTween?.kill();
+        focusTween = gsap.to(state, {
+          focus: key ? 1 : 0,
+          duration: 0.9,
+          ease: "power3.out",
+          onUpdate: render,
         });
         render();
       };
@@ -207,19 +243,37 @@ export function RoboPetExploded() {
         const usable = portrait ? 0.92 : 0.74; // desktop leaves the copy column free
         // Phones are width-bound and the teardown is mostly lateral, so fit its width
         // directly; the sphere fit wastes most of a narrow screen.
-        const dist = portrait
+        fits.portrait = portrait;
+        fits.exploded = portrait
           ? (halfWidth * 1.08) / Math.tan(hFov / 2) + sphere.radius * 0.35
           : sphere.radius / Math.sin(Math.min(vFov * 1.02, hFov * usable) / 2);
-        camera.position.set(0, sphere.center.y + dist * 0.26, dist);
-        camera.lookAt(0, sphere.center.y, 0);
-        camera.setViewOffset(w, h, portrait ? 0 : -w * 0.17, portrait ? h * 0.1 : -h * 0.02, w, h);
-        camera.updateProjectionMatrix();
+        // Assembled: the robot fills a little over half the stage height.
+        fits.assembled = Math.min(
+          fits.exploded,
+          assembledSphere.radius / Math.sin(Math.min(vFov * 0.6, hFov * usable * 0.75) / 2),
+        );
+        camera.setViewOffset(w, h, portrait ? 0 : -w * 0.15, portrait ? h * 0.1 : -h * 0.02, w, h);
         render();
       };
 
+      const lookAt = new THREE.Vector3();
       function render() {
         setRoboPetExplode(model, state.explode);
         pivot.rotation.y = state.yaw;
+        floorMaterial.opacity = 0.4 * (1 - Math.min(1, state.explode * 1.6));
+        const e = THREE.MathUtils.smoothstep(state.explode, 0, 1);
+        let dist = THREE.MathUtils.lerp(fits.assembled, fits.exploded, e);
+        const centerY = THREE.MathUtils.lerp(assembledSphere.center.y, sphere.center.y, e);
+        lookAt.set(0, centerY, 0);
+        if (state.focus > 0) {
+          // Part centres are in model space; rotate them with the pivot's yaw.
+          const target = focusTarget.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), state.yaw);
+          lookAt.lerp(target, 0.4 * state.focus);
+          dist *= 1 - 0.2 * state.focus;
+        }
+        camera.position.set(lookAt.x, lookAt.y + dist * 0.26, lookAt.z + dist);
+        camera.lookAt(lookAt);
+        camera.updateProjectionMatrix();
         renderer.render(scene, camera);
       }
 
@@ -260,8 +314,9 @@ export function RoboPetExploded() {
               onUpdate: (self) => {
                 // After the teardown holds, scrolling walks through each subsystem until
                 // the visitor picks one themselves.
-                if (userPicked.current) return;
                 const t = (self.progress - EXPLODE_END) / (1 - EXPLODE_END);
+                section.dataset.phase = t < 0 ? "build" : "tour";
+                if (userPicked.current) return;
                 const next =
                   t < 0 ? null : PARTS[Math.min(PARTS.length - 1, Math.floor(t * PARTS.length))].key;
                 if (next !== lastTour) {
@@ -285,6 +340,9 @@ export function RoboPetExploded() {
         ctx?.revert();
         resizeObserver.disconnect();
         renderer.domElement.removeEventListener("pointerup", onClick);
+        focusTween?.kill();
+        delete section.dataset.phase;
+        ghost.dispose();
         disposeRoboPetModel(model);
         perPart.forEach((material) => material.dispose());
         floor.geometry.dispose();
@@ -340,6 +398,20 @@ export function RoboPetExploded() {
             A procedural Three.js reconstruction, built in code from the concept render.{" "}
             {live ? "Scroll to pull it apart, or pick a part." : "Pick a part to see what it does."}
           </p>
+        </div>
+        {/* Desktop tour card: a large visual twin of the detail panel that takes over the
+            heading's slot once the teardown holds. The panel below stays the live region. */}
+        <div className="exploded-tour site-shell" aria-hidden="true">
+          {activePart && (
+            <div key={activePart.key}>
+              <span className="micro">
+                {String(PARTS.indexOf(activePart) + 1).padStart(2, "0")} /{" "}
+                {String(PARTS.length).padStart(2, "0")}
+              </span>
+              <p className="exploded-tour-title">{activePart.label}</p>
+              <p>{activePart.detail}</p>
+            </div>
+          )}
         </div>
         <div ref={mountRef} className="exploded-canvas" aria-hidden="true">
           {failed && (

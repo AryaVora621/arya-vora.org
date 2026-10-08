@@ -734,3 +734,36 @@
 html[data-motion="paused"] .notch-line i {
   animation: none;
 }
+
+/* Filters as a quiet editorial text row rather than SaaS pills. */
+.projects-section .filter-row {
+  gap: 4px 22px;
+}
+.projects-section .filter-row button {
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: inset 0 -1px 0 transparent;
+  transition:
+    color 0.2s,
+    box-shadow 0.2s;
+}
+.projects-section .filter-row button:hover {
+  color: var(--text);
+}
+.projects-section .filter-row button[aria-pressed="true"] {
+  color: var(--text);
+  background: none;
+  box-shadow: inset 0 -1px 0 var(--accent);
+}
+.feature-photo img[src*="exploded-still"] {
+  object-fit: contain;
+  object-position: 50% 50%;
+  padding: 6%;
+}
