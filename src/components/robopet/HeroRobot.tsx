@@ -2,38 +2,47 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
-import type { RoboPetEyeMode } from "./createRoboPetModel";
-import { shouldUseStill } from "./gpu";
+import { prefersStill, shouldUseStill } from "./gpu";
+import { addStudio } from "./studio";
 
-const MODES = ["Curious", "Happy", "Sleepy"] as const;
-type Mode = (typeof MODES)[number];
-const EYES: Record<Mode, RoboPetEyeMode> = {
-  Curious: "open",
-  Happy: "happy",
-  Sleepy: "sleepy",
-};
-const CAPTIONS: Record<Mode, string> = {
-  Curious: "Move your pointer. I’m curious.",
-  Happy: "A small change. A little personality.",
-  Sleepy: "Even robots need a break.",
-};
+// Run `task` when the browser is idle, so three.js and the first model build do not compete
+// with hydration. Safari has no requestIdleCallback; the timeout covers it and a busy page.
+function whenIdle(task: () => void) {
+  if (typeof window.requestIdleCallback === "function") {
+    const id = window.requestIdleCallback(task, { timeout: 1500 });
+    return () => window.cancelIdleCallback(id);
+  }
+  const id = window.setTimeout(task, 200);
+  return () => window.clearTimeout(id);
+}
 
 // Hero roboPet: the same procedural model as the exploded view, so the hero, film and
-// teardown all show one robot. A pre-rendered still covers first paint and no-WebGL.
+// teardown all show one robot. A pre-rendered still covers first paint, reduced-motion
+// software renderers and no-WebGL. The head follows the mouse pointer and the eyes blink.
 export function HeroRobot() {
   const motion = useMotionAllowed();
-  const [mode, setMode] = useState<Mode>("Curious");
   const [ready, setReady] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
-  const modeRef = useRef<(mode: Mode) => void>(() => {});
+  // The scene is built once. Motion preference changes reach it through this ref and
+  // `onMotionRef`, so a setting flip never rebuilds the renderer.
+  const motionRef = useRef(motion);
+  const onMotionRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    motionRef.current = motion;
+    onMotionRef.current();
+  }, [motion]);
 
   useEffect(() => {
     const host = hostRef.current;
-    if (!host) return;
+    // Browsers with no WebGL, or only a software renderer, keep the still. The probe is
+    // cached and shared with the exploded view, so this check costs nothing the second time
+    // and three.js is never downloaded for a visitor who cannot use it.
+    if (!host || prefersStill()) return;
     let disposed = false;
     let cleanup = () => {};
 
-    (async () => {
+    const build = async () => {
       const THREE = await import("three");
       const { RoomEnvironment } = await import(
         "three/examples/jsm/environments/RoomEnvironment.js"
@@ -67,26 +76,9 @@ export function HeroRobot() {
       const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
       scene.environment = env;
       scene.environmentIntensity = 0.3;
-      const key = new THREE.DirectionalLight("#ffead2", 2.6);
-      key.position.set(-1.6, 4.2, 4.6);
-      key.castShadow = true;
-      key.shadow.mapSize.set(1024, 1024);
-      Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5 });
-      key.shadow.bias = -0.0004;
-      const rim = new THREE.DirectionalLight("#c4b5fd", 1.6);
-      rim.position.set(3.5, 2.5, -3.5);
-      scene.add(key, rim, new THREE.HemisphereLight("#e8ecff", "#0a0a10", 0.25));
+      const studio = addStudio(THREE, scene, { shadowExtent: 2.5, floorRadius: 1.7 });
 
-      // Shadow-only floor so the robot grounds itself on the page background.
-      const floor = new THREE.Mesh(
-        new THREE.CircleGeometry(4, 48),
-        new THREE.ShadowMaterial({ opacity: 0.45 }),
-      );
-      floor.rotation.x = -Math.PI / 2;
-      floor.receiveShadow = true;
-      scene.add(floor);
-
-      const model = createRoboPetModel({ eyeMode: EYES.Curious, shadows: true });
+      const model = createRoboPetModel({ eyeMode: "open", shadows: true });
       const rig = new THREE.Group();
       rig.add(model);
       scene.add(rig);
@@ -94,7 +86,7 @@ export function HeroRobot() {
       rig.rotation.y = baseYaw;
 
       const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 100);
-      camera.position.set(0, 1.7, 5.9);
+      camera.position.set(0, 1.5, 5.2);
       camera.lookAt(0, 0.62, 0);
 
       const render = () => renderer.render(scene, camera);
@@ -112,14 +104,13 @@ export function HeroRobot() {
 
       // Pointer tracking eases toward a target. Frames are only drawn while the head is
       // settling; blinks are two scheduled draws, so an idle hero costs no GPU time.
-      const motionRef = { motion };
       const look = { x: 0, y: 0 };
       const target = { x: 0, y: 0 };
       let frame = 0;
       let blinkTimer = 0;
+      let openTimer = 0;
       let visible = true;
-      let current: Mode = "Curious";
-      const drawEyes = (mode: RoboPetEyeMode) => {
+      const drawEyes = (mode: "open" | "blink") => {
         setRoboPetEyes(model, mode, { x: look.x, y: -look.y });
         render();
       };
@@ -130,27 +121,27 @@ export function HeroRobot() {
         look.y += (target.y - look.y) * 0.08;
         rig.rotation.y = baseYaw + look.x * 0.45;
         rig.rotation.x = look.y * 0.08;
-        drawEyes(EYES[current]);
+        drawEyes("open");
         const settling =
           Math.abs(target.x - look.x) > 0.002 || Math.abs(target.y - look.y) > 0.002;
-        if (visible && motionRef.motion && settling) frame = requestAnimationFrame(tick);
+        if (visible && motionRef.current && settling) frame = requestAnimationFrame(tick);
       };
       const wake = () => {
         if (!frame && visible) frame = requestAnimationFrame(tick);
       };
       const scheduleBlink = () => {
         blinkTimer = window.setTimeout(() => {
-          if (visible && motionRef.motion && current === "Curious") {
+          if (visible && motionRef.current) {
             drawEyes("blink");
-            window.setTimeout(() => current === "Curious" && drawEyes("open"), 140);
+            openTimer = window.setTimeout(() => drawEyes("open"), 140);
           }
           scheduleBlink();
         }, 2600 + Math.random() * 2800);
       };
-      if (motion) scheduleBlink();
+      scheduleBlink();
 
       const onPointer = (event: PointerEvent) => {
-        if (event.pointerType !== "mouse" || !motionRef.motion) return;
+        if (event.pointerType !== "mouse" || !motionRef.current) return;
         const rect = host.getBoundingClientRect();
         target.x = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / rect.width) * 2 - 1));
         target.y = Math.max(-1, Math.min(1, ((event.clientY - rect.top) / rect.height) * 2 - 1));
@@ -170,70 +161,81 @@ export function HeroRobot() {
       });
       visibility.observe(host);
 
-      modeRef.current = (next) => {
-        current = next;
-        drawEyes(EYES[next]);
+      // The pose returns to centre when motion is switched off mid-visit.
+      onMotionRef.current = () => {
+        if (motionRef.current) return;
+        target.x = target.y = look.x = look.y = 0;
+        tick();
       };
+
+      // A lost context (backgrounded tab, GPU reset) clears the canvas. Put the still back
+      // until the browser restores it, then draw again.
+      const onLost = (event: Event) => {
+        event.preventDefault();
+        cancelAnimationFrame(frame);
+        frame = 0;
+        setReady(false);
+      };
+      const onRestored = () => {
+        render();
+        setReady(true);
+      };
+      renderer.domElement.addEventListener("webglcontextlost", onLost);
+      renderer.domElement.addEventListener("webglcontextrestored", onRestored);
+
       setReady(true);
 
       cleanup = () => {
+        onMotionRef.current = () => {};
+        renderer.domElement.removeEventListener("webglcontextlost", onLost);
+        renderer.domElement.removeEventListener("webglcontextrestored", onRestored);
         cancelAnimationFrame(frame);
         window.clearTimeout(blinkTimer);
+        window.clearTimeout(openTimer);
         window.removeEventListener("pointermove", onPointer);
         document.documentElement.removeEventListener("pointerleave", onLeave);
         visibility.disconnect();
         resizeObserver.disconnect();
         disposeRoboPetModel(model);
-        floor.geometry.dispose();
-        (floor.material as import("three").Material).dispose();
+        studio.dispose();
         env.dispose();
         pmrem.dispose();
         renderer.dispose();
         renderer.domElement.remove();
       };
-    })().catch(() => {});
+    };
+
+    const cancelIdle = whenIdle(() => {
+      build().catch(() => {});
+    });
 
     return () => {
       disposed = true;
+      cancelIdle();
       cleanup();
       setReady(false);
     };
-  }, [motion]);
+  }, []);
 
   return (
-    <div className={`robot-scene hero-robot mode-${mode.toLowerCase()}`}>
-      <div className="scene-coordinate coordinate-top" aria-hidden="true">
-        FIG. 01 / ROBOPET, PROCEDURAL MODEL
-      </div>
-      <div className="hero-robot-stage" data-ready={ready}>
+    <div className="hero-robot">
+      <div
+        className="hero-robot-stage"
+        data-ready={ready}
+        role="img"
+        aria-label="A 3D model of roboPet's planned design: a small four-legged robot with a rounded light grey shell and an OLED face showing two eyes."
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- first-paint still of the 3D model */}
         <img
           className="hero-robot-still"
           src="/robopet/hero-still.webp"
           alt=""
-          width={1200}
-          height={1000}
+          width={1278}
+          height={1066}
           fetchPriority="high"
         />
         <div ref={hostRef} className="hero-robot-canvas" aria-hidden="true" />
       </div>
-      <div className="robot-mode" role="group" aria-label="Robot expression">
-        {MODES.map((item) => (
-          <button
-            key={item}
-            aria-pressed={mode === item}
-            onClick={() => {
-              setMode(item);
-              modeRef.current(item);
-            }}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-      <p className="scene-caption">
-        {CAPTIONS[mode]} <span>Procedural 3D model, built in code</span>
-      </p>
     </div>
   );
 }

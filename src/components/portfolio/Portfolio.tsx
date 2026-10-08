@@ -1,198 +1,144 @@
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUpRight,
-  Cpu,
-  GitBranch,
-  Wrench,
-} from "lucide-react";
-import { github } from "@/data/github";
-import { PortfolioNav } from "./PortfolioNav";
+import { frcTeam, ftcTeam, milestones, profile } from "@/data/profile";
+import { socialLinks } from "@/data/portfolio";
+import { FooterNav, PortfolioNav } from "./PortfolioNav";
 import { HeroRobot } from "@/components/robopet/HeroRobot";
+import { FtcSection } from "./FtcSection";
+import { RoboPetFilm } from "@/components/robopet/RoboPetFilm";
+import { RoboPetExploded } from "@/components/robopet/RoboPetExploded";
+import { CadGallery } from "./CadGallery";
 import { ProjectGallery } from "./ProjectGallery";
 import { Playground } from "./Playground";
 import { ContactPanel } from "./ContactPanel";
-import { RoboPetFilm } from "@/components/robopet/RoboPetFilm";
-import { RoboPetExploded } from "@/components/robopet/RoboPetExploded";
 import { ScrollChoreography } from "./ScrollChoreography";
+
+// Joins words with no-break spaces, so a line never splits a team number from its program
+// ("FTC team / 23786") or a name in half.
+const glue = (text: string) => text.replace(/ /g, "\u00a0");
+
+// The school may break once, between "Stevens" and "High", so a phone never has to push a
+// 27-character unbreakable name onto its own line.
+const school = profile.school.replace(
+  /^(.*) (High School)$/,
+  (_, name: string, kind: string) => `${glue(name)} ${glue(kind)}`,
+);
+
+// The hero links to the two profiles a reader is most likely to want after email.
+const heroProfiles = socialLinks.filter((link) =>
+  ["GitHub", "LinkedIn"].includes(link.label),
+);
 
 export function Portfolio() {
   return (
-    <div id="top" className="portfolio">
+    <div className="portfolio">
       <PortfolioNav />
       <ScrollChoreography />
       <main id="main-content" tabIndex={-1}>
         <section
+          id="top"
           className="portfolio-hero site-shell"
           aria-labelledby="hero-title"
         >
-          <div className="hero-topline">
-            <p className="eyebrow">
-              <span className="status-dot" />A WORK IN PROGRESS. LIKE MOST GOOD
-              THINGS.
-            </p>
-            <span className="micro hero-location">
-              EDISON, NJ / EST. 2023 ON GITHUB
-            </span>
-          </div>
           <div className="hero-grid">
             <div className="hero-copy">
-              <p className="hero-intro">Hey, I’m Arya.</p>
-              <h1 id="hero-title">
-                I make
-                <br />
-                code <span className="accent-text">move.</span>
-              </h1>
+              <h1 id="hero-title">{profile.name}</h1>
+              {/* DRAFT. Arya will rewrite this in his own words. Facts: class year and school
+                  from src/data/profile.ts; captaincy confirmed by Arya on 2026-10-08. The
+                  Onshape line matches the models in the CAD section. */}
               <p className="hero-description">
-                Sometimes it moves a robot. Sometimes it makes a workflow a
-                little less painful. I build across hardware, software, and the
-                space in between.
+                I captain {glue(`${ftcTeam.program} team ${ftcTeam.number}`)},{" "}
+                {ftcTeam.name}, and I’m in the class of {profile.classYear} at{" "}
+                {school} in {profile.city}. I do my CAD in Onshape.
               </p>
-              <div className="hero-actions">
-                <a className="primary-button" href="#projects">
-                  Explore my work <ArrowDown size={18} aria-hidden="true" />
-                </a>
-                <a className="text-link" href="#playground">
-                  Play with an idea{" "}
-                  <ArrowUpRight size={18} aria-hidden="true" />
-                </a>
-              </div>
-              <p className="hero-aliases">
-                ARYA VORA <span>/</span> ARYAVORA621 <span>/</span> FRINKLYY
+              <p className="hero-description">
+                <a href="#ftc">Reaper</a>, the robot I built with my team, played
+                at the FIRST Championship in Houston in April 2026.{" "}
+                <a href="#robopet">roboPet</a> is the four-legged robot I’m
+                building outside the team.
               </p>
+              <ul className="hero-actions">
+                <li>
+                  <a href={`mailto:${profile.email}`}>Email</a>
+                </li>
+                {heroProfiles.map((link) => (
+                  <li key={link.url}>
+                    <a href={link.url} target="_blank" rel="me noopener noreferrer">
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
             <div className="hero-art">
               <HeroRobot />
             </div>
           </div>
-          <div className="hero-foot">
-            <p>
-              <span className="status-dot" />
-              BUILDING IN PUBLIC
-            </p>
-            <a
-              href={github.profile.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {github.profile.publicRepos} public repos{" "}
-              <span className="snapshot-hint">/ {github.fetchedAt}</span>
-              <ArrowUpRight size={15} aria-hidden="true" />
-            </a>
-            <a href="#projects" className="scroll-cue">
-              SCROLL TO EXPLORE <ArrowDown size={16} aria-hidden="true" />
-            </a>
-          </div>
         </section>
+        <FtcSection />
         <RoboPetFilm />
         <RoboPetExploded />
+        <CadGallery />
         <ProjectGallery />
         <Playground />
-        <section id="about" tabIndex={-1} className="about-section section-pad">
+        <section
+          id="about"
+          tabIndex={-1}
+          className="about-section section-pad"
+          aria-labelledby="about-title"
+        >
           <div className="site-shell about-grid">
+            {/* DRAFT. Arya will rewrite this About in his own words. His MakEMinds roles and
+                results are in the FTC section, so this part covers the rest.
+                FRC 2554 at John P. Stevens High School: thebluealliance.com/team/2554; board
+                role confirmed by Arya on 2026-10-08. E.M.E.R.G.E.: the team’s 2024-25
+                engineering portfolio ("founded by FRC team 2554 and FTC team MakEMinds as a
+                robotics student council for local teams ... in the Edison-Metuchen area").
+                TODO(Arya): add what the board does, in his own words. */}
             <div className="about-intro">
-              <p className="eyebrow">03 / THE PERSON BEHIND THE COMMITS</p>
-              <h2>
-                A builder.
-                <br />
-                <span className="muted-text">Still learning.</span>
-              </h2>
+              <h2 id="about-title">About</h2>
               <p>
-                I’m Arya Vora, based in Edison, New Jersey. Robotics is where my
-                interests come together: code, mechanical design, and seeing
-                what happens when an idea has to work outside a screen.
+                I’m on the board of the <a href={frcTeam.url}>{frcTeam.name}</a>,{" "}
+                {glue(`${frcTeam.program} team ${frcTeam.number}`)} at my school.
               </p>
               <p>
-                I captain FTC 23786 MakEMinds and serve on the board of FRC
-                2554 The Warhawks. Away from the field, I work on companion
-                robots and tools for developers.
+                The Warhawks and {ftcTeam.name} founded E.M.E.R.G.E., a robotics
+                student council for local teams in the Edison and Metuchen area.
               </p>
-              <div className="about-signature">
-                Arya Vora<span>ALSO AROUND AS FRINKLYY</span>
-              </div>
-              <a
-                className="text-link"
-                href={github.profile.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Follow the work <ArrowUpRight size={17} aria-hidden="true" />
-              </a>
             </div>
-            <div id="timeline" className="journey-list">
-              <div className="journey-line" aria-hidden="true" />
-              {[
-                {
-                  number: "01",
-                  icon: Wrench,
-                  title: "Make it physical.",
-                  label: "ROBOTICS & HARDWARE",
-                  text: "FTC and FRC, custom parts, companion robots. The feedback is immediate when a mechanism jams or a servo won’t move.",
-                  tags: ["CAD", "MicroPython", "Raspberry Pi", "Java"],
-                },
-                {
-                  number: "02",
-                  icon: Cpu,
-                  title: "Make it useful.",
-                  label: "SOFTWARE & SYSTEMS",
-                  text: "Scouting apps for the team. A notch companion for terminal sessions. Tools that begin with a small, recurring frustration.",
-                  tags: ["TypeScript", "Next.js", "SwiftUI", "Python"],
-                },
-                {
-                  number: "03",
-                  icon: GitBranch,
-                  title: "Leave the process visible.",
-                  label: "EXPERIMENTS & OPEN SOURCE",
-                  text: "Agent workflows, prototypes, and unfinished ideas. The repos include roadmaps and work in progress, not just the polished parts.",
-                  tags: ["GitHub", "Local agents", "Iteration"],
-                },
-              ].map((item) => (
-                <article className="journey-card" key={item.number}>
-                  <div className="journey-kicker">
-                    <span>
-                      {item.number} / {item.label}
-                    </span>
-                    <item.icon size={19} aria-hidden="true" />
-                  </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
-                  <div className="tech-tags">
-                    {item.tags.map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                </article>
-              ))}
+            <div className="min-w-0">
+              <h3 className="text-[length:var(--text-h3)] font-extrabold leading-[1.05] tracking-[-0.02em]">Timeline</h3>
+              <ol className="mt-5 border-t border-[color:var(--line)]">
+                {milestones.map((item) => (
+                  <li
+                    key={`${item.dateTime}-${item.text}`}
+                    className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 border-b border-[color:var(--line)] py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-x-6 sm:py-5"
+                  >
+                    <time
+                      dateTime={item.dateTime}
+                      className="mono pt-[0.2em] text-[length:var(--text-caption)] text-[color:var(--muted)]"
+                    >
+                      {item.when}
+                    </time>
+                    <p className="text-[length:var(--text-body)] leading-[1.55] text-pretty">
+                      {item.text}
+                    </p>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </section>
-        <div className="site-shell closing-note">
-          <span className="micro">THE THROUGH LINE</span>
-          <p>
-            Curiosity is the starting point.
-            <br />
-            Making it work is the fun part.
-          </p>
-          <ArrowRight aria-hidden="true" />
-        </div>
         <ContactPanel />
       </main>
-      <footer className="portfolio-footer site-shell">
-        <a href="#top" className="footer-name">
-          arya vora<span>↗</span>
-        </a>
-        <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} Arya Vora · Built with curiosity.</p>
-          <div>
-            <a
-              href="https://github.com/AryaVora621/arya-vora.org"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Source <ArrowUpRight size={14} aria-hidden="true" />
+      <footer className="portfolio-footer">
+        <div className="site-shell footer-bottom">
+          <p>
+            © {new Date().getFullYear()} {profile.name}.{" "}
+            <a href={profile.siteSource} target="_blank" rel="noopener noreferrer">
+              Source on GitHub
             </a>
-            <a href="#top">Back to top ↑</a>
-          </div>
+            .
+          </p>
+          <FooterNav />
         </div>
       </footer>
     </div>

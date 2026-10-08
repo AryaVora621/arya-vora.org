@@ -1,63 +1,125 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
-  ArrowRight,
-  Bot,
-  Check,
-  Play,
-  RotateCcw,
-  Workflow,
-} from "lucide-react";
-import {
-  agentScenarios,
+  CELL_STATES,
+  type CellStateKey,
+  cellStateClass,
   DEFAULT_OBSTACLES,
   findPath,
   GOAL,
   GRID_SIZE,
+  moveCell,
   START,
 } from "@/lib/playground";
 
+const SOURCE_URL =
+  "https://github.com/AryaVora621/arya-vora.org/blob/main/src/lib/playground.ts";
+
+// Milliseconds per animation frame: one frame per explored cell, then one per route cell.
+const EXPLORE_MS = 16;
+const ROUTE_MS = 48;
+
+const NAVIGATION_KEYS = new Set([
+  "ArrowRight",
+  "ArrowLeft",
+  "ArrowUp",
+  "ArrowDown",
+  "Home",
+  "End",
+]);
+
+const reducedMotion = () =>
+  matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// False in the server HTML (and so with JavaScript off), true once the page is live.
+const subscribeNever = () => () => {};
+
+// Numbers in the status line are measurements, so they use the mono face.
+const measure = { fontFamily: 'var(--font-mono), "Atkinson Mono Fallback", monospace' };
+
+// Maps each cell to its position in a list, so a cell can ask when it appears.
+function indexCells(cells: readonly number[] = []) {
+  return new Map<number, number>(cells.map((cell, index) => [cell, index]));
+}
+
+// Legend swatches mirror the cell styles in portfolio.css (.lab-swatch). They do not carry
+// the `.path-cell` classes, so anything that counts grid cells by class sees only the 49
+// real buttons. The Record type makes a new cell state fail to compile until it has a swatch.
+const SWATCHES: Record<CellStateKey, string> = {
+  start: "lab-swatch lab-swatch--start",
+  goal: "lab-swatch lab-swatch--goal",
+  wall: "lab-swatch lab-swatch--wall",
+  explored: "lab-swatch lab-swatch--explored",
+  route: "lab-swatch lab-swatch--route",
+};
+
+function Swatch({ state }: { state: (typeof CELL_STATES)[number] }) {
+  return (
+    <span aria-hidden="true" className={SWATCHES[state.key]}>
+      {state.key === "route" ? <span className="lab-swatch-dot" /> : state.glyph}
+    </span>
+  );
+}
+
+// A cell's name is its position, plus "start" or "goal" for the two fixed ones. Whether a
+// cell is a wall is its pressed state, so the name never repeats it: a screen reader says
+// "Row 2, column 2, toggle button, pressed" rather than naming the state twice.
+function cellName(cell: number) {
+  const position = `Row ${Math.floor(cell / GRID_SIZE) + 1}, column ${(cell % GRID_SIZE) + 1}`;
+  if (cell === START) return `${position}, start`;
+  if (cell === GOAL) return `${position}, goal`;
+  return position;
+}
+
 function PathLab() {
-  const [obstacles, setObstacles] = useState(new Set(DEFAULT_OBSTACLES));
+  const [obstacles, setObstacles] = useState(() => new Set(DEFAULT_OBSTACLES));
   const [result, setResult] = useState<ReturnType<typeof findPath> | null>(
     null,
   );
-  const [step, setStep] = useState(0);
-  const [running, setRunning] = useState(false);
+  // One counter drives the whole animation: the first `visited.length` frames reveal
+  // explored cells in search order, the frames after that reveal the route.
+  const [frame, setFrame] = useState(0);
+  // Only one cell is a tab stop; the arrow keys move between the rest.
+  const [active, setActive] = useState(START);
   const grid = useRef<HTMLDivElement>(null);
-  const arrived = !!result?.path.length && step === result.path.length - 1;
+  // Until the page is live the buttons would do nothing, so they are inert: no tab stop,
+  // no click, and nothing for a screen reader to announce. With scripting off,
+  // interaction.css hides them and the note below takes their place.
+  const live = useSyncExternalStore(subscribeNever, () => true, () => false);
+
+  const exploredCount = result?.visited.length ?? 0;
+  const total = result ? exploredCount + result.path.length : 0;
+  const running = result !== null && frame < total;
+  const routeShown = Math.max(0, frame - exploredCount);
+
+  const exploredAt = useMemo(() => indexCells(result?.visited), [result]);
+  const routeAt = useMemo(() => indexCells(result?.path), [result]);
+
   useEffect(() => {
-    if (!running || !result?.path.length) return;
-    const preference = matchMedia("(prefers-reduced-motion: reduce)");
-    const finishWithoutAnimation = () => {
-      if (preference.matches || document.documentElement.dataset.motion === "paused") {
-        setRunning(false);
-        setStep(result.path.length - 1);
-      }
-    };
-    // Both the system preference and the global toggle can change mid-route.
-    preference.addEventListener("change", finishWithoutAnimation);
-    const observer = new MutationObserver(finishWithoutAnimation);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });
-    return () => {
-      preference.removeEventListener("change", finishWithoutAnimation);
-      observer.disconnect();
-    };
-  }, [running, result]);
+    if (!result || frame >= total) return;
+    const timer = window.setTimeout(
+      () => setFrame((current) => current + 1),
+      frame < exploredCount ? EXPLORE_MS : ROUTE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [result, frame, total, exploredCount]);
+
+  // If the visitor turns on reduced motion mid-search, show the finished result.
   useEffect(() => {
-    if (!running || !result?.path.length) return;
-    const timer = window.setTimeout(() => {
-      if (step >= result.path.length - 2) setRunning(false);
-      setStep(Math.min(step + 1, result.path.length - 1));
-    }, 160);
-    return () => clearTimeout(timer);
-  }, [running, result, step]);
+    if (!running) return;
+    const query = matchMedia("(prefers-reduced-motion: reduce)");
+    const finish = () => {
+      if (query.matches) setFrame(total);
+    };
+    query.addEventListener("change", finish);
+    return () => query.removeEventListener("change", finish);
+  }, [running, total]);
+
   const edit = (cell: number) => {
     if (cell === START || cell === GOAL) return;
-    setRunning(false);
     setResult(null);
-    setStep(0);
+    setFrame(0);
     setObstacles((previous) => {
       const next = new Set(previous);
       if (next.has(cell)) next.delete(cell);
@@ -65,222 +127,140 @@ function PathLab() {
       return next;
     });
   };
+
   const run = () => {
     const next = findPath(obstacles);
     setResult(next);
-    setStep(0);
-    const reduced =
-      matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      document.documentElement.dataset.motion === "paused";
-    setRunning(next.path.length > 0 && !reduced);
-    if (reduced) setStep(Math.max(0, next.path.length - 1));
+    setFrame(reducedMotion() ? next.visited.length + next.path.length : 0);
   };
+
+  const clear = () => {
+    setObstacles(new Set());
+    setResult(null);
+    setFrame(0);
+  };
+
+  const states = (cell: number): CellStateKey[] => {
+    const keys: CellStateKey[] = [];
+    if (cell === START) keys.push("start");
+    else if (cell === GOAL) keys.push("goal");
+    else if (obstacles.has(cell)) keys.push("wall");
+    else {
+      const explored = exploredAt.get(cell);
+      if (explored !== undefined && explored < frame) keys.push("explored");
+      const route = routeAt.get(cell);
+      if (route !== undefined && route < routeShown) keys.push("route");
+    }
+    return keys;
+  };
+
+  let status: React.ReactNode;
+  if (!result) {
+    status = "Select cells to add walls. Arrow keys move between cells.";
+  } else if (running) {
+    status = "Searching for the shortest route.";
+  } else if (!result.path.length) {
+    status = "No route available. Remove a wall and try again.";
+  } else {
+    status = (
+      <>
+        <span style={measure}>{result.path.length - 1}</span> moves and{" "}
+        <span style={measure}>{result.visited.length}</span> cells explored.
+        Goal reached.
+      </>
+    );
+  }
+
   return (
     <article className="lab-card">
-      <div className="lab-card-title">
-        <span className="micro">EXPERIMENT 01</span>
-        <Bot size={20} aria-hidden="true" />
+      <div className="lab-copy">
+        <h2 id="playground-title">Breadth-first search</h2>
+        <p>
+          The first route to reach the goal is a shortest one, because the search
+          explores cells in order of their distance from the start.
+        </p>
+        <ul className="lab-legend" role="list" aria-label="Legend">
+          {CELL_STATES.map((state) => (
+            <li key={state.key}>
+              <Swatch state={state} />
+              {state.label}
+            </li>
+          ))}
+        </ul>
+        <noscript>
+          <p className="lab-nojs">The grid needs JavaScript. The code is linked below.</p>
+        </noscript>
       </div>
-      <h3>Find a way through.</h3>
-      <p>Add walls. Run the planner. Watch a shortest route emerge.</p>
       <div
         ref={grid}
         className="path-grid"
         role="group"
-        aria-label="Pathfinding field"
+        aria-label="Breadth-first search grid"
+        aria-describedby="path-grid-help"
+        inert={!live}
         onKeyDown={(event) => {
           const current = Number((event.target as HTMLElement).dataset.cell);
-          const offsets: Record<string, number> = {
-            ArrowRight: 1,
-            ArrowLeft: -1,
-            ArrowUp: -GRID_SIZE,
-            ArrowDown: GRID_SIZE,
-          };
-          if (!(event.key in offsets) || !Number.isInteger(current)) return;
+          if (!NAVIGATION_KEYS.has(event.key) || !Number.isInteger(current))
+            return;
+          // Arrow keys would otherwise scroll the page.
           event.preventDefault();
-          const next = Math.max(
-            0,
-            Math.min(GOAL, current + offsets[event.key]),
-          );
           grid.current
-            ?.querySelector<HTMLButtonElement>(`[data-cell="${next}"]`)
+            ?.querySelector<HTMLButtonElement>(
+              `[data-cell="${moveCell(current, event.key)}"]`,
+            )
             ?.focus();
         }}
       >
+        <span id="path-grid-help" className="sr-only">
+          A pressed cell is a wall. The start and the goal cannot be changed.
+        </span>
         {Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, cell) => {
-          const wall = obstacles.has(cell);
-          const pathIndex = result?.path.indexOf(cell) ?? -1;
-          const robot = result?.path[step] === cell;
-          const classes = [
-            "path-cell",
-            wall ? "wall" : "",
-            pathIndex >= 0 && pathIndex <= step ? "route" : "",
-            result?.visited.includes(cell) ? "visited" : "",
-            cell === START || cell === GOAL ? "endpoint" : "",
-          ].join(" ");
+          const keys = states(cell);
+          const wall = keys.includes("wall");
+          const endpoint = cell === START || cell === GOAL;
+          const glyph = keys
+            .map((key) => CELL_STATES.find((state) => state.key === key)?.glyph)
+            .find(Boolean);
           return (
             <button
               type="button"
               data-cell={cell}
               key={cell}
-              className={classes}
+              tabIndex={cell === active ? 0 : -1}
+              className={["path-cell", ...keys.map(cellStateClass)].join(" ")}
               onClick={() => edit(cell)}
-              aria-label={`Row ${Math.floor(cell / GRID_SIZE) + 1}, column ${(cell % GRID_SIZE) + 1}: ${cell === START ? "start (fixed)" : cell === GOAL ? "goal (fixed)" : wall ? "wall" : "open"}`}
-              aria-pressed={wall}
-              aria-disabled={cell === START || cell === GOAL}
+              onFocus={() => setActive(cell)}
+              aria-label={cellName(cell)}
+              aria-pressed={endpoint ? undefined : wall}
+              aria-disabled={endpoint || undefined}
             >
-              {robot ? (
-                <Bot size={18} aria-hidden="true" />
-              ) : cell === START ? (
-                "S"
-              ) : cell === GOAL ? (
-                "G"
-              ) : wall ? (
-                "×"
-              ) : (
-                <span aria-hidden="true">·</span>
-              )}
+              {glyph}
             </button>
           );
         })}
       </div>
-      <div className="lab-legend">
-        <span>S / Start</span>
-        <span>G / Goal</span>
-        <span>× / Wall</span>
-        <span>Route</span>
-      </div>
-      <div className="lab-controls">
-        <button className="primary-button" onClick={run}>
-          <Play size={15} aria-hidden="true" />
-          {result ? "Run again" : "Find path"}
-        </button>
-        <button
-          className="secondary-button"
-          onClick={() => {
-            setObstacles(new Set());
-            setResult(null);
-            setRunning(false);
-            setStep(0);
-          }}
-        >
-          <RotateCcw size={15} aria-hidden="true" />
-          Clear walls
-        </button>
-      </div>
-      <p className="lab-status" role="status">
-        {result
-          ? result.path.length
-            ? `${result.path.length - 1} moves · ${result.visited.length} cells explored${arrived ? " · Goal reached" : " · Following route"}`
-            : "No route available. Remove a wall and try again."
-          : "Tap cells to toggle walls. Arrow keys move between cells."}
-      </p>
-      <p className="lab-disclaimer">
-        Browser simulation · Breadth-first search, 4-way movement. Not a live
-        robot controller.
-      </p>
-    </article>
-  );
-}
 
-function AgentLab() {
-  const [scenario, setScenario] =
-    useState<keyof typeof agentScenarios>("Build a feature");
-  const [stage, setStage] = useState(-1);
-  const [running, setRunning] = useState(false);
-  const steps = agentScenarios[scenario];
-  useEffect(() => {
-    if (!running) return;
-    const timer = setTimeout(() => {
-      const next = Math.min(stage + 1, steps.length - 1);
-      setStage(next);
-      if (next === steps.length - 1) setRunning(false);
-    }, 850);
-    return () => clearTimeout(timer);
-  }, [running, stage, steps.length]);
-  return (
-    <article className="lab-card agent-lab">
-      <div className="lab-card-title">
-        <span className="micro">EXPERIMENT 02</span>
-        <Workflow size={20} aria-hidden="true" />
-      </div>
-      <h3>One task. A small crew.</h3>
-      <p>
-        Follow a task from planning to verification in a local-agent workflow.
-      </p>
-      <label className="micro scenario-label" htmlFor="agent-scenario">
-        CHOOSE A TASK
-      </label>
-      <select
-        id="agent-scenario"
-        value={scenario}
-        onChange={(event) => {
-          setScenario(event.target.value as keyof typeof agentScenarios);
-          setStage(-1);
-          setRunning(false);
-        }}
-      >
-        {Object.keys(agentScenarios).map((name) => (
-          <option key={name}>{name}</option>
-        ))}
-      </select>
-      <ol className="agent-pipeline">
-        {steps.map(([name, text], index) => (
-          <li key={name} className={index <= stage ? "is-complete" : ""}>
-            <span className="agent-node">
-              {index <= stage ? (
-                <Check size={18} aria-hidden="true" />
-              ) : (
-                String(index + 1).padStart(2, "0")
-              )}
-            </span>
-            <div>
-              <h4>
-                {name}
-                <span>{index <= stage ? "Complete" : "Waiting"}</span>
-              </h4>
-              <p>{index <= stage ? text : "Waiting for the previous stage."}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <div className="lab-controls">
-        <button
-          className="primary-button"
-          disabled={running}
-          onClick={() => {
-            setStage(-1);
-            setRunning(true);
-          }}
+      <div className="lab-actions">
+        <div className="lab-controls" inert={!live}>
+          <button type="button" className="primary-button" onClick={run}>
+            {result ? "Run again" : "Find path"}
+          </button>
+          <button type="button" className="secondary-button" onClick={clear}>
+            Clear walls
+          </button>
+        </div>
+        <p className="lab-status" role="status">
+          {status}
+        </p>
+        <a
+          className="text-link"
+          href={SOURCE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          <Play size={15} aria-hidden="true" />
-          {running
-            ? "Running demo…"
-            : stage >= 0
-              ? "Replay workflow"
-              : "Run workflow"}
-        </button>
-        <button
-          className="secondary-button"
-          disabled={stage === -1 && !running}
-          onClick={() => {
-            setStage(-1);
-            setRunning(false);
-          }}
-        >
-          Reset
-        </button>
+          Source on GitHub<span className="sr-only"> for the path lab</span>
+        </a>
       </div>
-      <p className="lab-status" role="status">
-        {running
-          ? `Running: ${steps[Math.min(stage + 1, steps.length - 1)][0]}`
-          : stage >= 0
-            ? "Workflow complete. Human review comes next."
-            : "Ready. Choose a task and run the workflow."}
-      </p>
-      <p className="lab-disclaimer">
-        Scripted illustration · No AI calls, terminal access, or files uploaded.
-      </p>
     </article>
   );
 }
@@ -290,33 +270,11 @@ export function Playground() {
     <section
       id="playground"
       tabIndex={-1}
-      className="section-pad playground-section"
+      className="playground-section"
+      aria-labelledby="playground-title"
     >
       <div className="site-shell">
-        <div className="section-heading">
-          <p className="eyebrow">02 / THE PLAYGROUND</p>
-          <h2>
-            Less scrolling.
-            <br />
-            <span className="accent-text">More tinkering.</span>
-          </h2>
-          <p>
-            A couple of ideas from my work, made small enough to play with.
-            Everything runs right here in your browser.
-          </p>
-        </div>
-        <div className="lab-grid reveal">
-          <PathLab />
-          <AgentLab />
-        </div>
-        <a
-          className="text-link"
-          href="https://github.com/AryaVora621"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Get into the actual code <ArrowRight size={17} aria-hidden="true" />
-        </a>
+        <PathLab />
       </div>
     </section>
   );

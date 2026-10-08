@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-const BG = "#07070c";
+const BG = "#000000";
 
 /**
  * Dev-only review canvas for the roboPet model. Fixed camera (no orbit controls).

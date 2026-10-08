@@ -1,91 +1,76 @@
 import type { Metadata, Viewport } from "next";
-import { Fragment_Mono, Instrument_Sans } from "next/font/google";
+import { Atkinson_Hyperlegible_Mono, Atkinson_Hyperlegible_Next } from "next/font/google";
 import "./globals.css";
 import "./portfolio.css";
 import "./robopet.css";
 import "./projects.css";
+import "./ftc.css";
+import "./cad.css";
 
-export const metadataBase = new URL("https://www.arya-vora.org");
+const metadataBase = new URL("https://www.arya-vora.org");
 
-const display = Fragment_Mono({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const sans = Instrument_Sans({
+// One family for text and display. The variable axis runs 200 to 800, so headlines
+// can sit at 800 while body copy stays at 400.
+// Next has no fallback metrics for either Atkinson face, so the size-matched
+// "Atkinson Fallback" faces in globals.css stand in while the files load.
+const sans = Atkinson_Hyperlegible_Next({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
+  adjustFontFallback: false,
+  fallback: ["Atkinson Fallback", "system-ui", "sans-serif"],
 });
 
-const mono = Fragment_Mono({
+// Mono is kept for measurements, part numbers, dates and code.
+const mono = Atkinson_Hyperlegible_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
   display: "swap",
+  adjustFontFallback: false,
+  fallback: ["Atkinson Mono Fallback", "ui-monospace", "monospace"],
 });
+
+const description =
+  "Arya Vora is in the class of 2028 at John P. Stevens High School in Edison, NJ. He captains FTC team 23786 MakEMinds and is building roboPet, a four-legged robot.";
 
 export const metadata: Metadata = {
   title: {
-    default: "Arya Vora | Robots, Software & Experiments",
+    default: "Arya Vora",
     template: "%s | Arya Vora",
   },
   metadataBase,
-  description: "Arya Vora (aryavora621 / frinklyy) builds robots, developer tools, and local-agent experiments. Explore the projects and interactive playground.",
-  keywords: [
-    "Arya Vora",
-    "Robotics",
-    "FTC 23786",
-    "FRC 2554",
-    "MakEMinds Robotics",
-    "The Warhawks",
-    "John P. Stevens High School",
-    "Edison NJ",
-    "AI Engineer",
-    "Autonomous Systems",
-    "Computer Vision",
-    "Machine Learning",
-  ],
-  authors: [{ name: "Arya Vora", url: "https://github.com/aryavora621" }],
-  creator: "Arya Vora",
-  publisher: "Arya Vora",
-  robots: "index, follow",
+  description,
+  authors: [{ name: "Arya Vora", url: "https://github.com/AryaVora621" }],
+  // One address for the page, so the www and bare-domain variants do not split link previews
+  // and search results. "/" resolves against metadataBase.
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://www.arya-vora.org",
     siteName: "Arya Vora",
-    title: "Arya Vora | Robots, Software & Experiments",
-    description: "Robots, developer tools, and local-agent experiments. Explore the work and interactive playground.",
+    title: "Arya Vora",
+    description,
     images: [
       {
         url: "/portfolio-og.png",
         width: 1200,
         height: 630,
-        alt: "Arya Vora - Robotics Engineer",
+        alt: "Arya Vora, captain of FTC team 23786, MakEMinds, next to a photo of Reaper, the team's 2025-26 robot.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Arya Vora | Robots, Software & Experiments",
-    description: "Robots, developer tools, and ideas you can play with. Built in public by Arya Vora.",
+    title: "Arya Vora",
+    description,
     images: ["/portfolio-og.png"],
-    creator: "@aryavora621",
-  },
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07070c",
+  themeColor: "#000000",
+  colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -97,16 +82,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://github.com" />
-        <link rel="dns-prefetch" href="https://linkedin.com" />
-      </head>
-      <body className="min-h-full flex flex-col bg-ink-950 text-paper-200">
-        {children}
-      </body>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

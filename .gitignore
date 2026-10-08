@@ -44,3 +44,12 @@ next-env.d.ts
 
 # img2threejs working files (renders, specs) stay local
 /assets-src/robopet/img2threejs/
+
+# Local-only sources: team portfolio exports (private), raw Onshape renders, research, tooling
+/assets-src/ftc/
+/assets-src/cad/
+/assets-src/robopet/turntable-violet.mp4
+/docs/ai-tells-research.md
+/.vale/
+/TRACKER.md
+/.claude/

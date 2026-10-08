@@ -1,78 +1,75 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowUpRight, Check, Copy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { profile } from "@/data/profile";
 import { socialLinks } from "@/data/portfolio";
 
+type CopyState = "idle" | "copied" | "failed";
+
+// Read out by the status line, since a changing button label is not announced reliably.
+const STATUS: Record<CopyState, string> = {
+  idle: "",
+  copied: "Copied to your clipboard.",
+  failed: "Your browser blocked the copy. Select the address above instead.",
+};
+
+const RESET_MS = 2400;
+
 export function ContactPanel() {
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
+  const [state, setState] = useState<CopyState>("idle");
+  const resetTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(resetTimer.current), []);
+
   const copy = async () => {
+    let next: CopyState = "copied";
     try {
+      // Throws when the Clipboard API is missing (an insecure origin) or permission is denied.
       await navigator.clipboard.writeText(profile.email);
-      setCopyState("copied");
     } catch {
-      setCopyState("error");
+      next = "failed";
     }
+    setState(next);
+    window.clearTimeout(resetTimer.current);
+    resetTimer.current = window.setTimeout(() => setState("idle"), RESET_MS);
   };
+
   return (
-    <section id="contact" tabIndex={-1} className="contact-section section-pad">
+    <section
+      id="contact"
+      tabIndex={-1}
+      className="contact-section section-pad"
+      aria-labelledby="contact-title"
+    >
       <div className="site-shell">
-        <p className="eyebrow">04 / OPEN A CONVERSATION</p>
-        <h2>
-          Got something
-          <br />
-          <span>worth building?</span>
-        </h2>
+        <h2 id="contact-title">Contact</h2>
         <div className="contact-bottom">
           <div>
-            <p>
-              Robotics, a useful tool, a strange idea.
-              <br />
-              I’d like to hear about it.
-            </p>
-            <div className="email-actions">
-              <a className="primary-button" href={`mailto:${profile.email}`}>
-                Say hello <ArrowUpRight size={19} aria-hidden="true" />
-              </a>
-              <button className="secondary-button" onClick={copy}>
-                {copyState === "copied" ? (
-                  <Check size={17} aria-hidden="true" />
-                ) : (
-                  <Copy size={17} aria-hidden="true" />
-                )}
-                {copyState === "copied" ? "Copied" : "Copy email"}
-              </button>
-            </div>
+            <p>Email me at</p>
             <a className="email-address" href={`mailto:${profile.email}`}>
               {profile.email}
             </a>
+            <div className="email-actions">
+              <button type="button" className="secondary-button" onClick={copy}>
+                {state === "copied" ? "Copied" : "Copy address"}
+              </button>
+            </div>
             <p className="copy-feedback" role="status">
-              {copyState === "error"
-                ? "Clipboard unavailable. Select the email above, or open it in your email app."
-                : copyState === "copied"
-                  ? "Email address copied to clipboard."
-                  : "Opens your email app. Nothing is sent by this website."}
+              {STATUS[state]}
             </p>
           </div>
-          <div className="social-list">
-            {socialLinks.map((social) => (
-              <a
-                key={social.label}
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>
-                  {social.label}
-                  <small>{social.handle}</small>
-                </span>
-                <ArrowUpRight size={20} aria-hidden="true" />
-              </a>
+          <ul className="social-list" aria-label="Profiles">
+            {socialLinks.map((link) => (
+              <li key={link.url}>
+                <a href={link.url} target="_blank" rel="me noopener noreferrer">
+                  <span>
+                    {link.label}
+                    <small>{link.handle.replace(/^@/, "")}</small>
+                  </span>
+                </a>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
     </section>

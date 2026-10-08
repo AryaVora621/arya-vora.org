@@ -1,0 +1,530 @@
+/*
+  FTC 23786 MakEMinds (src/components/portfolio/FtcSection.tsx).
+  Colors come only from the tokens in portfolio.css. Rules separate real data rows
+  (roles by year, results); nothing else is ruled or boxed.
+*/
+.ftc-section {
+  /* The Reaper heading carries its own leading and the film below opens with deep padding of
+     its own, so this section needs less space than the others at both ends. */
+  padding-block: clamp(24px, 3vw, 48px) 16px;
+  background: var(--surface);
+  color: var(--text);
+}
+.ftc-section h3 {
+  font-size: var(--text-h3);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.ftc-section figcaption,
+.ftc-credit,
+.ftc-sources {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.ftc-section img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ftc-block {
+  margin-top: clamp(80px, 8vw, 120px);
+}
+.ftc-opener + .ftc-block {
+  margin-top: clamp(64px, 6vw, 96px);
+}
+.ftc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Opener: the robot overlaps its own name. */
+.ftc-opener {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  align-items: start;
+}
+.ftc-name {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+}
+.ftc-name h2 {
+  /* line-height leaves room for the heading's line mask; margins pull it back in. */
+  font-size: clamp(112px, 19.5vw, 300px);
+  font-weight: 800;
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+  margin-block: -0.16em -0.24em;
+  margin-left: -0.055em;
+  white-space: nowrap;
+}
+.ftc-hero {
+  grid-column: 6 / -1;
+  grid-row: 1 / span 2;
+  margin-top: clamp(96px, 10.5vw, 158px);
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.ftc-hero-robot {
+  /* The photo is 520 px of detail in a 1040 px file, so it is shown at that width and no larger. */
+  width: min(100%, 520px);
+  margin-left: auto;
+}
+.ftc-intro {
+  grid-column: 1 / 6;
+  grid-row: 2;
+  margin-top: 64px;
+  max-width: 31em;
+}
+.ftc-intro p {
+  font-size: var(--text-body);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.ftc-intro .ftc-lede {
+  font-size: var(--text-lead);
+  line-height: 1.45;
+}
+.ftc-intro p + p {
+  margin-top: 20px;
+}
+
+/* Mechanisms: spec rows beside the team CAD. */
+.ftc-mechanisms {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  align-items: start;
+}
+.ftc-mechanisms-copy {
+  grid-column: 1 / 7;
+}
+.ftc-specs {
+  margin-top: 32px;
+}
+.ftc-specs > div {
+  display: grid;
+  grid-template-columns: 8.5em minmax(0, 1fr);
+  column-gap: 24px;
+  padding-block: 14px;
+}
+.ftc-specs dt {
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: 1.6;
+}
+.ftc-specs dd {
+  font-size: var(--text-body);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.ftc-cad {
+  grid-column: 7 / -1;
+  position: sticky;
+  top: 64px;
+  margin-top: 72px;
+}
+.ftc-cad figcaption {
+  margin-top: 12px;
+  max-width: 30em;
+}
+
+/* My part: the heading sits over the roles, and the four roles run across the page in order, one
+   column each, so the block fills its row and reads as a progression. Each column opens with its
+   own rule, so the rules mark real entries and the gaps between columns stay open. */
+.ftc-roles {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 24px;
+}
+.ftc-roles > li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+.ftc-role-when {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.ftc-role-name {
+  margin-top: 6px;
+  font-size: var(--text-lead);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.ftc-role-text {
+  margin-top: 10px;
+  max-width: 32ch;
+  text-wrap: pretty;
+}
+
+/* Iterations: eight versions in two groups. Each photo sits in the same 4 by 3 frame with its
+   caption beside it, two to a row, so the photos read as a set. */
+.ftc-iterations-copy {
+  max-width: 44em;
+}
+.ftc-iterations-copy p {
+  margin-top: 24px;
+  max-width: 65ch;
+  font-size: var(--text-body);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.ftc-sub {
+  margin-top: clamp(56px, 6vw, 88px);
+}
+.ftc-sub-head {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  align-items: start;
+}
+.ftc-sub-head h4 {
+  grid-column: 1 / 5;
+  font-size: var(--text-lead);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.ftc-sub-head p {
+  grid-column: 6 / -1;
+  max-width: 65ch;
+  font-size: var(--text-body);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.ftc-versions {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(32px, 5vw, 80px);
+  row-gap: clamp(32px, 3.6vw, 52px);
+  border-top: 1px solid var(--line);
+  padding-top: clamp(32px, 3.6vw, 52px);
+}
+.ftc-versions figure {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 232px) minmax(0, 1fr);
+  column-gap: 24px;
+  align-items: start;
+}
+.ftc-photo {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--surface-soft);
+}
+.ftc-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ftc-versions figcaption {
+  font-size: var(--text-body);
+  line-height: 1.55;
+  color: var(--text);
+  text-wrap: pretty;
+}
+.ftc-step-name {
+  display: block;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--muted);
+}
+.ftc-step-label {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-lead);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.ftc-step-text {
+  display: block;
+  margin-top: 6px;
+}
+.ftc-step-mine {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+}
+.ftc-iterations > .ftc-credit {
+  margin-top: 48px;
+}
+
+/* Results: a short list of highlights leads, and the full ledger opens below it. */
+.ftc-table {
+  width: 100%;
+  margin-top: 48px;
+  border-collapse: collapse;
+  font-size: var(--text-body);
+  line-height: 1.45;
+}
+.ftc-results h3 + .ftc-table {
+  margin-top: 28px;
+}
+.ftc-all {
+  margin-top: 40px;
+}
+.ftc-all > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  font-size: var(--text-body);
+  font-weight: 700;
+  list-style: none;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+.ftc-all > summary::-webkit-details-marker {
+  display: none;
+}
+.ftc-all > summary:hover {
+  text-decoration-thickness: 2px;
+}
+/* A plus that loses its upright bar when the list is open. Drawn from currentColor. */
+.ftc-all > summary::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat;
+}
+.ftc-all[open] > summary::before {
+  background-size: 100% 2px, 0 0;
+}
+.ftc-all > .ftc-table:first-of-type {
+  margin-top: 24px;
+}
+.ftc-table caption {
+  caption-side: top;
+  padding-bottom: 16px;
+  text-align: left;
+  font-size: var(--text-lead);
+  font-weight: 700;
+}
+.ftc-table caption span {
+  margin-left: 0.4em;
+  font-weight: 400;
+  color: var(--muted);
+}
+.ftc-table thead th {
+  padding: 0 24px 10px 0;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--muted);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.ftc-table tbody th,
+.ftc-table tbody td {
+  padding: 14px 24px 14px 0;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 400;
+  border-bottom: 1px solid var(--line);
+  text-wrap: pretty;
+}
+.ftc-table tbody td:last-child,
+.ftc-table thead th:last-child {
+  padding-right: 0;
+}
+.ftc-table thead th:nth-child(1) {
+  width: 9.5em;
+}
+.ftc-table thead th:nth-child(2) {
+  width: 36%;
+}
+.ftc-table thead th:nth-child(3) {
+  width: 5.5em;
+}
+.ftc-table .ftc-date {
+  white-space: nowrap;
+  font-size: var(--text-caption);
+  line-height: 1.65;
+  color: var(--muted);
+}
+.ftc-table .ftc-record {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ftc-sources {
+  margin-top: 28px;
+  max-width: 44em;
+}
+
+@media (max-width: 1100px) {
+  .ftc-hero {
+    grid-column: 6 / -1;
+  }
+  .ftc-intro {
+    grid-column: 1 / 6;
+    margin-top: 48px;
+  }
+  .ftc-mechanisms-copy {
+    grid-column: 1 / 8;
+  }
+  .ftc-cad {
+    grid-column: 8 / -1;
+    margin-top: 120px;
+  }
+  .ftc-specs > div {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 4px;
+  }
+  .ftc-roles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 40px;
+  }
+  .ftc-versions {
+    column-gap: 32px;
+  }
+  .ftc-versions figure {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    column-gap: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .ftc-block {
+    margin-top: 72px;
+  }
+  .ftc-opener,
+  .ftc-mechanisms {
+    display: block;
+  }
+  .ftc-name h2 {
+    font-size: clamp(76px, 25vw, 160px);
+  }
+  .ftc-hero {
+    margin-top: -0.4em;
+    font-size: clamp(76px, 25vw, 160px);
+  }
+  .ftc-intro {
+    margin-top: 32px;
+  }
+  .ftc-cad {
+    position: static;
+    margin-top: 48px;
+  }
+  .ftc-roles {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 20px;
+    row-gap: 28px;
+  }
+  .ftc-role-text {
+    max-width: none;
+  }
+  .ftc-sub-head {
+    display: block;
+  }
+  .ftc-sub-head p {
+    margin-top: 14px;
+  }
+  /* A photo beside its caption, one row per version. */
+  .ftc-versions {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 28px;
+    margin-top: 32px;
+    padding-top: 28px;
+  }
+  .ftc-versions figure {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    column-gap: 16px;
+  }
+  .ftc-versions figcaption {
+    font-size: var(--text-caption);
+  }
+  .ftc-step-label {
+    font-size: var(--text-body);
+  }
+  .ftc-iterations > .ftc-credit {
+    margin-top: 40px;
+  }
+
+  /* The ledger becomes stacked rows: date and record, then event, then result. */
+  .ftc-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .ftc-table,
+  .ftc-table caption,
+  .ftc-table tbody {
+    display: block;
+  }
+  .ftc-table caption {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 12px;
+  }
+  .ftc-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 16px;
+    padding-block: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ftc-table tbody th,
+  .ftc-table tbody td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .ftc-table .ftc-date {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .ftc-table .ftc-record {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: var(--text-caption);
+    text-align: right;
+  }
+  .ftc-table tbody th {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    font-weight: 700;
+  }
+  .ftc-table tbody td:last-child {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+  }
+}
+
+/* Windows High Contrast drops gradient backgrounds on generated content, which would erase the
+   plus beside the summary, so it is redrawn from a system color. */
+@media (forced-colors: active) {
+  .ftc-all > summary::before {
+    forced-color-adjust: none;
+    background:
+      linear-gradient(CanvasText, CanvasText) center / 100% 2px no-repeat,
+      linear-gradient(CanvasText, CanvasText) center / 2px 100% no-repeat;
+  }
+  .ftc-all[open] > summary::before {
+    background-size: 100% 2px, 0 0;
+  }
+}

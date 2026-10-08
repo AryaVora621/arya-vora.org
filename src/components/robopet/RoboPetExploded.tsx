@@ -1,75 +1,128 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
-import { shouldUseStill } from "./gpu";
+import { prefersStill, shouldUseStill } from "./gpu";
+import { PartText } from "./PartText";
+import { addStudio } from "./studio";
+import { useScrubStage } from "./useScrubStage";
 
-// UI-side part data (README-sourced) so the explainer works without WebGL. `ids` maps a
-// chip to model part ids; the four legs are one subsystem.
+// UI-side part data, so the explainer works without WebGL. `ids` maps a part to the model's
+// part ids; the four legs are one entry. Each line is checked against the roboPet README and
+// build log (devlogs/DEVLOG.md, Days 1 to 8). The film beside this section already covers
+// what each subsystem does, and its outro says once how far the build has got, so a part
+// panel adds something the film does not: why the part is there, a size or rating, or what
+// went wrong with it. The lede says once that the model is the planned design, so the panels
+// do not repeat it. `backticks` mark part numbers, code and dates, which render in the mono
+// face. Measurements keep a no-break space before the unit because the mono face gives a
+// decimal point a full cell.
 const PARTS = [
   {
     key: "shell",
-    label: "Shell",
+    label: "Upper shell",
     ids: ["shell-top", "status-led"],
-    detail: "PLA shell printed on a Bambu A1 Mini, with a single WS2812 status and mood LED.",
+    // README hardware table: one WS2812 for status and mood. Day 3: "the cute, rounded Sesame
+    // aesthetic". The README never mentions a printed shell; the lede says the model is a plan.
+    detail:
+      "The top cover, rounded in the style of the Sesame robot, with one `WS2812` LED for status and mood.",
   },
   {
     key: "face",
     label: "OLED face",
     ids: ["face"],
-    detail: "SSD1306 OLED behind a printed bezel. Draws the eyes; driven over I2C by the Pico.",
+    // Day 5: second I2C bus (I2C0, GP8 and GP9) for the SSD1306, the IMU on I2C1; a 1,024-byte
+    // frame timed out until it was written in 256-byte chunks; "128x64".
+    detail:
+      "A 128 by 64 `SSD1306` on its own I2C bus, apart from the IMU. A full frame timed out on the breadboard until I wrote it in 256-byte chunks.",
   },
   {
     key: "camera",
     label: "PiCam",
     ids: ["camera"],
-    detail: "Camera module for the Zero 2W, the brain's eyes for perception.",
+    // Day 3: the quad-core Zero 2W runs full Linux and "will run multiple concurrent
+    // processes": camera, web server, Bluetooth daemon.
+    detail:
+      "Camera for the Zero 2W, which runs full Linux on four cores. The camera, the web dashboard and the Bluetooth controller link are meant to run there together. The Pico keeps the servo loop to itself.",
   },
   {
     key: "electronics",
-    label: "Pico + Zero 2W",
+    label: "Pico and Zero 2W",
     ids: ["electronics"],
+    // Day 4: Zero GPIO 14 and 15 to Pico GP1 and GP0; TX was first wired to TX; core_freq=250
+    // added to the Zero's config to stop the mini UART baud rate drifting.
     detail:
-      "The Pico runs the real-time loop for all 12 servos. The Zero 2W is the brain. An MPU6050 IMU feeds balance.",
+      "Zero GPIO 14 and 15 wire to Pico GP1 and GP0. Wired straight through, the link did not work until TX and RX were crossed. The Zero also needed `core_freq=250` to stop its UART baud rate drifting.",
   },
   {
     key: "power",
     label: "Power",
     ids: ["power"],
-    detail: "3-cell pack into two XL4016 buck converters: about 7.2 V for servos, 5 V for logic.",
+    // README Architecture and Progress Log: inline fuse and switch on the pack, bulk
+    // capacitors at the servo power bus, logic rail under 500 mA with the OLED and LED running.
+    detail:
+      "A fuse and a switch sit inline at the pack, with bulk capacitors on the servo bus. With the OLED and LED running, the logic rail drew under 500\u00a0mA.",
   },
   {
     key: "legs",
-    label: "Legs ×4",
+    label: "Legs",
     ids: ["leg-fl", "leg-fr", "leg-rl", "leg-rr"],
-    detail: "Three MG996R servos per leg (hip, upper leg, lower leg) on printed PLA segments.",
+    // Day 7 (DEVLOG): esp32_servo_tester, a web page with 0, 45, 90, 135 and 180 degree buttons,
+    // run at 5 to 6 V, built to check each MG996R before it is mounted. It worked on the first
+    // servo. Connecting the second, Arya swapped its VCC and GND while it was powered from the
+    // ESP32, and the ESP32 died. (The servo rating story is in the film's Power beat.)
+    detail:
+      "Printed PLA legs. I built an ESP32 bench tester, a web page with buttons for 0, 45, 90, 135 and 180 degrees, to check each servo at 5 to 6\u00a0V before mounting it. It worked on the first servo. Then I swapped the power and ground wires on the second one and killed the ESP32.",
   },
   {
-    key: "chassis",
-    label: "Chassis",
+    key: "lower",
+    label: "Lower shell",
     ids: ["shell-bottom"],
-    detail: "Lower shell carrying the hip mounts, battery tray and board standoffs.",
+    // The model's shell-bottom is the concept render's lower half-tube. It is not the printed
+    // chassis (README Day 8, 2026-07-10 and 11). The film outro states once that the chassis is
+    // printed and partly assembled, so this panel neither repeats nor cross-refers it.
+    detail: "The lower half of the shell, where the boards and the battery sit.",
   },
 ] as const;
 type PartKey = (typeof PARTS)[number]["key"];
 
 const EXPLODE_END = 0.55;
 
+// The GPU probe never changes during a visit, so nothing needs to subscribe.
+const subscribeNever = () => () => {};
+
+// How much of the stage's narrower side the selected part's bounding sphere should span when
+// the camera moves in on it (the sphere includes the part's depth, so the part itself reads
+// at about 40 percent of the frame), and how close the camera may get relative to the
+// shot it started from, so a part as small as the camera never fills the frame with shell.
+const FOCUS_FILL = 0.55;
+const FOCUS_MIN_DIST = 0.42;
+const GHOST_OPACITY = 0.07;
+
 export function RoboPetExploded() {
-  const motion = useMotionAllowed();
+  // Scroll-driven when motion is allowed and the viewport is tall enough to pin.
+  const scrubStage = useScrubStage();
   const sectionRef = useRef<HTMLElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<PartKey | null>(null);
   const [failed, setFailed] = useState(false);
+  // The browser took the GL context away (a backgrounded tab, a GPU reset). The still stands
+  // in until it comes back; the layout stays as it is, so the page does not jump.
+  const [lost, setLost] = useState(false);
+  // The live canvas has drawn its first frame, so the still has done its job.
+  const [ready, setReady] = useState(false);
+  // False on the server and during hydration, then the cached probe result.
+  const stillOnly = useSyncExternalStore(subscribeNever, prefersStill, () => false);
+  // False in the server HTML (and so with JavaScript off), true once the page is live.
+  const hydrated = useSyncExternalStore(subscribeNever, () => true, () => false);
   const highlightRef = useRef<(key: PartKey | null) => void>(() => {});
   const userPicked = useRef(false);
 
   useEffect(() => {
     const section = sectionRef.current;
     const mount = mountRef.current;
-    if (!section || !mount) return;
+    if (!section || !mount || prefersStill()) return;
+    const motion = scrubStage;
     let disposed = false;
     let cleanup = () => {};
 
@@ -109,21 +162,8 @@ export function RoboPetExploded() {
       const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
       scene.environment = env;
       scene.environmentIntensity = 0.3;
-      const key = new THREE.DirectionalLight("#ffead2", 2.6);
-      key.position.set(-1.6, 4.2, 4.6);
-      key.castShadow = true;
-      key.shadow.mapSize.set(1024, 1024);
-      Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3 });
-      key.shadow.bias = -0.0004;
-      const rim = new THREE.DirectionalLight("#c4b5fd", 1.6);
-      rim.position.set(3.5, 2.5, -3.5);
-      scene.add(key, rim, new THREE.HemisphereLight("#e8ecff", "#0a0a10", 0.25));
-      const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.4, depthWrite: false });
-      const floor = new THREE.Mesh(new THREE.CircleGeometry(5, 48), floorMaterial);
-      floor.rotation.x = -Math.PI / 2;
-      floor.receiveShadow = true;
-      floor.renderOrder = -1;
-      scene.add(floor);
+      const studio = addStudio(THREE, scene, { shadowExtent: 3, floorRadius: 2.8 });
+      const { floorMaterial } = studio;
 
       const model = createRoboPetModel({ shadows: true });
       const pivot = new THREE.Group();
@@ -143,10 +183,15 @@ export function RoboPetExploded() {
       const sphere = explodedBox.getBoundingSphere(new THREE.Sphere());
       const halfWidth = explodedBox.getSize(new THREE.Vector3()).x / 2;
       const partCenters = new Map<PartKey, import("three").Vector3>();
+      // Bounding radius of each part's group, for the tour's dolly: small boards move the
+      // camera in until they fill FOCUS_FILL of the stage; the legs and the shell are already
+      // that big, so the camera stays put for them.
+      const partRadius = new Map<PartKey, number>();
       setRoboPetExplode(model, 0);
 
       const state = { explode: motion ? 0 : 1, yaw: motion ? -0.35 : -0.15, focus: 0 };
       const focusTarget = new THREE.Vector3();
+      let focusKey: PartKey | null = null;
       const fits = { assembled: 1, exploded: 1, portrait: false };
       const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
 
@@ -160,12 +205,12 @@ export function RoboPetExploded() {
       const keyOf = (id: string | null) =>
         PARTS.find((part) => (part.ids as readonly string[]).includes(id ?? ""))?.key ?? null;
 
-      // Unselected parts become a flat violet ghost (an x-ray, not muddy glass); the
-      // selected one keeps its real material with a faint violet lift.
+      // Unselected parts become a flat white ghost (an x-ray, not muddy glass); the
+      // selected one keeps its real material.
       const ghost = new THREE.MeshBasicMaterial({
-        color: "#a78bfa",
+        color: "#ffffff",
         transparent: true,
-        opacity: 0.07,
+        opacity: GHOST_OPACITY,
         depthWrite: false,
       });
       const realMaterial = new Map<import("three").Mesh, import("three").Mesh["material"]>();
@@ -193,7 +238,9 @@ export function RoboPetExploded() {
       PARTS.forEach((part) => {
         const box = new THREE.Box3();
         meshParts.forEach((key, mesh) => key === part.key && box.expandByObject(mesh));
-        if (!box.isEmpty()) partCenters.set(part.key, box.getCenter(new THREE.Vector3()));
+        if (box.isEmpty()) return;
+        partCenters.set(part.key, box.getCenter(new THREE.Vector3()));
+        partRadius.set(part.key, box.getBoundingSphere(new THREE.Sphere()).radius);
       });
       setRoboPetExplode(model, 0);
       let focusTween: gsap.core.Tween | null = null;
@@ -205,21 +252,12 @@ export function RoboPetExploded() {
           const dim = key !== null && partKey !== key;
           mesh.material = dim ? ghost : realMaterial.get(mesh)!;
           mesh.castShadow = !dim;
-          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-          materials.forEach((material) => {
-            const lit = material as import("three").MeshStandardMaterial;
-            if (!lit.isMeshStandardMaterial || dim) return;
-            if (lit.userData.baseEmissive === undefined) {
-              lit.userData.baseEmissive = lit.emissive.getHex();
-              lit.userData.baseIntensity = lit.emissiveIntensity;
-            }
-            const lift = key !== null && partKey === key && lit.userData.baseEmissive === 0;
-            lit.emissive.setHex(lift ? 0x6d28d9 : lit.userData.baseEmissive);
-            lit.emissiveIntensity = lift ? 0.12 : lit.userData.baseIntensity;
-          });
         });
         // Dolly toward the selected subsystem so even small boards read clearly.
-        if (key && partCenters.has(key)) focusTarget.copy(partCenters.get(key)!);
+        if (key && partCenters.has(key)) {
+          focusTarget.copy(partCenters.get(key)!);
+          focusKey = key;
+        }
         focusTween?.kill();
         focusTween = gsap.to(state, {
           focus: key ? 1 : 0,
@@ -245,14 +283,14 @@ export function RoboPetExploded() {
         // directly; the sphere fit wastes most of a narrow screen.
         fits.portrait = portrait;
         fits.exploded = portrait
-          ? (halfWidth * 1.08) / Math.tan(hFov / 2) + sphere.radius * 0.35
-          : sphere.radius / Math.sin(Math.min(vFov * 1.02, hFov * usable) / 2);
+          ? (halfWidth * 1.22) / Math.tan(hFov / 2) + sphere.radius * 0.35
+          : sphere.radius / Math.sin(Math.min(vFov * 1.2, hFov * usable) / 2);
         // Assembled: the robot fills a little over half the stage height.
         fits.assembled = Math.min(
           fits.exploded,
-          assembledSphere.radius / Math.sin(Math.min(vFov * 0.6, hFov * usable * 0.75) / 2),
+          assembledSphere.radius / Math.sin(Math.min(vFov * 0.5, hFov * usable * 0.7) / 2),
         );
-        camera.setViewOffset(w, h, portrait ? 0 : -w * 0.15, portrait ? h * 0.1 : -h * 0.02, w, h);
+        camera.setViewOffset(w, h, portrait ? 0 : -w * 0.17, portrait ? h * 0.17 : 0, w, h);
         render();
       };
 
@@ -260,16 +298,27 @@ export function RoboPetExploded() {
       function render() {
         setRoboPetExplode(model, state.explode);
         pivot.rotation.y = state.yaw;
-        floorMaterial.opacity = 0.4 * (1 - Math.min(1, state.explode * 1.6));
+        floorMaterial.opacity = 1 - Math.min(1, state.explode * 1.6);
         const e = THREE.MathUtils.smoothstep(state.explode, 0, 1);
         let dist = THREE.MathUtils.lerp(fits.assembled, fits.exploded, e);
         const centerY = THREE.MathUtils.lerp(assembledSphere.center.y, sphere.center.y, e);
         lookAt.set(0, centerY, 0);
-        if (state.focus > 0) {
+        // The ghosted rest of the robot steps back as the camera closes in on a part.
+        ghost.opacity = GHOST_OPACITY * (1 - 0.6 * state.focus);
+        if (state.focus > 0 && focusKey) {
           // Part centres are in model space; rotate them with the pivot's yaw.
           const target = focusTarget.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), state.yaw);
-          lookAt.lerp(target, 0.4 * state.focus);
-          dist *= 1 - 0.2 * state.focus;
+          lookAt.lerp(target, 0.7 * state.focus);
+          // Close enough that the part's bounding sphere spans FOCUS_FILL of the narrower
+          // field of view, and never farther out than the shot it started from.
+          const radius = partRadius.get(focusKey) ?? 0;
+          const narrow = Math.min(
+            THREE.MathUtils.degToRad(camera.fov),
+            2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect),
+          );
+          const near = radius / (FOCUS_FILL * Math.tan(narrow / 2));
+          const closest = Math.max(near, dist * FOCUS_MIN_DIST);
+          dist = THREE.MathUtils.lerp(dist, Math.min(dist, closest), state.focus);
         }
         camera.position.set(lookAt.x, lookAt.y + dist * 0.26, lookAt.z + dist);
         camera.lookAt(lookAt);
@@ -294,16 +343,34 @@ export function RoboPetExploded() {
       };
       renderer.domElement.addEventListener("pointerup", onClick);
 
+      // A lost context clears the canvas for good unless it is handled: show the still while
+      // it is gone and draw again when the browser hands it back.
+      const onLost = (event: Event) => {
+        event.preventDefault();
+        setLost(true);
+      };
+      const onRestored = () => {
+        render();
+        setLost(false);
+      };
+      renderer.domElement.addEventListener("webglcontextlost", onLost);
+      renderer.domElement.addEventListener("webglcontextrestored", onRestored);
+
       const resizeObserver = new ResizeObserver(resize);
       resizeObserver.observe(mount);
       resize();
+      setReady(true);
 
-      let ctx: gsap.Context | null = null;
+      // The tour timeline is built per orientation and rebuilt when the window crosses it, so
+      // a rotated tablet does not keep the other layout's choices.
+      let mm: gsap.MatchMedia | null = null;
       if (motion) {
         gsap.registerPlugin(ScrollTrigger);
-        const portrait = mount.clientWidth < mount.clientHeight;
         let lastTour: PartKey | null = null;
-        ctx = gsap.context(() => {
+        mm = gsap.matchMedia(section);
+        // Both orientations are listed because matchMedia only runs for a condition that matches.
+        mm.add({ portrait: "(orientation: portrait)", landscape: "(orientation: landscape)" }, (context) => {
+          const portrait = Boolean(context.conditions?.portrait);
           const timeline = gsap.timeline({
             defaults: { ease: "none" },
             scrollTrigger: {
@@ -333,20 +400,23 @@ export function RoboPetExploded() {
             .to(state, { explode: 1, duration: EXPLODE_END - 0.1, ease: "power2.inOut" }, 0.08);
           if (portrait)
             timeline.to(".exploded-copy", { opacity: 0, y: -24, duration: 0.08 }, 0.08);
-        }, section);
+        });
       }
 
       cleanup = () => {
-        ctx?.revert();
+        mm?.revert();
         resizeObserver.disconnect();
         renderer.domElement.removeEventListener("pointerup", onClick);
+        renderer.domElement.removeEventListener("webglcontextlost", onLost);
+        renderer.domElement.removeEventListener("webglcontextrestored", onRestored);
+        setReady(false);
+        setLost(false);
         focusTween?.kill();
         delete section.dataset.phase;
         ghost.dispose();
         disposeRoboPetModel(model);
         perPart.forEach((material) => material.dispose());
-        floor.geometry.dispose();
-        (floor.material as import("three").Material).dispose();
+        studio.dispose();
         env.dispose();
         pmrem.dispose();
         renderer.dispose();
@@ -370,10 +440,15 @@ export function RoboPetExploded() {
       observer.disconnect();
       cleanup();
     };
-  }, [motion]);
+  }, [scrubStage]);
 
   const activePart = PARTS.find((part) => part.key === active);
-  const live = motion && !failed;
+  const noWebGL = failed || stillOnly;
+  // The still shows where there is no live canvas: no WebGL, a lost context, or the moment
+  // before the first frame. The server HTML includes it, so it also shows with JavaScript off.
+  const showStill = noWebGL || lost || !ready;
+  // Layout follows the support, not the context's state, so a lost context cannot move the page.
+  const live = scrubStage && !noWebGL;
 
   return (
     <section
@@ -385,18 +460,17 @@ export function RoboPetExploded() {
     >
       <div className="exploded-stage">
         <div className="exploded-copy site-shell">
-          <p className="eyebrow">
-            <span className="status-dot" />
-            ROBOPET / EXPLODED VIEW
-          </p>
-          <h2 id="exploded-title">
-            Every part,
-            <br />
-            <span className="muted-text">on purpose.</span>
-          </h2>
+          <h2 id="exploded-title">Parts</h2>
           <p className="exploded-lede">
-            A procedural Three.js reconstruction, built in code from the concept render.{" "}
-            {live ? "Scroll to pull it apart, or pick a part." : "Pick a part to see what it does."}
+            The planned design in three.js. Internals are approximate.
+            {/* With JavaScript off the parts are listed below, so there is nothing to select. The
+                sentence is in the server HTML, invisible, so the lede is the same height before
+                and after hydration and the page below it does not move. */}
+            <span className="exploded-hint" data-ready={hydrated}>
+              {live || !hydrated
+                ? "Scroll to pull it apart, or select a part."
+                : "Select a part to see what it is."}
+            </span>
           </p>
         </div>
         {/* Desktop tour card: a large visual twin of the detail panel that takes over the
@@ -404,17 +478,15 @@ export function RoboPetExploded() {
         <div className="exploded-tour site-shell" aria-hidden="true">
           {activePart && (
             <div key={activePart.key}>
-              <span className="micro">
-                {String(PARTS.indexOf(activePart) + 1).padStart(2, "0")} /{" "}
-                {String(PARTS.length).padStart(2, "0")}
-              </span>
               <p className="exploded-tour-title">{activePart.label}</p>
-              <p>{activePart.detail}</p>
+              <p>
+                <PartText text={activePart.detail} />
+              </p>
             </div>
           )}
         </div>
         <div ref={mountRef} className="exploded-canvas" aria-hidden="true">
-          {failed && (
+          {showStill && (
             // eslint-disable-next-line @next/next/no-img-element -- static stand-in for WebGL
             <img
               className="exploded-still"
@@ -426,8 +498,21 @@ export function RoboPetExploded() {
             />
           )}
         </div>
+        {/* With JavaScript off the buttons below do nothing, so the parts are listed here. */}
+        <noscript>
+          <dl className="exploded-all site-shell">
+            {PARTS.map((part) => (
+              <div key={part.key}>
+                <dt>{part.label}</dt>
+                <dd>
+                  <PartText text={part.detail} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </noscript>
         <div className="exploded-parts site-shell">
-          <ul aria-label="roboPet subsystems">
+          <ul aria-label="roboPet parts" data-ready={hydrated}>
             {PARTS.map((part) => (
               <li key={part.key}>
                 <button
@@ -445,17 +530,16 @@ export function RoboPetExploded() {
               </li>
             ))}
           </ul>
+          {/* Empty until a part is selected, then a short panel that ends where its text does. */}
           <div className="exploded-detail" aria-live="polite">
-            <span className="micro">
-              {activePart
-                ? `${String(PARTS.indexOf(activePart) + 1).padStart(2, "0")} / ${String(PARTS.length).padStart(2, "0")}`
-                : "INTERNALS ARE INFERRED, NOT MEASURED"}
-            </span>
-            <h3>{activePart?.label ?? "Seven subsystems"}</h3>
-            <p>
-              {activePart?.detail ??
-                "Structure, face, perception, control, power and locomotion. Each one is a decision documented in the build log."}
-            </p>
+            {activePart && (
+              <div key={activePart.key} className="exploded-detail-body">
+                <h3>{activePart.label}</h3>
+                <p>
+                  <PartText text={activePart.detail} />
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

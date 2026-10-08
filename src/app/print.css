@@ -1,0 +1,236 @@
+/*
+  Print. The screen design is white on black, pinned and animated. On paper, with background
+  graphics off (the browser default), white text turns mid-grey and the pinned film and the
+  exploded view paginate into near-empty pages. This sheet prints the page as a plain document:
+  black text on white, every scene laid out in flow, nothing that only works on a screen.
+
+  Imported first (from globals.css) so it is the earliest stylesheet. Every rule below that has
+  to beat a screen rule or a style GSAP writes inline is therefore marked !important.
+*/
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  /* The tokens flip, so every rule that reads them prints dark on light. */
+  :root {
+    --surface: #fff !important;
+    --surface-raised: #f2f2f2 !important;
+    --surface-soft: #e6e6e6 !important;
+    --line: #b3b3b3 !important;
+    --text: #000 !important;
+    --muted: #4d4d4d !important;
+    --accent: #000 !important;
+    --section-gap: 36px !important;
+    /* Paper is read closer than a screen, so the type scale steps down. */
+    --text-caption: 11px !important;
+    --text-body: 13.5px !important;
+    --text-lead: 16px !important;
+    --text-h3: 22px !important;
+    --text-h2: 32px !important;
+    color-scheme: light !important;
+  }
+  .hero-copy h1 {
+    font-size: 64px !important;
+  }
+  .ftc-name h2 {
+    font-size: 96px !important;
+  }
+  .film-intro h2 {
+    font-size: 56px !important;
+  }
+  .work-feature h3 {
+    font-size: 30px !important;
+  }
+  .film-outro-line {
+    font-size: 26px !important;
+  }
+  html,
+  body,
+  .portfolio {
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+  }
+
+  /* Things that only work on a screen. */
+  .skip-link,
+  .portfolio-nav,
+  .portfolio button,
+  .playground-section,
+  .ftc-all,
+  .film-canvas,
+  .exploded-tour,
+  .exploded-parts,
+  .exploded-canvas canvas,
+  .hero-robot-canvas,
+  nextjs-portal {
+    display: none !important;
+  }
+
+  /* Whatever GSAP left on an element mid-scroll: hidden, shifted or scaled. */
+  .portfolio [style*="opacity"] {
+    opacity: 1 !important;
+  }
+  .portfolio [style*="transform"],
+  .portfolio [style*="translate"],
+  .portfolio [style*="scale"] {
+    transform: none !important;
+    translate: none !important;
+    scale: none !important;
+  }
+  .portfolio [style*="visibility"] {
+    visibility: visible !important;
+  }
+
+  /* Hero: the still stands in for the live model. */
+  .hero-robot-still {
+    opacity: 1 !important;
+  }
+
+  /* The roboPet film becomes a static block: heading, still, the four beats, the outro. */
+  .film[data-mode] {
+    height: auto !important;
+  }
+  .film[data-mode] .film-stage {
+    position: static !important;
+    height: auto !important;
+    padding: 16px 0 0 !important;
+    overflow: visible !important;
+  }
+  .film[data-mode] .film-poster {
+    display: block !important;
+    width: min(100%, 440px) !important;
+    margin: 20px auto 0 !important;
+  }
+  .film[data-mode] .film-intro,
+  .film[data-mode] .film-beats,
+  .film[data-mode] .film-beat,
+  .film[data-mode] .film-outro,
+  .film[data-mode] .film-caption {
+    position: static !important;
+    inset: auto !important;
+    opacity: 1 !important;
+    translate: none !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+  .film[data-mode] .film-intro {
+    display: block !important;
+    padding: 0 !important;
+  }
+  .film[data-mode] .film-beats {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 20px 32px !important;
+    margin: 28px auto 0 !important;
+  }
+  .film[data-mode] .film-beat {
+    width: auto !important;
+    text-align: left !important;
+    break-inside: avoid;
+  }
+  .film[data-mode] .film-beat p,
+  .film[data-mode] .film-beat-right p {
+    margin-left: 0 !important;
+    max-width: none !important;
+  }
+  .film[data-mode] .film-outro {
+    margin: 32px auto 0 !important;
+    break-inside: avoid;
+  }
+  .film[data-mode] .film-caption {
+    margin: 12px auto 0 !important;
+    text-align: left !important;
+  }
+
+  /* The exploded view: its still image, drawn as a background that prints with the page. */
+  .exploded[data-mode] {
+    height: auto !important;
+  }
+  .exploded[data-mode] .exploded-stage {
+    position: static !important;
+    height: auto !important;
+    padding: 24px 0 0 !important;
+    overflow: visible !important;
+  }
+  .exploded[data-mode] .exploded-copy {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .exploded[data-mode] .exploded-canvas {
+    position: relative !important;
+    inset: auto !important;
+    height: 3.6in !important;
+    margin: 16px 0 0 !important;
+    background: url("/robopet/exploded-still.webp") center / contain no-repeat;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .exploded[data-mode] .exploded-still {
+    display: none !important;
+  }
+
+  /* Layout that depends on the viewport or on scrolling. */
+  .ftc-cad,
+  .about-intro {
+    position: static !important;
+  }
+  .cad-group--drones [data-piece] .cad-render,
+  .cad-piece.is-lead .cad-render {
+    margin-inline: 0 !important;
+  }
+
+  /* Less air between blocks, a smaller address and shorter renders, so a sheet holds more. */
+  .work-feature {
+    padding-block: 24px !important;
+  }
+  .work-row {
+    padding-block: 20px !important;
+  }
+  .email-address {
+    font-size: var(--text-lead) !important;
+  }
+  .cad-render img {
+    width: auto !important;
+    max-width: 100%;
+    max-height: 3.2in;
+  }
+  .cad-spread {
+    gap: 24px !important;
+  }
+  .cad-group + .cad-group {
+    margin-top: 40px !important;
+  }
+
+  /* Software opens a sheet of its own; its first feature is a full page and would otherwise
+     leave the heading alone at the foot of the CAD sheet. */
+  .projects-section {
+    break-before: page;
+  }
+
+  /* Keep a figure, a row or a caption whole, and a heading with what follows it. */
+  figure,
+  .cad-piece,
+  .work-row,
+  .ftc-roles > li,
+  .ftc-specs > div,
+  .ftc-table tr {
+    break-inside: avoid;
+  }
+  h2,
+  h3,
+  h4,
+  .section-heading,
+  .cad-group-head {
+    break-after: avoid;
+  }
+  img {
+    max-height: 9in;
+    object-fit: contain;
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * Review stage for the roboPet model: renderer, studio lights, dark floor and a fixed camera.
+ * Review stage for the roboPet model: renderer, neutral studio lights, dark floor and a fixed camera.
  * Used by the dev preview route (src/app/dev/robopet) and by the offline capture harness.
  */
 import * as THREE from "three";
@@ -34,7 +34,7 @@ export type RoboPetStage = {
 };
 
 export function mountRoboPetStage(host: HTMLElement, params: RoboPetStageParams = {}): RoboPetStage {
-  const background = params.background ?? "#07070c";
+  const background = params.background ?? "#000000";
   const explode = THREE.MathUtils.clamp(params.explode ?? 0, 0, 1);
   const az = THREE.MathUtils.degToRad(params.az ?? 30);
   const el = THREE.MathUtils.degToRad(params.el ?? 8);
@@ -58,8 +58,9 @@ export function mountRoboPetStage(host: HTMLElement, params: RoboPetStageParams 
   scene.environment = envTex;
   scene.environmentIntensity = 0.3;
 
-  // key: large soft source upper front-left; rim: cool from upper rear; low hemisphere fill
-  const key = new THREE.DirectionalLight("#ffead2", 2.6);
+  // key: large soft source upper front-left; rim: neutral from upper rear; low hemisphere fill.
+  // All three are white so the model's greys stay greys.
+  const key = new THREE.DirectionalLight("#ffffff", 2.6);
   key.position.set(-1.6, 4.2, 4.6);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -68,14 +69,14 @@ export function mountRoboPetStage(host: HTMLElement, params: RoboPetStageParams 
   key.shadow.radius = 6;
   key.shadow.bias = -0.0004;
   scene.add(key);
-  const rim = new THREE.DirectionalLight("#cfd8ff", 1.2);
+  const rim = new THREE.DirectionalLight("#ffffff", 1.2);
   rim.position.set(3.5, 2.5, -3.5);
   scene.add(rim);
-  scene.add(new THREE.HemisphereLight("#e8ecff", "#0a0a10", 0.25));
+  scene.add(new THREE.HemisphereLight("#ffffff", "#000000", 0.25));
 
   const floor = new THREE.Mesh(
     new THREE.CircleGeometry(12, 64),
-    new THREE.MeshLambertMaterial({ color: "#121219" }),
+    new THREE.MeshLambertMaterial({ color: "#111111" }),
   );
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;

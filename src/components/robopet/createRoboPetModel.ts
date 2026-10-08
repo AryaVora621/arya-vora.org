@@ -8,10 +8,14 @@
  * Frame: forward = +Z (OLED face), up = +Y, the robot's own left = +X. Feet rest on y = 0 and the
  * body is centered on the origin in XZ. Overall length is about 2.45 units.
  *
- * Visible geometry (shell, face, legs, servos, wires, brass hardware) follows the reference render.
+ * Visible geometry (shell, face, legs, servos, wires, hardware) follows the reference render.
  * The internals (Raspberry Pi Pico, Pi Zero 2W, MPU6050, 3-cell pack, 2x XL4016 buck converters,
  * hidden hip-roll servos) are NOT visible in the reference: they are inferred from the roboPet
  * hardware list and laid out plausibly so the exploded view has something true to show.
+ *
+ * Palette: every material is a neutral grey (R = G = B) so the model sits on the black and white
+ * page. The shell is light grey, the legs graphite, the servos black, the OLED eyes and the
+ * status LED white. Nothing glows: the LED is an emissive dome with no halo sprite.
  */
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -34,10 +38,8 @@ export type RoboPetPartId =
 export type RoboPetPartInfo = { id: RoboPetPartId; label: string; detail: string };
 
 export type RoboPetModelOptions = {
-  /** Emissive color of the OLED eyes and status LED core. */
+  /** Emissive color of the OLED eyes and status LED core (default white). */
   eyeColor?: THREE.ColorRepresentation;
-  /** Halo color for the status LED glow sprite. */
-  glowColor?: THREE.ColorRepresentation;
   /** Initial OLED face mode. */
   eyeMode?: RoboPetEyeMode;
   /** Cast/receive shadows on every mesh (default true). */
@@ -136,7 +138,7 @@ function mottleTexture(seed: number, base: string, amp: number): THREE.Texture |
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     const dark = rnd() > 0.5;
     const a = amp * (0.3 + rnd() * 0.7);
-    g.addColorStop(0, dark ? `rgba(60,50,40,${a})` : `rgba(255,255,250,${a})`);
+    g.addColorStop(0, dark ? `rgba(50,50,50,${a})` : `rgba(255,255,255,${a})`);
     g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
@@ -169,25 +171,6 @@ function printHatchTexture(seed: number): THREE.Texture | null {
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.colorSpace = THREE.NoColorSpace;
-  return t;
-}
-
-/** Radial glow sprite for the status LED halo. */
-function glowTexture(color: string): THREE.Texture | null {
-  const c = makeCanvas(64, 64);
-  if (!c) return null;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  const col = new THREE.Color(color);
-  const rgb = `${Math.round(col.r * 255)},${Math.round(col.g * 255)},${Math.round(col.b * 255)}`;
-  g.addColorStop(0, `rgba(${rgb},0.9)`);
-  g.addColorStop(0.25, `rgba(${rgb},0.35)`);
-  g.addColorStop(1, `rgba(${rgb},0)`);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 64, 64);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -376,8 +359,7 @@ function countTriangles(root: THREE.Object3D) {
 // Factory
 // ---------------------------------------------------------------------------------------------
 export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Group {
-  const eyeColor = new THREE.Color(options.eyeColor ?? "#a78bfa");
-  const glowColor = new THREE.Color(options.glowColor ?? "#8b5cf6");
+  const eyeColor = new THREE.Color(options.eyeColor ?? "#ffffff");
   const shadows = options.shadows ?? true;
 
   const root = new THREE.Group();
@@ -392,13 +374,13 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   if (shellMap) shellMap.repeat.set(0.35, 0.35);
   const pla = new THREE.MeshPhysicalMaterial({
     name: "pla-shell",
-    // Tuned under the site key light so the shell reads as the film's warm cream, not white.
-    color: "#d6ccb8",
+    // Tuned under the site key light so the shell reads as light grey, not blown-out white.
+    color: "#c6c6c6",
     roughness: 0.74,
     metalness: 0,
     sheen: 0.15,
     sheenRoughness: 0.8,
-    sheenColor: new THREE.Color("#fff8ec"),
+    sheenColor: new THREE.Color("#ffffff"),
     map: shellMap,
     bumpMap: layerBump,
     bumpScale: 0.35,
@@ -407,13 +389,13 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   if (hatch) hatch.repeat.set(1, 1);
   const graphite = new THREE.MeshStandardMaterial({
     name: "pla-graphite",
-    color: "#5b5f5c",
+    color: "#5c5c5c",
     roughness: 0.66,
     metalness: 0,
     bumpMap: hatch,
     bumpScale: 0.25,
   });
-  const graphiteDark = new THREE.MeshStandardMaterial({ name: "pla-graphite-dark", color: "#474a48", roughness: 0.7 });
+  const graphiteDark = new THREE.MeshStandardMaterial({ name: "pla-graphite-dark", color: "#474747", roughness: 0.7 });
   const servoBlack = new THREE.MeshPhysicalMaterial({
     name: "servo-black",
     color: "#151515",
@@ -422,28 +404,28 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     clearcoatRoughness: 0.5,
   });
   const servoLabel = new THREE.MeshStandardMaterial({ name: "servo-label", color: "#202020", roughness: 0.6 });
-  const brass = new THREE.MeshStandardMaterial({ name: "brass", color: "#c9a35a", roughness: 0.32, metalness: 1 });
-  const steel = new THREE.MeshStandardMaterial({ name: "steel", color: "#a2a5a8", roughness: 0.36, metalness: 1 });
-  const rubber = new THREE.MeshStandardMaterial({ name: "rubber-black", color: "#1b1b1c", roughness: 0.7 });
-  const wireMats = ["#5a2e1a", "#c4231c", "#e8a21a"].map(
+  const brass = new THREE.MeshStandardMaterial({ name: "brass", color: "#a6a6a6", roughness: 0.32, metalness: 1 });
+  const steel = new THREE.MeshStandardMaterial({ name: "steel", color: "#a6a6a6", roughness: 0.36, metalness: 1 });
+  const rubber = new THREE.MeshStandardMaterial({ name: "rubber-black", color: "#1b1b1b", roughness: 0.7 });
+  const wireMats = ["#2b2b2b", "#5c5c5c", "#8c8c8c"].map(
     (c, i) => new THREE.MeshStandardMaterial({ name: `wire-${i}`, color: c, roughness: 0.45 }),
   );
-  const pcbGreen = new THREE.MeshStandardMaterial({ name: "pcb-green", color: "#1f6b3a", roughness: 0.5 });
-  const pcbBlue = new THREE.MeshStandardMaterial({ name: "pcb-blue", color: "#1d3f8a", roughness: 0.5 });
-  const pcbDark = new THREE.MeshStandardMaterial({ name: "pcb-dark", color: "#1b1f1c", roughness: 0.5 });
+  const pcbGreen = new THREE.MeshStandardMaterial({ name: "pcb-green", color: "#2e2e2e", roughness: 0.5 });
+  const pcbBlue = new THREE.MeshStandardMaterial({ name: "pcb-blue", color: "#3a3a3a", roughness: 0.5 });
+  const pcbDark = new THREE.MeshStandardMaterial({ name: "pcb-dark", color: "#1c1c1c", roughness: 0.5 });
   const chip = new THREE.MeshStandardMaterial({ name: "chip-black", color: "#111111", roughness: 0.45 });
-  const gold = new THREE.MeshStandardMaterial({ name: "header-gold", color: "#d4af37", roughness: 0.3, metalness: 1 });
-  const aluminium = new THREE.MeshStandardMaterial({ name: "heatsink", color: "#1a1a1c", roughness: 0.5, metalness: 0.6 });
+  const gold = new THREE.MeshStandardMaterial({ name: "header-gold", color: "#bfbfbf", roughness: 0.3, metalness: 1 });
+  const aluminium = new THREE.MeshStandardMaterial({ name: "heatsink", color: "#1a1a1a", roughness: 0.5, metalness: 0.6 });
   const silver = new THREE.MeshStandardMaterial({ name: "tin", color: "#c8c8c8", roughness: 0.3, metalness: 1 });
   const cellWrap = [
-    new THREE.MeshStandardMaterial({ name: "cell-wrap", color: "#2c4f8c", roughness: 0.35 }),
+    new THREE.MeshStandardMaterial({ name: "cell-wrap", color: "#404040", roughness: 0.35 }),
     new THREE.MeshStandardMaterial({ name: "cell-cap", color: "#b8b8b8", roughness: 0.3, metalness: 1 }),
   ];
-  const copper = new THREE.MeshStandardMaterial({ name: "copper", color: "#b8733a", roughness: 0.35, metalness: 1 });
-  const capBody = new THREE.MeshStandardMaterial({ name: "electrolytic", color: "#20242c", roughness: 0.4 });
+  const copper = new THREE.MeshStandardMaterial({ name: "copper", color: "#8c8c8c", roughness: 0.35, metalness: 1 });
+  const capBody = new THREE.MeshStandardMaterial({ name: "electrolytic", color: "#222222", roughness: 0.4 });
   const lensGlass = new THREE.MeshPhysicalMaterial({
     name: "lens-glass",
-    color: "#06080c",
+    color: "#070707",
     roughness: 0.05,
     clearcoat: 1,
     metalness: 0.2,
@@ -452,8 +434,10 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     name: "led-emissive",
     color: eyeColor,
     emissive: eyeColor,
-    emissiveIntensity: 2.2,
+    emissiveIntensity: 1,
     roughness: 0.2,
+    // Skip tone mapping so the LED reaches pure white instead of ACES grey.
+    toneMapped: false,
   });
 
   // OLED canvas texture
@@ -474,13 +458,15 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   drawEyes(eyeState);
   const oledMat = new THREE.MeshPhysicalMaterial({
     name: "oled-glass",
-    color: "#020203",
+    color: "#000000",
     roughness: 0.14,
     clearcoat: 1,
     clearcoatRoughness: 0.08,
     emissive: "#ffffff",
     emissiveMap: oledTex,
-    emissiveIntensity: 1.35,
+    emissiveIntensity: 1,
+    // The eyes are lit pixels, not lit surfaces: tone mapping would grey them out.
+    toneMapped: false,
   });
 
   // ---------------- shared geometry ----------------
@@ -556,13 +542,13 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const shellTop = part(
     "shell-top",
     "Upper shell",
-    "PLA top half printed on a Bambu A1 Mini.",
+    "A rounded top cover with one WS2812 LED for status and mood. It has not been printed.",
     new THREE.Vector3(0, 1.45, 0),
   );
   const shellBottom = part(
     "shell-bottom",
     "Chassis",
-    "Lower PLA shell and rear cap. Carries the hip mounts, battery tray and board standoffs.",
+    "The printed PLA frame for the MVP, with mounts for the servos, the IMU and both boards.",
     new THREE.Vector3(0, -0.05, 0),
   );
   const extrudeOpts = { depth: BODY.len, bevelEnabled: false, curveSegments: 14 };
@@ -602,7 +588,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const face = part(
     "face",
     "Face plate + OLED",
-    "SSD1306 OLED behind a printed bezel. Draws the eyes; driven over I2C by the Pico.",
+    "An SSD1306 OLED for the face. So far it has drawn test faces and the IMU orientation cube.",
     new THREE.Vector3(0, 0, 0.85),
   );
   face.position.set(0, yC, BODY.len / 2 - 0.03);
@@ -629,7 +615,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const camera = part(
     "camera",
     "PiCam",
-    "Camera module for the Zero 2W, the brain's eyes for perception.",
+    "Camera module for the Pi Zero 2W, which has not been tested yet.",
     new THREE.Vector3(0, 0, 1.35),
   );
   camera.position.set(0, yC + CAMSLOT.y, BODY.len / 2 - 0.03 + capFront - 0.05);
@@ -656,7 +642,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const statusLed = part(
     "status-led",
     "Status LED",
-    "Single WS2812 addressable LED: status and mood indicator.",
+    "One WS2812 LED for status and mood.",
     new THREE.Vector3(0, 1.45, 0),
   );
   {
@@ -672,23 +658,13 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     const dome = mk(new THREE.SphereGeometry(0.022, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), ledMat, statusLed, "led-dome");
     dome.position.y = 0.005;
     dome.scale.set(1, 0.6, 1);
-    const glowTex = glowTexture(`#${glowColor.getHexString()}`);
-    if (glowTex) {
-      const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
-      );
-      sprite.name = "led-glow";
-      sprite.scale.set(0.16, 0.16, 1);
-      sprite.position.y = 0.02;
-      statusLed.add(sprite);
-    }
   }
 
   // ---------------- electronics (inferred internals) ----------------
   const electronics = part(
     "electronics",
     "Pico + Zero 2W + IMU",
-    "Raspberry Pi Pico runs the 12-servo real-time loop; Pi Zero 2W is the brain; MPU6050 IMU for balance.",
+    "A Raspberry Pi Pico running MicroPython drives servo PWM and reads the MPU6050 IMU. The Pi Zero 2W will take the camera, audio and RC.",
     new THREE.Vector3(0, 0.95, 0),
   );
   electronics.position.set(0, yC + 0.02, 0);
@@ -755,7 +731,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const power = part(
     "power",
     "Battery + buck converters",
-    "3-cell pack feeding two XL4016 bucks: ~7.2 V servo rail and a 5 V logic rail.",
+    "A salvaged 3-cell laptop pack feeds two XL4016 buck converters: about 7.2 V for the servos and 5.0 V for logic.",
     new THREE.Vector3(0, 0.45, 0),
   );
   power.position.set(0, yC - BODY.h / 2 + BODY.wall + 0.06, 0);
@@ -874,7 +850,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     const leg = part(
       def.id,
       def.label,
-      "3 x MG996R (hip, upper leg, lower leg), printed PLA segments, rubber foot.",
+      "Printed PLA leg driven by MG996R servos. The plan is three per leg; the MVP frame has two.",
       // Straight out on the lateral axis only, so the teardown reads as engineered.
       new THREE.Vector3(def.side * 0.8, 0, 0),
     );

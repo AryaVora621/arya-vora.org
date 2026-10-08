@@ -1,110 +1,173 @@
-// Curated against public repository metadata and READMEs. See docs/redesign.md.
-export const selectedWork = [
-  {
-    id: "robopet",
-    name: "roboPet",
-    category: "Robotics",
-    number: "01",
-    headline: "A little robot. A lot to learn.",
-    description:
-      "A four-legged companion built to learn mechatronics from the ground up. Custom printed parts, servo control, and a two-board architecture.",
-    detail:
-      "The current work is hardware bring-up and locomotion: a Raspberry Pi Pico for real-time control, with a Pi Zero 2W planned as the higher-level brain. Learned locomotion and onboard AI are goals, not finished features.",
-    stack: ["MicroPython", "Raspberry Pi", "CAD"],
-    status: "Hardware in progress",
-    url: "https://github.com/AryaVora621/roboPet",
-    visual: "robot",
-  },
+// Rows for the Software section, in the order they render: two feature rows, then the index.
+// Each description was written on 2026-10-08 from the repository’s README and code, and the
+// owner reads them before they ship. Text between backticks renders as inline code. The
+// last-commit date of each row is read from src/data/github.ts (npm run data:github), so it
+// is not repeated here. `repo` is the name that file uses for the repository.
+//
+// What each row rests on (checked 2026-10-08):
+// - notchTerm: README "Current State" and "Permissions"; NotchStateStore.swift polls every
+//   1.2 s. There are no screenshots in the repository, so the figure is the AppleScript from
+//   locateTab in TerminalBridge.swift (commit a721fc2), complete and in order. An untracked
+//   notchterm-readme-hero.png sits in the local clone. It is a mockup with invented session
+//   text, so it is not used.
+// - OpenUltraCode: docs/MODEL_ROUTING.md and the README. The transcript in the visual is real
+//   output of ouc 0.1.0, built from commit 6b81862 and captured on 2026-10-08. The routing
+//   rule is in src/router.ts, classifyTask: importance "critical" returns the critical tier
+//   before any other check, and the default profile maps that tier to claude-cli, opus.
+// - SmartInvest: its README and the screenshot committed to the repository (cropped above the
+//   Next.js dev badge and converted to grayscale).
+// - Tally: the repository is still named adhdsat. REBRAND.md records the rename on 2026-06-30
+//   and the full screenshot still shows the old name, so the page uses a crop of the question.
+//   The question bank has 1,062 questions in server/data/questions.json; 912 are marked
+//   generated, 80 ingested and 70 authored.
+// - Jarvis-Bee (repository smartAI) is left off the page: its agents only echo messages back,
+//   and there is no screenshot to show.
+// - ShipKit: src/lib/scanner/registry.ts registers 18 rules; src/lib/ai/index.ts says the
+//   Anthropic SDK is used only for fix suggestions.
+// - TeamStat Insights: the repository was created and last pushed on 2025-05-25. Its 48 teams
+//   all appear in the 53-team Thomson Division at the Michiana Premier Event (FTCScout
+//   2024/FPEMITHO, 2025-06-19 to 22). The repository does not say the app was used there. The
+//   row gives no team count: FIRST ranks 46 teams in that division and FTCScout lists 53, and
+//   the Results table in the FTC section already uses FIRST's 46.
+
+export type SoftwareVisual = "script" | "terminal";
+
+export type SoftwareScreenshot = {
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+  /** Short caption, only where the screenshot needs one. */
+  note?: string;
+};
+
+export type SoftwareProject = {
+  id: string;
+  name: string;
+  repo: string;
+  url: string;
+  kind: string;
+  body: readonly string[];
+  stack: readonly string[];
+  visual?: SoftwareVisual;
+  screenshot?: SoftwareScreenshot;
+};
+
+export const featuredSoftware: readonly SoftwareProject[] = [
   {
     id: "notchterm",
     name: "notchTerm",
-    category: "Systems",
-    number: "02",
-    headline: "Your agents, at a glance.",
-    description:
-      "A macOS notch companion that brings Claude and Codex terminal sessions into a compact SwiftUI overlay.",
-    detail:
-      "The overlay expands on hover, previews terminal output, and routes messages to the selected session. Terminal automation requires macOS permissions. This portfolio preview is an illustration, not a running macOS app.",
-    stack: ["Swift", "SwiftUI", "macOS"],
-    status: "Native application",
+    repo: "notchTerm",
     url: "https://github.com/AryaVora621/notchTerm",
-    visual: "notch",
+    kind: "macOS app",
+    body: [
+      "My Claude and Codex sessions in Terminal show up as two small chips on either side of the MacBook notch. Move the pointer toward them and a panel opens with each session’s latest output and a field for typing to one of them.",
+      "A bridge drives Terminal.app through AppleScript. It finds a tab whose foreground processes include `claude` or `codex`, reads that tab’s visible text every 1.2 seconds and types my message into it. The overlay takes its size from the screen’s safe-area insets.",
+      "macOS asks for Automation permission, and for Accessibility because the Esc button sends the Escape key to a session. Without them the panes read Offline. There is no packaged release. You compile it with `swift build`.",
+    ],
+    stack: ["Swift", "SwiftUI", "AppleScript"],
+    visual: "script",
   },
   {
     id: "openultracode",
     name: "OpenUltraCode",
-    category: "AI",
-    number: "03",
-    headline: "Parallel agents. Explicit boundaries.",
-    description:
-      "A local CLI for parallel coding agents, adaptive model routing, and inspectable run artifacts. An organization repository in my GitHub workbench.",
-    detail:
-      "An early TypeScript CLI foundation with deterministic planning, model-tier routing, isolated edit worktrees, cost accounting, and opt-in patch application. The interactive lab below illustrates orchestration; it does not execute the CLI or call a model.",
-    stack: ["TypeScript", "Node.js", "CLI"],
-    status: "Early CLI foundation",
+    repo: "openultracode",
     url: "https://github.com/openultracode/openultracode",
-    visual: "agents",
+    kind: "Command-line tool",
+    body: [
+      "Give `ouc` a goal and it splits the work into tasks and routes each one to a model tier. Research goes to free models, and edits and tests go to the strong tier. Anything marked critical goes straight to the top tier, Claude Opus in the default profile. `ouc plan` shows that routing as a dry run before any model is called.",
+      "Each edit task runs in its own git worktree, and nothing reaches my checkout unless I pass `--apply-clean-patches`. If two edit tasks claim the same file, the run stops before it starts. A cost cap can also end a run partway through, and every run keeps a plan and a ledger of what happened under `.ouc/runs`.",
+      "The backends that call real models are covered by tests with mocked responses, and the fake backend calls nothing.",
+    ],
+    stack: ["TypeScript", "Node.js"],
+    visual: "terminal",
+  },
+];
+
+export const indexedSoftware: readonly SoftwareProject[] = [
+  {
+    id: "smartinvest",
+    name: "SmartInvest",
+    repo: "SmartInvest",
+    url: "https://github.com/AryaVora621/SmartInvest",
+    kind: "Web app",
+    body: [
+      "A stock research app. Its Research tab streams a web-searched, cited report while it is written, next to a market overview and screeners. The AI engine tries local command-line tools before falling back to an API key, and provider keys stay on the server.",
+    ],
+    stack: ["Next.js", "TypeScript"],
+    screenshot: {
+      src: "/projects/smartinvest-screener.webp",
+      width: 1440,
+      height: 810,
+      alt: "The SmartInvest dashboard, in grayscale, with a row of market index tiles above an Emerging Markets screener that has Swing, Long-term and Ranked tabs and a list of tickers.",
+    },
   },
   {
-    id: "teamstat",
-    name: "TeamStat Insights",
-    category: "Robotics",
-    number: "04",
-    headline: "Make the next match count.",
-    description:
-      "An FTC scouting app made by Team 23786 MakEMinds. Competition software for the people behind the robot.",
-    detail:
-      "The repository identifies this as an FTC scouting app by Team 23786. The sketch shows match phases only, not actual team results or competition statistics.",
-    stack: ["TypeScript", "Next.js", "FTC"],
-    status: "Team software",
-    url: "https://github.com/AryaVora621/TeamStat-Insights",
-    visual: "scouting",
+    id: "tally",
+    name: "Tally",
+    repo: "adhdsat",
+    url: "https://github.com/AryaVora621/adhdsat",
+    kind: "Web app",
+    body: [
+      "Short sprints of 5, 10, 15 or 20 questions target the SAT topics a student is weakest in, and a spaced-repetition queue brings missed questions back. It adds XP, streaks and a predicted score, and an optional Gemini coach explains answers.",
+      "The question bank holds 1,062 questions, most of them generated by AI.",
+    ],
+    stack: ["React", "Vite", "Express", "Postgres"],
+    screenshot: {
+      src: "/projects/tally-sprint.webp",
+      width: 1200,
+      height: 731,
+      alt: "A sprint question, in grayscale, with a progress bar, a question about the vertex of a parabola, four answer choices, Hint and Check Answer buttons, and a sidebar headed ADHDSat that shows XP and a day streak.",
+    },
   },
   {
     id: "shipkit",
     name: "ShipKit",
-    category: "Systems",
-    number: "05",
-    headline: "From prototype to production.",
-    description:
-      "A production-readiness scanner for AI-built web apps, with security, deployment, and quality findings in one place.",
-    detail:
-      "A Next.js application with Supabase for authentication and data, plus deployment and billing flows. The preview is illustrative and does not scan the visitor’s files or claim a security certification.",
-    stack: ["Next.js", "Supabase", "Stripe"],
-    status: "Web application",
+    repo: "shipkit",
     url: "https://github.com/AryaVora621/shipkit",
-    visual: "scanner",
+    kind: "Web app",
+    body: [
+      "ShipKit checks a web project against 18 rules for problems such as an exposed service key or a missing 404 page, then suggests fixes. Scanning runs locally. The Anthropic SDK is used only to write the suggestions.",
+    ],
+    stack: ["Next.js", "Supabase", "Stripe", "Vitest"],
   },
   {
-    id: "smartai",
-    name: "Jarvis-Bee / smartAI",
-    category: "AI",
-    number: "06",
-    headline: "Local intelligence, under construction.",
-    description:
-      "An offline-first agent system for macOS, pairing a Queen-and-Swarm architecture with an interactive HUD.",
-    detail:
-      "The public roadmap marks the swarm core, tools, WebSocket server, and HUD as implemented. Fine-tuning, self-healing, and several safety features remain roadmap items; they are not presented here as completed capabilities.",
-    stack: ["Python", "FastAPI", "WebSockets"],
-    status: "Experimental",
-    url: "https://github.com/AryaVora621/smartAI",
-    visual: "swarm",
+    id: "teamstat",
+    name: "TeamStat Insights",
+    repo: "TeamStat-Insights",
+    url: "https://github.com/AryaVora621/TeamStat-Insights",
+    kind: "Web app",
+    body: [
+      "In May 2025 I built a scouting app for my FTC team in Firebase Studio. It lists teams from the Thomson Division at the Michiana Premier Event in a table you can sort and search, and a match simulator lets each team’s score swing by a percentage you set.",
+    ],
+    stack: ["Next.js", "TypeScript", "Genkit"],
   },
-] as const;
+];
 
+// Every GitHub link on the page uses this URL. It opens the repositories tab, not the profile
+// page, on purpose: the profile README (AryaVora621/AryaVora621, a separate repo) still says
+// "Won it as captain, 5-0" and "won the NJ University Cup", and FTCScout records a 0-2 loss in
+// the state final. Once Arya approves a corrected README, point this back at
+// https://github.com/AryaVora621.
+export const githubUrl = "https://github.com/AryaVora621?tab=repositories";
+
+// Read by the Contact section. Hugging Face is left out: the Frinklyy account exists but has
+// no models, datasets or spaces, so a link would only pad the list.
 export const socialLinks = [
   {
     label: "GitHub",
     handle: "@AryaVora621",
-    url: "https://github.com/AryaVora621",
+    url: githubUrl,
   },
   {
     label: "LinkedIn",
-    handle: "Arya Vora",
+    // The slug comes from Arya’s own profile README; linkedin.com answers bots with
+    // status 999, so it could not be checked here. Arya to confirm.
+    handle: "aryavora",
     url: "https://linkedin.com/in/aryavora",
   },
   {
-    label: "X / Twitter",
+    label: "X",
     handle: "@aryavora621",
     url: "https://x.com/aryavora621",
   },
@@ -112,10 +175,5 @@ export const socialLinks = [
     label: "Instagram",
     handle: "@aryavora621",
     url: "https://www.instagram.com/aryavora621/",
-  },
-  {
-    label: "Hugging Face",
-    handle: "Frinklyy",
-    url: "https://huggingface.co/Frinklyy",
   },
 ] as const;

@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   },
 
   experimental: {
-    optimizePackageImports: ["lucide-react", "framer-motion", "three", "gsap"],
+    optimizePackageImports: ["three", "gsap"],
   },
 
   turbopack: {
@@ -67,6 +67,40 @@ const nextConfig: NextConfig = {
         {
           key: "Cache-Control",
           value: "public, max-age=31536000, immutable",
+        },
+      ],
+    },
+    // The film packs live in a directory named by a hash of their contents
+    // (scripts/grade-frames-bw.mjs), so a changed film gets a new URL and the old one can
+    // be kept for good. A repeat visit then skips about 2 MB of revalidation requests.
+    {
+      source: "/sequence/:path*",
+      headers: [
+        {
+          key: "Cache-Control",
+          value: "public, max-age=31536000, immutable",
+        },
+      ],
+    },
+    // CAD renders, team photos and project screenshots keep their file names when they are
+    // regenerated, so they get a day, then serve stale for a week while the browser checks.
+    ...["/cad/:path*", "/ftc/:path*", "/projects/:path*"].map((source) => ({
+      source,
+      headers: [
+        {
+          key: "Cache-Control",
+          value: "public, max-age=86400, stale-while-revalidate=604800",
+        },
+      ],
+    })),
+    // The two roboPet stills are regenerated under the same names, so they stay on a short
+    // lifetime.
+    {
+      source: "/robopet/:path*",
+      headers: [
+        {
+          key: "Cache-Control",
+          value: "public, max-age=3600, stale-while-revalidate=86400",
         },
       ],
     },
