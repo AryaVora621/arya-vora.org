@@ -7,10 +7,10 @@ test("games subdomain host serves the games section", async ({ request }) => {
   expect(await index.text()).toContain("<title>Games | Arya Vora</title>");
   const game = await request.get("/stat-line", { headers });
   expect(await game.text()).toContain("<title>Stat Line | Arya Vora Games</title>");
-  const asset = await request.get("/favicon.svg", { headers });
+  const asset = await request.get("/icon.svg", { headers });
   expect(asset.headers()["content-type"]).toContain("image/svg");
   const home = await request.get("/");
-  expect(await home.text()).toContain("Robots, Software &amp; Experiments");
+  expect(await home.text()).toContain("<title>Arya Vora</title>");
 });
 
 test("games index links to every game and passes axe", async ({ page }) => {

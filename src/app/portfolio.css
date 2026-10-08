@@ -654,11 +654,12 @@ body {
   }
 }
 @media (max-width: 560px) {
+  /* Seven links (with Games) no longer fit one row on the narrowest phones, so they wrap. */
   .nav-links {
     flex: 1 1 100%;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    column-gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    column-gap: 16px;
   }
   .nav-links a {
     font-size: var(--text-caption);
