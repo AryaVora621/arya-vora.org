@@ -1,94 +1,59 @@
 import type { Metadata, Viewport } from "next";
-import { Fragment_Mono, Instrument_Sans } from "next/font/google";
+import { Atkinson_Hyperlegible_Mono, Atkinson_Hyperlegible_Next } from "next/font/google";
 import "./globals.css";
-import "./portfolio.css";
-import "./robopet.css";
-import "./projects.css";
+import "./styles/header.css";
+import "./styles/intro.css";
+import "./styles/robopet.css";
+import "./styles/film.css";
+import "./styles/projects.css";
+import "./styles/pathfinding.css";
+import "./styles/about.css";
+import "./styles/contact.css";
+import "./styles/footer.css";
 
-export const metadataBase = new URL("https://aryavora.com");
-
-const display = Fragment_Mono({
-  variable: "--font-display",
+// Static weights keep the type system to 400, 700 and 800; there is no 500 or 600 to reach for.
+const sans = Atkinson_Hyperlegible_Next({
   subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const sans = Instrument_Sans({
+  weight: ["400", "700", "800"],
   variable: "--font-sans",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const mono = Fragment_Mono({
-  variable: "--font-mono",
+// Mono is reserved for measurements, part numbers, code and computed counts.
+const mono = Atkinson_Hyperlegible_Mono({
   subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
+  weight: ["400", "700"],
+  variable: "--font-mono",
   display: "swap",
 });
+
+const description =
+  "Arya Vora is in the class of 2028 at John P. Stevens High School in Edison, NJ. This site documents roboPet, the four-legged robot he is building, and his other projects.";
 
 export const metadata: Metadata = {
-  title: {
-    default: "Arya Vora | Robots, Software & Experiments",
-    template: "%s | Arya Vora",
-  },
-  metadataBase,
-  description: "Arya Vora (aryavora621 / frinklyy) builds robots, developer tools, and local-agent experiments. Explore the projects and interactive playground.",
-  keywords: [
-    "Arya Vora",
-    "Robotics",
-    "FTC 23786",
-    "FRC 2554",
-    "MakEMinds Robotics",
-    "The Warhawks",
-    "John P. Stevens High School",
-    "Edison NJ",
-    "AI Engineer",
-    "Autonomous Systems",
-    "Computer Vision",
-    "Machine Learning",
-  ],
-  authors: [{ name: "Arya Vora", url: "https://github.com/aryavora621" }],
-  creator: "Arya Vora",
-  publisher: "Arya Vora",
-  robots: "index, follow",
+  metadataBase: new URL("https://www.arya-vora.org"),
+  title: "Arya Vora",
+  description,
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://aryavora.com",
+    url: "https://www.arya-vora.org",
     siteName: "Arya Vora",
-    title: "Arya Vora | Robots, Software & Experiments",
-    description: "Robots, developer tools, and local-agent experiments. Explore the work and interactive playground.",
-    images: [
-      {
-        url: "/portfolio-og.png",
-        width: 1200,
-        height: 630,
-        alt: "Arya Vora - Robotics Engineer",
-      },
-    ],
+    title: "Arya Vora",
+    description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Arya Vora | Robots, Software & Experiments",
-    description: "Robots, developer tools, and ideas you can play with. Built in public by Arya Vora.",
-    images: ["/portfolio-og.png"],
-    creator: "@aryavora621",
-  },
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    title: "Arya Vora",
+    description,
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07070c",
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 };
 
 export default function RootLayout({
@@ -97,16 +62,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://github.com" />
-        <link rel="dns-prefetch" href="https://linkedin.com" />
-      </head>
-      <body className="min-h-full flex flex-col bg-ink-950 text-paper-200">
-        {children}
-      </body>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

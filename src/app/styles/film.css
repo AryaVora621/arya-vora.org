@@ -1,0 +1,155 @@
+/*
+  The roboPet film: one figure in the content column, its plate sized to the frames.
+
+  The plate is black in both themes because every frame fades to black at its edges, so it
+  takes whichever token is black (ink in light mode, paper in dark). DESIGN.md section 3 names
+  it as the one exception to the single surface. In dark mode that black is the page's own, so
+  the plate takes a 1px rule outline to keep an edge.
+
+  Width. From 1024px up the plate spans columns 1 to 8 of the page grid, the same width as the
+  model's stage below it, so the generated film never outweighs the line model and the two
+  share a left edge. Below 1024px the stage is full width, so the plate is too. Under 640px
+  the plate runs to the screen edges, so a pinned turn fills the screen instead of floating in
+  it, and the caption keeps the page gutter.
+
+  Whether the film pins and scrubs is decided here and not in React, so the server HTML already
+  has the final height and links to sections further down land where they should. Scrubbing
+  needs script and no request for reduced motion; everyone else gets the poster, unpinned.
+  The poster stays on screen until the canvas has drawn its first frame (RoboPetFilm sets
+  data-ready on .film), and if no pack ever arrives (data-failed) the figure unpins and the
+  run is dropped, so nobody scrolls through a blank plate.
+*/
+.film {
+  --film-plate: var(--ink);
+  --film-gutter: var(--space-4);
+  /* The page grid's column gap from 640px up; only used for the 8-column width. */
+  --film-gap: var(--space-5);
+  /* The column's content width. The film is the query container, so 100cqi is its own width,
+     the column's outer edge; it resolves where it is used, inside the plate and the caption. */
+  --film-content: calc(min(100cqi, 72rem) - 2 * var(--film-gutter));
+  --film-w: var(--film-content);
+  /* The frames' aspect ratio across that width, capped so plate and caption fit one screen. */
+  --film-plate-h: min(
+    calc(var(--film-w) * 940 / 1364),
+    calc(100svh - 2 * var(--space-7) - var(--space-8))
+  );
+  container-type: inline-size;
+}
+
+@media (max-width: 639.98px) {
+  .film {
+    --film-w: 100cqi;
+  }
+}
+
+@media (min-width: 640px) {
+  .film {
+    --film-gutter: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .film {
+    --film-gutter: var(--space-7);
+    --film-w: calc((var(--film-content) - 11 * var(--film-gap)) / 12 * 8 + 7 * var(--film-gap));
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .film {
+    --film-plate: var(--paper);
+  }
+}
+
+.film-figure {
+  margin-block: 0;
+}
+
+@media (max-width: 639.98px) {
+  .film-figure {
+    padding-inline: 0;
+  }
+}
+
+.film-plate {
+  position: relative;
+  width: var(--film-w);
+  max-width: 100%;
+  height: var(--film-plate-h);
+  overflow: hidden;
+  background: var(--film-plate);
+}
+
+@media (prefers-color-scheme: dark) {
+  .film-plate {
+    outline: 1px solid var(--rule);
+  }
+}
+
+.film-poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.film-canvas {
+  position: absolute;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+}
+
+.film-caption {
+  max-width: var(--film-w);
+  margin-top: 0;
+  padding-top: var(--space-3);
+}
+
+@media (max-width: 639.98px) {
+  .film-caption {
+    padding-inline: var(--film-gutter);
+  }
+}
+
+.film-run {
+  display: none;
+}
+
+/* Scrub: the figure pins at the middle of the screen while the run below it scrolls past, one
+   screen of scrolling for one turn (half a screen on phones, where the plate is shorter). The
+   poster sits under the transparent canvas until the first frame is drawn. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .film-figure {
+    position: sticky;
+    top: max(0px, (100svh - var(--film-plate-h)) / 2 - var(--space-5));
+  }
+
+  .film-run {
+    display: block;
+    height: 50svh;
+  }
+
+  .film-canvas {
+    display: block;
+  }
+
+  .film[data-ready] .film-poster {
+    display: none;
+  }
+
+  .film[data-failed] .film-figure {
+    position: static;
+  }
+
+  .film[data-failed] .film-run {
+    display: none;
+  }
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) and (min-width: 640px) {
+  .film-run {
+    height: 100svh;
+  }
+}

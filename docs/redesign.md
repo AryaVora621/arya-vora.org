@@ -1,10 +1,12 @@
 # Portfolio redesign
 
+**Superseded by [DESIGN.md](../DESIGN.md) on 2026-10-08.** This file records the September 2026 redesign and the public research behind it. It no longer describes the site. Where anything here disagrees with DESIGN.md, DESIGN.md wins. The lines below that would mislead a reader about the current site have been corrected; the rest is kept as history.
+
 ## Direction
 
-Graphite, warm off-white, acid lime, and a secondary teal. Oversized Instrument Sans headlines contrast with Fragment Mono labels. An original SVG companion-robot study anchors the hero; project illustrations replace repetitive text-only cards. The design is intentionally engineering-oriented rather than a generic gradient portfolio.
+Black and white only, from the DESIGN.md tokens. A procedural three.js roboPet anchors one section.
 
-Reference: [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), consulted on 2026-09-08. Reviewed its skill guide and local CSV entries for **Bento Box Grid**, **Kinetic Typography**, **Developer Mono**, reduced motion, touch targets, and overflow. These were recommendations, not installed runtime code. Adaptation: two-column illustrated cards, content-first mobile stacking, transform/opacity-only effects, explicit controls, native links and details. The existing fonts were retained to avoid unnecessary font downloads.
+Reference for the September 2026 pass: [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), consulted on 2026-09-08. Reviewed its skill guide and local CSV entries for **Bento Box Grid**, **Kinetic Typography**, **Developer Mono**, reduced motion, touch targets, and overflow. These were recommendations, not installed runtime code. Adaptation: two-column illustrated cards, content-first mobile stacking, transform/opacity-only effects, explicit controls, native links and details. The existing fonts were retained to avoid unnecessary font downloads.
 
 ## Public research and content boundaries
 
@@ -16,7 +18,7 @@ Research date: **2026-09-08**.
 - roboPet is hardware in progress, not a completed emotionally intelligent robot. The smartAI README calls the project Jarvis-Bee and marks several advertised features as roadmap items. The new copy distinguishes implementation from goals.
 - `frinklyy` is included as an alias supplied directly by the user. GitHub's exact `/users/frinklyy` endpoint returned 404, so no account at that URL was fabricated. The profile social-accounts endpoint returned an empty array.
 - Edison location and FTC/FRC affiliations are carried over from the user's existing `src/data/profile.ts`, not independently established from third-party biography pages. No new awards, school-year assertions, audience counts, or employment claims were added.
-- The first general-web pass hit Google/DuckDuckGo browser challenges and local Python certificate errors. A second pass succeeded with **Yahoo searches and direct public social pages via curl**; see the source-by-source findings below. Neither failed search engines nor unrelated name matches were used as evidence. Additional environment tooling can be provisioned through `.gitlab/duo/agent-config.yml`.
+- The first general-web pass hit Google/DuckDuckGo browser challenges and local Python certificate errors. A second pass succeeded with **Yahoo searches and direct public social pages via curl**; see the source-by-source findings below. Neither failed search engines nor unrelated name matches were used as evidence.
 - The GitHub refresh received a 403 for OpenUltraCode's **language endpoint**, while repository metadata and its README were available. `github.languageCoverage` now explicitly records missing language data. The redesigned home does not display aggregate language-byte totals as complete.
 
 ### Completed follow-up: web and direct-social research
@@ -41,7 +43,9 @@ The added Instagram/Hugging Face links are based on matching **both** the exact 
 
 ## Interaction contract
 
-1. **Hero:** pointer-responsive head and three click/keyboard expression controls. Original concept art, not a photograph or a claim about the current hardware.
+Item 1 is current. Items 2 to 5 describe the September 2026 site; the October rebuild removed them, and DESIGN.md section 10 lists the sections that replaced them.
+
+1. **roboPet figure:** line-drawn three.js model with drag to orbit, an exploded toggle and a parts table.
 2. **Work:** category filters, native expandable details, search over the entire repository snapshot, and show-all/show-less controls. Project visuals use illustrative data only.
 3. **Path lab:** editable 7×7 obstacle field, deterministic breadth-first shortest paths, unreachable-goal feedback, replay, clear, and arrow-key movement. No robot/network access. Reduced motion renders the completed route immediately, including when enabled during an active run. A media-query listener and mutation observer also complete an active route when the global pause control changes.
 4. **Agent lab:** two scripted tasks, visible stages, replay/reset, and cancellation when tasks change. No actual model calls, terminal access, uploads, or fabricated benchmark results.
@@ -49,9 +53,9 @@ The added Instagram/Hugging Face links are based on matching **both** the exact 
 
 ## Motion and performance
 
-GSAP ScrollTrigger drives the hero parallax, horizontal type strip, and about-section line. ResizeObserver refreshes trigger geometry after filtering/expanding content. IntersectionObserver starts one-shot Web Animations reveals; content is never hidden in server HTML or before JavaScript. Interactive surfaces fade without translation so controls do not move under a pointer. Native scrolling replaces the global smooth-scroll engine. The old custom cursor, glow, terminal overlay, and continuous background effects are not mounted by the new home.
+The only scroll-driven motion is the one pinned, scroll-scrubbed film act inside the roboPet section. Everything else moves only when the visitor starts it: the explode toggle, drag to orbit, the breadth-first search run and the button inversion. GSAP, Lenis, reveal animations, parallax and smooth-scroll engines are gone (DESIGN.md section 9).
 
-The navigation offers a pause-effects control; `prefers-reduced-motion` is respected at load and on changes. Animations/observers/timers clean up on unmount. Touch users can operate every demo without hover or dragging.
+`prefers-reduced-motion: reduce` is respected at load and on changes: nothing animates except drag to orbit, and the film shows a still. Animations, observers and timers clean up on unmount.
 
 ## Validation
 
@@ -69,8 +73,8 @@ Observed on 2026-09-08: `npm run lint` and `npm run build` succeeded; `npm test 
 
 Full-page captures are saved as `test-results/**/portfolio-full.png`. Automated accessibility checks do not replace manual screen-reader or visual review. Safari/Firefox and physical-device testing are not claimed by the Chromium suite.
 
-Social card source: `public/portfolio-og.svg`; regenerate its PNG with `node scripts/render-social-image.mjs`.
+Social card: `src/app/opengraph-image.tsx`, rendered by `ImageResponse` with the Atkinson Hyperlegible Next files in `assets/fonts/`. The SVG source and `scripts/render-social-image.mjs` were removed.
 
 ## Persistence
 
-The configured remote is GitHub: `AryaVora621/aryavora.com`. The GitLab projects search for `aryavora` returned zero results; no GitLab remote or draft-MR target is configured. Work is kept on `duo/feature/interactive-portfolio-redesign`, not directly on main. No production deployment or merge is implied.
+The configured remote is GitHub: `AryaVora621/arya-vora.org` (renamed from `aryavora.com` on 2026-10-08). The GitLab projects search for `aryavora` returned zero results; no GitLab remote or draft-MR target is configured. Work lands on `main`, which Vercel auto-deploys to https://www.arya-vora.org (the apex arya-vora.org redirects 308 to www; aryavora.com has no DNS).

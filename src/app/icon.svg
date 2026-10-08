@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- roboPet's OLED panel and its two eyes: round, a little taller than wide, each with a pupil set toward the nose. Same shapes as the eyes in createRoboPetModel.ts and in the concept animation. -->
+  <rect width="32" height="32" fill="#000000"/>
+  <ellipse cx="9" cy="15.5" rx="4.6" ry="6" fill="#ffffff"/>
+  <ellipse cx="23" cy="15.5" rx="4.6" ry="6" fill="#ffffff"/>
+  <ellipse cx="10.4" cy="15.5" rx="1.8" ry="2.7" fill="#000000"/>
+  <ellipse cx="21.6" cy="15.5" rx="1.8" ry="2.7" fill="#000000"/>
+</svg>

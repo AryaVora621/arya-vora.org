@@ -14,8 +14,13 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
+  // Stamped at build time so the footer date tracks the deploy.
+  env: {
+    BUILD_DATE: new Date().toISOString().slice(0, 10),
+  },
+
   experimental: {
-    optimizePackageImports: ["lucide-react", "framer-motion", "three", "gsap"],
+    optimizePackageImports: ["three"],
   },
 
   turbopack: {
@@ -51,6 +56,18 @@ const nextConfig: NextConfig = {
         },
       ],
     },
+    // The film folder is named after a hash of its contents, and the model stills live in a
+    // versioned folder, so neither changes under its URL. Change the hash or the version
+    // folder, never the files in place.
+    ...["/sequence/:path*", "/robopet/v1/:path*"].map((source) => ({
+      source,
+      headers: [
+        {
+          key: "Cache-Control",
+          value: "public, max-age=31536000, immutable",
+        },
+      ],
+    })),
   ],
 };
 

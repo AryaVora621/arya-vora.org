@@ -1,0 +1,17 @@
+/* About: one column of prose at the --measure width. It gets the page's widest
+   gap above it so it reads as a change of subject after the demo. */
+
+.about {
+  padding-block-start: var(--space-8);
+}
+
+@media (min-width: 640px) {
+  .about {
+    padding-block-start: var(--space-9);
+  }
+}
+
+/* "FTC team 23786" is one name, so the link never breaks across lines. */
+.about-body a {
+  white-space: nowrap;
+}

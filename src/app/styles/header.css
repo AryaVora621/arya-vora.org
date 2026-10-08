@@ -1,0 +1,57 @@
+/* Static header: no sticky, no blur, no background change on scroll. */
+.site-header {
+  padding-block: var(--space-4);
+}
+
+.site-header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--space-6);
+  row-gap: var(--space-2);
+}
+
+.site-header-name,
+.site-header-links a {
+  display: inline-block;
+  padding-block: var(--space-1);
+  font-size: var(--text-body);
+  text-decoration-line: none;
+}
+
+.site-header-name {
+  font-weight: 700;
+}
+
+.site-header-name:hover,
+.site-header-name:focus-visible,
+.site-header-links a:hover,
+.site-header-links a:focus-visible {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+}
+
+.site-header-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Under 640px the name keeps row one to itself and the links wrap onto row two. */
+@media (max-width: 639.98px) {
+  .site-header-nav {
+    flex-basis: 100%;
+  }
+
+  .site-header-inner {
+    row-gap: 0;
+  }
+
+  .site-header-links {
+    column-gap: var(--space-4);
+  }
+}

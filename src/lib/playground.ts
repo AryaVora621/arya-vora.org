@@ -3,6 +3,19 @@ export const START = 0;
 export const GOAL = GRID_SIZE * GRID_SIZE - 1;
 export const DEFAULT_OBSTACLES = [3, 10, 17, 24, 23, 30, 37];
 
+// The cell classes, the cell labels and the legend all read this table, so a
+// legend word can never describe a look the grid does not have. The tests read
+// it too.
+export const CELL_STATES = {
+  wall: { label: "Wall", className: "pathfinding-state-wall", mark: "" },
+  explored: { label: "Explored", className: "pathfinding-state-explored", mark: "" },
+  route: { label: "Route", className: "pathfinding-state-route", mark: "" },
+  start: { label: "Start", className: "pathfinding-state-start", mark: "S" },
+  goal: { label: "Goal", className: "pathfinding-state-goal", mark: "G" },
+} as const;
+
+export type CellState = keyof typeof CELL_STATES;
+
 /** Breadth-first search: shortest route on an unweighted, four-neighbor grid. */
 export function findPath(
   obstacles: ReadonlySet<number>,
@@ -64,21 +77,3 @@ export function findPath(
   }
   return { path: [], visited };
 }
-
-export const agentScenarios = {
-  "Build a feature": [
-    [
-      "Planner",
-      "Split the work into interface, implementation, and verification.",
-    ],
-    ["Builder", "Prepare a change in an isolated workspace."],
-    ["Reviewer", "Check the proposed change against the task."],
-    ["Verifier", "Return the plan and checks for human review."],
-  ],
-  "Audit a repository": [
-    ["Planner", "Map source files and define a read-only audit."],
-    ["Builder", "Inspect configuration and public entry points."],
-    ["Reviewer", "Group potential findings by severity."],
-    ["Verifier", "Return findings with reproducible verification steps."],
-  ],
-} as const;

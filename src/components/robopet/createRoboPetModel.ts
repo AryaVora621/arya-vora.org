@@ -1,22 +1,24 @@
 /**
- * roboPet procedural model.
+ * roboPet procedural model, drawn as a line drawing in the page's ink tokens.
  *
- * Reconstructed from assets-src/robopet/robopet-reference.jpeg with the img2threejs pipeline
- * (spec + reviews live in assets-src/robopet/img2threejs/). Everything is generated in code:
- * no external meshes or texture files, only canvas textures. Output is deterministic.
+ * Proportions follow an early concept render of roboPet. The boards, battery pack and buck
+ * converters inside are laid out from the hardware list in the roboPet README, so their sizes
+ * and positions are approximate. Everything is generated in code: no meshes, no textures.
  *
  * Frame: forward = +Z (OLED face), up = +Y, the robot's own left = +X. Feet rest on y = 0 and the
  * body is centered on the origin in XZ. Overall length is about 2.45 units.
  *
- * Visible geometry (shell, face, legs, servos, wires, brass hardware) follows the reference render.
- * The internals (Raspberry Pi Pico, Pi Zero 2W, MPU6050, 3-cell pack, 2x XL4016 buck converters,
- * hidden hip-roll servos) are NOT visible in the reference: they are inferred from the roboPet
- * hardware list and laid out plausibly so the exploded view has something true to show.
+ * After construction every part is flattened into one mesh per tone plus two sets of edges:
+ * hard edges (creases sharper than CREASE_DEG), which never change, and silhouette edges, which
+ * are recomputed from the camera position whenever the view changes so that curved surfaces
+ * keep an outline. Colors are not set here; the stage paints them from the CSS tokens.
  */
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-
-export type RoboPetEyeMode = "open" | "blink" | "happy" | "sleepy" | "off";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
+import type { InstancedInterleavedBuffer, InterleavedBufferAttribute } from "three";
 
 export type RoboPetPartId =
   | "shell-top"
@@ -31,218 +33,49 @@ export type RoboPetPartId =
   | "leg-rl"
   | "leg-rr";
 
-export type RoboPetPartInfo = { id: RoboPetPartId; label: string; detail: string };
+/** The three lit values a part can be drawn in. They map to --wash, --muted and --ink. */
+export type RoboPetTone = "wash" | "muted" | "ink";
+/** Unlit surfaces: the OLED glass (black in both themes) and lit pixels (white in both themes). */
+type FaceTone = RoboPetTone | "panel" | "light";
+
+export type RoboPetPalette = {
+  paper: THREE.Color;
+  ink: THREE.Color;
+  muted: THREE.Color;
+  wash: THREE.Color;
+};
 
 export type RoboPetModelOptions = {
-  /** Emissive color of the OLED eyes and status LED core. */
-  eyeColor?: THREE.ColorRepresentation;
-  /** Halo color for the status LED glow sprite. */
-  glowColor?: THREE.ColorRepresentation;
-  /** Initial OLED face mode. */
-  eyeMode?: RoboPetEyeMode;
-  /** Cast/receive shadows on every mesh (default true). */
-  shadows?: boolean;
   /** Overall nose-to-tail length in model units (default 2.45). Applied as a uniform root scale. */
   length?: number;
 };
 
-export type RoboPetLegJoints = {
-  hipRoll: THREE.Object3D;
-  hipPitch: THREE.Object3D;
-  knee: THREE.Object3D;
-};
+type PartMaterials = Record<RoboPetTone, THREE.MeshLambertMaterial> & { line: LineMaterial };
 
-type EyeState = {
-  canvas: HTMLCanvasElement | null;
-  texture: THREE.Texture;
-  color: string;
-  mode: RoboPetEyeMode;
-  lookX: number;
-  lookY: number;
+type Silhouette = {
+  /** Smooth edges in part space, 12 floats each: v0, v1, n0, n1. */
+  edges: Float32Array;
+  geometry: LineSegmentsGeometry;
+  buffer: InstancedInterleavedBuffer;
 };
 
 // ---------------------------------------------------------------------------------------------
-// Dimensions (model units). Scale reference: 1 mm of real hardware ~ 0.0052 units.
+// Dimensions (model units). Scale reference: 1 mm of real hardware is about 0.0052 units.
 // ---------------------------------------------------------------------------------------------
 const BODY = { w: 0.96, h: 0.75, len: 1.9, r: 0.26, wall: 0.03 };
 const CAP = { depth: 0.11, bevel: 0.035, grow: 0.018 };
 const HIP_Z_FRONT = 0.69;
 const HIP_Z_REAR = -0.86;
 const HIP_DROP = -0.1; // hip axis height relative to body center
-const SERVO = { len: 0.22, wid: 0.155, hgt: 0.2 }; // slightly chunkier than MG996R to match the render // MG996R 40.7 x 19.7 x 42.9 mm
+const SERVO = { len: 0.22, wid: 0.155, hgt: 0.2 }; // MG996R is 40.7 x 19.7 x 42.9 mm; drawn a little chunkier
 const THIGH_REST = 0.42; // rad, thigh swings down and rearward
 const KNEE_REST = -1.02; // rad, shank swings down and forward (knee-back stance)
 const HIP_ROLL_REST = 0.05; // rad, slight outward splay
 
-// ---------------------------------------------------------------------------------------------
-// Deterministic PRNG for procedural textures.
-// ---------------------------------------------------------------------------------------------
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function makeCanvas(w: number, h: number): HTMLCanvasElement | null {
-  if (typeof document === "undefined") return null;
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  return c;
-}
-
-/** Horizontal FDM layer-line height field (independent from albedo). */
-function layerLineTexture(seed: number, stripes: number): THREE.Texture | null {
-  const c = makeCanvas(8, stripes * 8);
-  if (!c) return null;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  const rnd = mulberry32(seed);
-  for (let i = 0; i < stripes; i++) {
-    const jitter = 0.85 + rnd() * 0.15;
-    for (let k = 0; k < 8; k++) {
-      // rounded bead profile: bright crest, dark valley between layers
-      const s = Math.sin((k / 8) * Math.PI);
-      const v = Math.round(255 * (0.25 + 0.75 * s * jitter));
-      ctx.fillStyle = `rgb(${v},${v},${v})`;
-      ctx.fillRect(0, i * 8 + k, 8, 1);
-    }
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.NoColorSpace;
-  return t;
-}
-
-/** Low-frequency albedo mottling so the PLA does not read as a flat CG fill. */
-function mottleTexture(seed: number, base: string, amp: number): THREE.Texture | null {
-  const size = 128;
-  const c = makeCanvas(size, size);
-  if (!c) return null;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, size, size);
-  const rnd = mulberry32(seed);
-  for (let i = 0; i < 220; i++) {
-    const x = rnd() * size;
-    const y = rnd() * size;
-    const r = 6 + rnd() * 22;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    const dark = rnd() > 0.5;
-    const a = amp * (0.3 + rnd() * 0.7);
-    g.addColorStop(0, dark ? `rgba(60,50,40,${a})` : `rgba(255,255,250,${a})`);
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
-/** Diagonal infill-like print texture for the graphite leg plates. */
-function printHatchTexture(seed: number): THREE.Texture | null {
-  const size = 64;
-  const c = makeCanvas(size, size);
-  if (!c) return null;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = "#808080";
-  ctx.fillRect(0, 0, size, size);
-  const rnd = mulberry32(seed);
-  ctx.lineWidth = 2;
-  for (let i = -size; i < size * 2; i += 4) {
-    const v = 150 + Math.round(rnd() * 60);
-    ctx.strokeStyle = `rgb(${v},${v},${v})`;
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i + size, size);
-    ctx.stroke();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.NoColorSpace;
-  return t;
-}
-
-/** Radial glow sprite for the status LED halo. */
-function glowTexture(color: string): THREE.Texture | null {
-  const c = makeCanvas(64, 64);
-  if (!c) return null;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  const col = new THREE.Color(color);
-  const rgb = `${Math.round(col.r * 255)},${Math.round(col.g * 255)},${Math.round(col.b * 255)}`;
-  g.addColorStop(0, `rgba(${rgb},0.9)`);
-  g.addColorStop(0.25, `rgba(${rgb},0.35)`);
-  g.addColorStop(1, `rgba(${rgb},0)`);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 64, 64);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
-// ---------------------------------------------------------------------------------------------
-// OLED face (SSD1306-style pixel grid drawn to a canvas, nearest-filtered).
-// ---------------------------------------------------------------------------------------------
-const OLED_GRID = { w: 64, h: 48, px: 8 };
-
-function superellipse(x: number, y: number, rx: number, ry: number, n: number) {
-  return Math.pow(Math.abs(x / rx), n) + Math.pow(Math.abs(y / ry), n) <= 1;
-}
-
-function drawEyes(state: EyeState) {
-  const c = state.canvas;
-  if (!c) return;
-  const ctx = c.getContext("2d");
-  if (!ctx) return;
-  const { w, h, px } = OLED_GRID;
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, c.width, c.height);
-  // faint unlit pixel matrix, visible only up close
-  ctx.fillStyle = "rgba(255,255,255,0.025)";
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) ctx.fillRect(x * px + 1, y * px + 1, px - 2, px - 2);
-  if (state.mode === "off") {
-    state.texture.needsUpdate = true;
-    return;
-  }
-  ctx.fillStyle = state.color;
-  const eyes = [
-    { cx: 18.5, cy: 23.5 },
-    { cx: 45.5, cy: 23.5 },
-  ];
-  for (const e of eyes) {
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const dx = x + 0.5 - e.cx;
-        const dy = y + 0.5 - e.cy;
-        let lit = false;
-        if (state.mode === "open" || state.mode === "sleepy") {
-          const outer = superellipse(dx, dy, 8.8, 9.4, 2.5);
-          const pupil = superellipse(dx - state.lookX, dy - state.lookY, 2.9, 3.9, 2.1);
-          lit = outer && !pupil;
-          if (state.mode === "sleepy" && dy < -2) lit = false;
-        } else if (state.mode === "blink") {
-          lit = Math.abs(dy) <= 1 && Math.abs(dx) <= 8;
-        } else if (state.mode === "happy") {
-          const r = Math.hypot(dx, dy + 3);
-          lit = r >= 6 && r <= 8.4 && dy + 3 <= 0.5;
-        }
-        if (lit) ctx.fillRect(x * px, y * px, px, px);
-      }
-    }
-  }
-  state.texture.needsUpdate = true;
-}
+/** Faces meeting at more than this angle get a hard edge; shallower ones are shaded smooth. */
+const CREASE_DEG = 40;
+/** Parts whose bounding sphere is smaller than this get no edges (screws, pins, chips). */
+const MIN_EDGE_RADIUS = 0.03;
 
 // ---------------------------------------------------------------------------------------------
 // Geometry helpers
@@ -303,35 +136,23 @@ function halfShellShape(sign: 1 | -1) {
   return s;
 }
 
-/** Object-space UVs: u wraps around, v follows world Y so layer lines stay horizontal. */
-function layerUV(geo: THREE.BufferGeometry, vScale: number, uScale = 1) {
-  const pos = geo.getAttribute("position");
-  const uv = new Float32Array(pos.count * 2);
-  for (let i = 0; i < pos.count; i++) {
-    uv[i * 2] = (pos.getX(i) + pos.getZ(i)) * uScale;
-    uv[i * 2 + 1] = pos.getY(i) * vScale;
-  }
-  geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-  return geo;
-}
-
-/** Extrude a shape drawn in (z, y) along +X from x0 with the given thickness. */
-function extrudeSide(shape: THREE.Shape, x0: number, thick: number, bevel = 0.008, curveSegments = 10) {
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: Math.max(0.001, thick - bevel * 2),
-    bevelEnabled: bevel > 0,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 2,
-    curveSegments,
-  });
-  // shape x -> world z, shape y -> world y, extrusion z -> world x
+/**
+ * Extrude a shape drawn in (z, y) along +X from x0 with the given thickness. No bevel: a bevel
+ * split into facets draws two or three parallel lines where one crisp edge belongs.
+ */
+function extrudeSide(shape: THREE.Shape, x0: number, thick: number, curveSegments = 10) {
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: thick, bevelEnabled: false, curveSegments });
+  // shape x to world z, shape y to world y, extrusion z to world x
   geo.rotateY(Math.PI / 2);
   geo.scale(1, 1, -1);
   geo.computeBoundingBox();
   const bb = geo.boundingBox as THREE.Box3;
   geo.translate(x0 - bb.min.x, 0, 0);
-  // undo the winding flip caused by the mirror scale
+  flipWinding(geo); // undo the winding flip caused by the mirror scale
+  return geo;
+}
+
+function flipWinding(geo: THREE.BufferGeometry) {
   const idx = geo.getIndex();
   if (idx) {
     const a = idx.array as Uint16Array | Uint32Array;
@@ -340,148 +161,161 @@ function extrudeSide(shape: THREE.Shape, x0: number, thick: number, bevel = 0.00
       a[i + 1] = a[i + 2];
       a[i + 2] = tmp;
     }
-  } else {
-    const p = geo.getAttribute("position");
-    const n = geo.getAttribute("normal");
-    const uvA = geo.getAttribute("uv");
-    for (let i = 0; i < p.count; i += 3) {
-      for (const attr of [p, n, uvA]) {
-        if (!attr) continue;
-        for (let k = 0; k < attr.itemSize; k++) {
-          const tmp = attr.getComponent(i + 1, k);
-          attr.setComponent(i + 1, k, attr.getComponent(i + 2, k));
-          attr.setComponent(i + 2, k, tmp);
-        }
+    return;
+  }
+  for (const attr of Object.values(geo.attributes) as THREE.BufferAttribute[]) {
+    for (let i = 0; i < attr.count; i += 3) {
+      for (let k = 0; k < attr.itemSize; k++) {
+        const tmp = attr.getComponent(i + 1, k);
+        attr.setComponent(i + 1, k, attr.getComponent(i + 2, k));
+        attr.setComponent(i + 2, k, tmp);
       }
     }
   }
-  geo.computeVertexNormals();
-  return geo;
 }
 
-function countTriangles(root: THREE.Object3D) {
-  let tris = 0;
-  root.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (!m.isMesh || !m.geometry) return;
-    const g = m.geometry;
-    const n = g.index ? g.index.count / 3 : g.getAttribute("position").count / 3;
-    const inst = (o as THREE.InstancedMesh).isInstancedMesh ? (o as THREE.InstancedMesh).count : 1;
-    tris += n * inst;
-  });
-  return Math.round(tris);
+// ---------------------------------------------------------------------------------------------
+// Geometry analysis: creased normals plus hard and smooth edges, cached per source geometry.
+// ---------------------------------------------------------------------------------------------
+type Analysis = {
+  /** Triangle soup positions, 9 floats per triangle. */
+  position: Float32Array;
+  /** Creased vertex normals matching position. */
+  normal: Float32Array;
+  edges?: { hard: Float32Array; soft: Float32Array };
+};
+
+const analysisCache = new WeakMap<THREE.BufferGeometry, Analysis>();
+
+function analyze(geo: THREE.BufferGeometry, withEdges: boolean): Analysis {
+  let a = analysisCache.get(geo);
+  if (a && (!withEdges || a.edges)) return a;
+
+  const src = geo.getAttribute("position");
+  const index = geo.getIndex();
+  const corners = index ? index.count : src.count;
+  const position = new Float32Array(corners * 3);
+  for (let i = 0; i < corners; i++) {
+    const v = index ? index.getX(i) : i;
+    position[i * 3] = src.getX(v);
+    position[i * 3 + 1] = src.getY(v);
+    position[i * 3 + 2] = src.getZ(v);
+  }
+  const faces = corners / 3;
+
+  // Weld corners by quantized position so faces from separate strips still share edges.
+  const ids = new Int32Array(corners);
+  const lookup = new Map<string, number>();
+  for (let i = 0; i < corners; i++) {
+    const key = `${Math.round(position[i * 3] * 1e4)},${Math.round(position[i * 3 + 1] * 1e4)},${Math.round(position[i * 3 + 2] * 1e4)}`;
+    let id = lookup.get(key);
+    if (id === undefined) {
+      id = lookup.size;
+      lookup.set(key, id);
+    }
+    ids[i] = id;
+  }
+  const welded = lookup.size;
+
+  // Face normals (unit) and areas.
+  const fn = new Float32Array(faces * 3);
+  const area = new Float32Array(faces);
+  for (let f = 0; f < faces; f++) {
+    const o = f * 9;
+    const ux = position[o + 3] - position[o];
+    const uy = position[o + 4] - position[o + 1];
+    const uz = position[o + 5] - position[o + 2];
+    const vx = position[o + 6] - position[o];
+    const vy = position[o + 7] - position[o + 1];
+    const vz = position[o + 8] - position[o + 2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const len = Math.hypot(nx, ny, nz);
+    area[f] = len;
+    if (len > 1e-12) {
+      fn[f * 3] = nx / len;
+      fn[f * 3 + 1] = ny / len;
+      fn[f * 3 + 2] = nz / len;
+    }
+  }
+
+  // Creased normals: average the faces around a corner that lie within CREASE_DEG of it.
+  const crease = Math.cos(THREE.MathUtils.degToRad(CREASE_DEG));
+  const around: number[][] = Array.from({ length: welded }, () => []);
+  for (let i = 0; i < corners; i++) if (area[(i / 3) | 0] > 1e-12) around[ids[i]].push((i / 3) | 0);
+  const normal = new Float32Array(corners * 3);
+  for (let i = 0; i < corners; i++) {
+    const f = (i / 3) | 0;
+    let x = 0;
+    let y = 0;
+    let z = 0;
+    for (const g of around[ids[i]]) {
+      const d = fn[f * 3] * fn[g * 3] + fn[f * 3 + 1] * fn[g * 3 + 1] + fn[f * 3 + 2] * fn[g * 3 + 2];
+      if (d < crease) continue;
+      x += fn[g * 3] * area[g];
+      y += fn[g * 3 + 1] * area[g];
+      z += fn[g * 3 + 2] * area[g];
+    }
+    const len = Math.hypot(x, y, z) || 1;
+    normal[i * 3] = x / len;
+    normal[i * 3 + 1] = y / len;
+    normal[i * 3 + 2] = z / len;
+  }
+
+  a = { position, normal };
+  if (withEdges) {
+    const hard: number[] = [];
+    const soft: number[] = [];
+    const open = new Map<number, { f: number; c0: number; c1: number }>();
+    const pushPos = (out: number[], c: number) => out.push(position[c * 3], position[c * 3 + 1], position[c * 3 + 2]);
+    for (let f = 0; f < faces; f++) {
+      if (area[f] <= 1e-12) continue;
+      for (let e = 0; e < 3; e++) {
+        const c0 = f * 3 + e;
+        const c1 = f * 3 + ((e + 1) % 3);
+        const i0 = ids[c0];
+        const i1 = ids[c1];
+        if (i0 === i1) continue;
+        const key = Math.min(i0, i1) * welded + Math.max(i0, i1);
+        const first = open.get(key);
+        if (!first) {
+          open.set(key, { f, c0, c1 });
+          continue;
+        }
+        open.delete(key);
+        const g = first.f;
+        const d = fn[f * 3] * fn[g * 3] + fn[f * 3 + 1] * fn[g * 3 + 1] + fn[f * 3 + 2] * fn[g * 3 + 2];
+        if (d < crease) {
+          pushPos(hard, c0);
+          pushPos(hard, c1);
+        } else if (d < 0.9999) {
+          // Curved surface: drawn only while it is a silhouette (one face toward the camera).
+          pushPos(soft, c0);
+          pushPos(soft, c1);
+          soft.push(fn[g * 3], fn[g * 3 + 1], fn[g * 3 + 2], fn[f * 3], fn[f * 3 + 1], fn[f * 3 + 2]);
+        }
+      }
+    }
+    // Open boundaries (a plane's rim, the end of a tube) are always drawn.
+    for (const { c0, c1 } of open.values()) {
+      pushPos(hard, c0);
+      pushPos(hard, c1);
+    }
+    a.edges = { hard: new Float32Array(hard), soft: new Float32Array(soft) };
+  }
+  analysisCache.set(geo, a);
+  return a;
 }
 
 // ---------------------------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------------------------
 export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Group {
-  const eyeColor = new THREE.Color(options.eyeColor ?? "#a78bfa");
-  const glowColor = new THREE.Color(options.glowColor ?? "#8b5cf6");
-  const shadows = options.shadows ?? true;
-
   const root = new THREE.Group();
   root.name = "roboPet";
-
-  // ---------------- materials (shared) ----------------
-  const layerBump = layerLineTexture(7, 32);
-  const LAYER_PITCH = 0.0085;
-  const vLayer = 1 / (32 * LAYER_PITCH);
-  // very low-amplitude albedo breakup; the layer-line bump carries most of the surface read
-  const shellMap = mottleTexture(11, "#ffffff", 0.006);
-  if (shellMap) shellMap.repeat.set(0.35, 0.35);
-  const pla = new THREE.MeshPhysicalMaterial({
-    name: "pla-shell",
-    // Tuned under the site key light so the shell reads as the film's warm cream, not white.
-    color: "#d6ccb8",
-    roughness: 0.74,
-    metalness: 0,
-    sheen: 0.15,
-    sheenRoughness: 0.8,
-    sheenColor: new THREE.Color("#fff8ec"),
-    map: shellMap,
-    bumpMap: layerBump,
-    bumpScale: 0.35,
-  });
-  const hatch = printHatchTexture(5);
-  if (hatch) hatch.repeat.set(1, 1);
-  const graphite = new THREE.MeshStandardMaterial({
-    name: "pla-graphite",
-    color: "#5b5f5c",
-    roughness: 0.66,
-    metalness: 0,
-    bumpMap: hatch,
-    bumpScale: 0.25,
-  });
-  const graphiteDark = new THREE.MeshStandardMaterial({ name: "pla-graphite-dark", color: "#474a48", roughness: 0.7 });
-  const servoBlack = new THREE.MeshPhysicalMaterial({
-    name: "servo-black",
-    color: "#151515",
-    roughness: 0.42,
-    clearcoat: 0.25,
-    clearcoatRoughness: 0.5,
-  });
-  const servoLabel = new THREE.MeshStandardMaterial({ name: "servo-label", color: "#202020", roughness: 0.6 });
-  const brass = new THREE.MeshStandardMaterial({ name: "brass", color: "#c9a35a", roughness: 0.32, metalness: 1 });
-  const steel = new THREE.MeshStandardMaterial({ name: "steel", color: "#a2a5a8", roughness: 0.36, metalness: 1 });
-  const rubber = new THREE.MeshStandardMaterial({ name: "rubber-black", color: "#1b1b1c", roughness: 0.7 });
-  const wireMats = ["#5a2e1a", "#c4231c", "#e8a21a"].map(
-    (c, i) => new THREE.MeshStandardMaterial({ name: `wire-${i}`, color: c, roughness: 0.45 }),
-  );
-  const pcbGreen = new THREE.MeshStandardMaterial({ name: "pcb-green", color: "#1f6b3a", roughness: 0.5 });
-  const pcbBlue = new THREE.MeshStandardMaterial({ name: "pcb-blue", color: "#1d3f8a", roughness: 0.5 });
-  const pcbDark = new THREE.MeshStandardMaterial({ name: "pcb-dark", color: "#1b1f1c", roughness: 0.5 });
-  const chip = new THREE.MeshStandardMaterial({ name: "chip-black", color: "#111111", roughness: 0.45 });
-  const gold = new THREE.MeshStandardMaterial({ name: "header-gold", color: "#d4af37", roughness: 0.3, metalness: 1 });
-  const aluminium = new THREE.MeshStandardMaterial({ name: "heatsink", color: "#1a1a1c", roughness: 0.5, metalness: 0.6 });
-  const silver = new THREE.MeshStandardMaterial({ name: "tin", color: "#c8c8c8", roughness: 0.3, metalness: 1 });
-  const cellWrap = [
-    new THREE.MeshStandardMaterial({ name: "cell-wrap", color: "#2c4f8c", roughness: 0.35 }),
-    new THREE.MeshStandardMaterial({ name: "cell-cap", color: "#b8b8b8", roughness: 0.3, metalness: 1 }),
-  ];
-  const copper = new THREE.MeshStandardMaterial({ name: "copper", color: "#b8733a", roughness: 0.35, metalness: 1 });
-  const capBody = new THREE.MeshStandardMaterial({ name: "electrolytic", color: "#20242c", roughness: 0.4 });
-  const lensGlass = new THREE.MeshPhysicalMaterial({
-    name: "lens-glass",
-    color: "#06080c",
-    roughness: 0.05,
-    clearcoat: 1,
-    metalness: 0.2,
-  });
-  const ledMat = new THREE.MeshStandardMaterial({
-    name: "led-emissive",
-    color: eyeColor,
-    emissive: eyeColor,
-    emissiveIntensity: 2.2,
-    roughness: 0.2,
-  });
-
-  // OLED canvas texture
-  const oledCanvas = makeCanvas(OLED_GRID.w * OLED_GRID.px, OLED_GRID.h * OLED_GRID.px);
-  const oledTex: THREE.Texture = oledCanvas ? new THREE.CanvasTexture(oledCanvas) : new THREE.Texture();
-  oledTex.magFilter = THREE.LinearFilter;
-  oledTex.minFilter = THREE.LinearMipmapLinearFilter;
-  oledTex.colorSpace = THREE.SRGBColorSpace;
-  oledTex.anisotropy = 4;
-  const eyeState: EyeState = {
-    canvas: oledCanvas,
-    texture: oledTex,
-    color: `#${eyeColor.getHexString()}`,
-    mode: options.eyeMode ?? "open",
-    lookX: -2.4,
-    lookY: 0.2,
-  };
-  drawEyes(eyeState);
-  const oledMat = new THREE.MeshPhysicalMaterial({
-    name: "oled-glass",
-    color: "#020203",
-    roughness: 0.14,
-    clearcoat: 1,
-    clearcoatRoughness: 0.08,
-    emissive: "#ffffff",
-    emissiveMap: oledTex,
-    emissiveIntensity: 1.35,
-  });
+  // Meshes are only carriers for geometry, tone and transform until the parts are flattened.
+  const placeholder = new THREE.MeshBasicMaterial();
 
   // ---------------- shared geometry ----------------
   const screwGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.01, 10).rotateZ(Math.PI / 2);
@@ -496,22 +330,22 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     ],
     14,
   ).rotateZ(-Math.PI / 2);
-  const servoCaseGeo = new RoundedBoxGeometry(SERVO.hgt, SERVO.wid, SERVO.len, 2, 0.008);
-  const servoTabGeo = new RoundedBoxGeometry(0.012, SERVO.wid * 0.92, SERVO.len + 0.08, 1, 0.003);
+  const servoCaseGeo = new THREE.BoxGeometry(SERVO.hgt, SERVO.wid, SERVO.len);
+  const servoTabGeo = new THREE.BoxGeometry(0.012, SERVO.wid * 0.92, SERVO.len + 0.08);
   const servoBossGeo = new THREE.CylinderGeometry(0.03, 0.032, 0.02, 18).rotateZ(Math.PI / 2);
   const splineGeo = new THREE.CylinderGeometry(0.011, 0.011, 0.012, 12).rotateZ(Math.PI / 2);
-  const labelGeo = new THREE.BoxGeometry(SERVO.hgt * 0.6, 0.002, SERVO.len * 0.55);
 
-  const meshes: THREE.Mesh[] = [];
-  const mk = (geo: THREE.BufferGeometry, mat: THREE.Material | THREE.Material[], parent: THREE.Object3D, name?: string) => {
-    const m = new THREE.Mesh(geo, mat);
-    if (name) m.name = name;
+  type MeshOptions = { edges?: boolean };
+  const mk = (geo: THREE.BufferGeometry, tone: FaceTone, parent: THREE.Object3D, name: string, opts: MeshOptions = {}) => {
+    const m = new THREE.Mesh(geo, placeholder);
+    m.name = name;
+    m.userData.tone = tone;
+    m.userData.edges = opts.edges ?? true;
     parent.add(m);
-    meshes.push(m);
     return m;
   };
   const screw = (parent: THREE.Object3D, x: number, y: number, z: number, dir: 1 | -1 = 1) => {
-    const s = mk(screwGeo, brass, parent, "brass-screw");
+    const s = mk(screwGeo, "ink", parent, "screw");
     s.position.set(x + dir * 0.005, y, z);
     return s;
   };
@@ -520,30 +354,27 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const buildServo = (name: string) => {
     const g = new THREE.Group();
     g.name = name;
-    const shaftOffsetZ = SERVO.len / 2 - 0.05; // shaft is ~10 mm from one end
+    const shaftOffsetZ = SERVO.len / 2 - 0.05; // shaft is about 10 mm from one end
     const body = new THREE.Group();
     body.position.set(-SERVO.hgt / 2 - 0.012, 0, shaftOffsetZ);
     g.add(body);
-    mk(servoCaseGeo, servoBlack, body, `${name}-case`);
-    const tab = mk(servoTabGeo, servoBlack, body, `${name}-tabs`);
+    mk(servoCaseGeo, "muted", body, `${name}-case`);
+    const tab = mk(servoTabGeo, "muted", body, `${name}-tabs`);
     tab.position.x = SERVO.hgt * 0.22;
     for (const dz of [-1, 1]) for (const dy of [-1, 1]) screw(body, SERVO.hgt * 0.22 + 0.006, dy * 0.028, dz * (SERVO.len / 2 + 0.024));
-    const label = mk(labelGeo, servoLabel, body, `${name}-label`);
-    label.position.set(-0.01, SERVO.wid / 2 + 0.0005, 0);
-    const boss = mk(servoBossGeo, servoBlack, g, `${name}-boss`);
-    boss.position.x = -0.012 + 0.01;
-    const spline = mk(splineGeo, steel, g, `${name}-spline`);
+    const boss = mk(servoBossGeo, "muted", g, `${name}-boss`);
+    boss.position.x = -0.002;
+    const spline = mk(splineGeo, "ink", g, `${name}-spline`);
     spline.position.x = 0.012;
-    g.userData.wireExit = new THREE.Vector3(-SERVO.hgt * 0.75, -SERVO.wid * 0.2, shaftOffsetZ - SERVO.len / 2 - 0.004);
     return g;
   };
 
   // ---------------- part registry ----------------
   const parts: THREE.Group[] = [];
-  const part = (id: RoboPetPartId, label: string, detail: string, explode: THREE.Vector3) => {
+  const part = (id: RoboPetPartId, explode: THREE.Vector3) => {
     const g = new THREE.Group();
     g.name = id;
-    g.userData.part = { id, label, detail } satisfies RoboPetPartInfo;
+    g.userData.partId = id;
     g.userData.explode = explode;
     root.add(g);
     parts.push(g);
@@ -553,27 +384,18 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const yC = 1.0; // body center height before the final ground snap
 
   // ---------------- shell top / bottom ----------------
-  const shellTop = part(
-    "shell-top",
-    "Upper shell",
-    "PLA top half printed on a Bambu A1 Mini.",
-    new THREE.Vector3(0, 1.45, 0),
-  );
-  const shellBottom = part(
-    "shell-bottom",
-    "Chassis",
-    "Lower PLA shell and rear cap. Carries the hip mounts, battery tray and board standoffs.",
-    new THREE.Vector3(0, -0.05, 0),
-  );
+  const shellTop = part("shell-top", new THREE.Vector3(0, 1.45, 0));
+  const shellBottom = part("shell-bottom", new THREE.Vector3(0, -0.05, 0));
   const extrudeOpts = { depth: BODY.len, bevelEnabled: false, curveSegments: 14 };
-  const topGeo = layerUV(new THREE.ExtrudeGeometry(halfShellShape(1), extrudeOpts).translate(0, 0, -BODY.len / 2), vLayer);
-  const botGeo = layerUV(new THREE.ExtrudeGeometry(halfShellShape(-1), extrudeOpts).translate(0, 0, -BODY.len / 2), vLayer);
+  const topGeo = new THREE.ExtrudeGeometry(halfShellShape(1), extrudeOpts).translate(0, 0, -BODY.len / 2);
+  const botGeo = new THREE.ExtrudeGeometry(halfShellShape(-1), extrudeOpts).translate(0, 0, -BODY.len / 2);
   shellTop.position.set(0, yC, 0);
   shellBottom.position.set(0, yC, 0);
-  mk(topGeo, pla, shellTop, "shell-top-tube");
-  mk(botGeo, pla, shellBottom, "shell-bottom-tube");
+  mk(topGeo, "wash", shellTop, "shell-top-tube");
+  mk(botGeo, "wash", shellBottom, "shell-bottom-tube");
 
-  // caps: rounded-rect slab, slightly proud of the tube so the seam reads as a step
+  // Caps: rounded-rect slab with one 45 degree chamfer, a little proud of the tube so the seam
+  // reads as a step. A single chamfer facet gives two deliberate lines instead of a smeared bevel.
   const capW = BODY.w + CAP.grow * 2 - CAP.bevel * 2;
   const capH = BODY.h + CAP.grow * 2 - CAP.bevel * 2;
   const capR = BODY.r + CAP.grow - CAP.bevel;
@@ -582,64 +404,80 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     bevelEnabled: true,
     bevelThickness: CAP.bevel,
     bevelSize: CAP.bevel,
-    bevelSegments: 5,
+    bevelSegments: 1,
     curveSegments: 16,
   };
   const rearShape = roundedRectPath(new THREE.Shape(), capW, capH, capR);
-  const rearGeo = layerUV(new THREE.ExtrudeGeometry(rearShape, capOpts), vLayer);
+  const rearGeo = new THREE.ExtrudeGeometry(rearShape, capOpts);
   rearGeo.computeBoundingBox();
   rearGeo.translate(0, 0, -(rearGeo.boundingBox as THREE.Box3).max.z);
-  const rearCap = mk(rearGeo, pla, shellBottom, "rear-cap");
+  const rearCap = mk(rearGeo, "wash", shellBottom, "rear-cap");
   rearCap.position.z = -BODY.len / 2 + 0.03;
   // internal standoffs / board rails (printed into the chassis)
   const railGeo = new THREE.BoxGeometry(0.04, 0.05, 1.5);
   for (const sx of [-1, 1]) {
-    const rail = mk(railGeo, pla, shellBottom, "board-rail");
+    const rail = mk(railGeo, "wash", shellBottom, "board-rail");
     rail.position.set(sx * 0.2, -BODY.h / 2 + BODY.wall + 0.025, 0);
   }
 
   // ---------------- face (cap + OLED) ----------------
-  const face = part(
-    "face",
-    "Face plate + OLED",
-    "SSD1306 OLED behind a printed bezel. Draws the eyes; driven over I2C by the Pico.",
-    new THREE.Vector3(0, 0, 0.85),
-  );
+  const face = part("face", new THREE.Vector3(0, 0, 0.62));
   face.position.set(0, yC, BODY.len / 2 - 0.03);
   const SCREEN = { w: 0.44, h: 0.33, y: -0.04 };
   const CAMSLOT = { w: 0.2, h: 0.085, y: 0.235 };
   const faceShape = roundedRectPath(new THREE.Shape(), capW, capH, capR);
   faceShape.holes.push(roundedRectPath(new THREE.Path(), SCREEN.w + CAP.bevel * 2, SCREEN.h + CAP.bevel * 2, 0.03, 0, SCREEN.y));
   faceShape.holes.push(roundedRectPath(new THREE.Path(), CAMSLOT.w + CAP.bevel * 2, CAMSLOT.h + CAP.bevel * 2, 0.045, 0, CAMSLOT.y));
-  const faceGeo = layerUV(new THREE.ExtrudeGeometry(faceShape, capOpts), vLayer);
+  const faceGeo = new THREE.ExtrudeGeometry(faceShape, capOpts);
   faceGeo.computeBoundingBox();
   faceGeo.translate(0, 0, -(faceGeo.boundingBox as THREE.Box3).min.z);
-  mk(faceGeo, pla, face, "face-cap");
+  mk(faceGeo, "wash", face, "face-cap");
   const capFront = CAP.depth + CAP.bevel * 2;
-  // OLED module: black glass panel + thin bezel + PCB edge, recessed into the cap
-  const oledPcb = mk(new THREE.BoxGeometry(SCREEN.w + 0.08, SCREEN.h + 0.07, 0.012), pcbDark, face, "oled-pcb");
+  // OLED module: black glass panel, thin bezel and PCB edge, recessed into the cap
+  const oledPcb = mk(new THREE.BoxGeometry(SCREEN.w + 0.08, SCREEN.h + 0.07, 0.012), "muted", face, "oled-pcb");
   oledPcb.position.set(0, SCREEN.y, capFront - 0.06);
-  const oledBezel = mk(new THREE.BoxGeometry(SCREEN.w + 0.03, SCREEN.h + 0.03, 0.02), chip, face, "oled-bezel");
+  const oledBezel = mk(new THREE.BoxGeometry(SCREEN.w + 0.03, SCREEN.h + 0.03, 0.02), "ink", face, "oled-bezel");
   oledBezel.position.set(0, SCREEN.y, capFront - 0.045);
-  const oledPanel = mk(new THREE.PlaneGeometry(SCREEN.w, SCREEN.h), oledMat, face, "oled-panel");
+  const oledPanel = mk(new THREE.PlaneGeometry(SCREEN.w, SCREEN.h), "panel", face, "oled-panel");
   oledPanel.position.set(0, SCREEN.y, capFront - 0.034);
-  face.userData.eyes = eyeState;
+  // The eyes follow the concept animation on the page: two round white eyes, a little taller than
+  // wide, each with a black pupil set toward the nose, a touch above the middle of the panel.
+  const EYE = { rx: 0.054, ry: 0.065, x: 0.1, y: 0.012 };
+  const PUPIL = { rx: 0.02, ry: 0.03, inset: 0.016 };
+  const ellipse = (cx: number, cy: number, rx: number, ry: number) =>
+    new THREE.Shape().absellipse(cx, cy, rx, ry, 0, Math.PI * 2, false, 0);
+  const eyes = mk(
+    new THREE.ShapeGeometry([ellipse(-EYE.x, EYE.y, EYE.rx, EYE.ry), ellipse(EYE.x, EYE.y, EYE.rx, EYE.ry)], 32),
+    "light",
+    face,
+    "oled-eyes",
+    { edges: false },
+  );
+  eyes.position.set(0, SCREEN.y, capFront - 0.0325);
+  const pupils = mk(
+    new THREE.ShapeGeometry(
+      [
+        ellipse(-EYE.x + PUPIL.inset, EYE.y, PUPIL.rx, PUPIL.ry),
+        ellipse(EYE.x - PUPIL.inset, EYE.y, PUPIL.rx, PUPIL.ry),
+      ],
+      24,
+    ),
+    "panel",
+    face,
+    "oled-pupils",
+    { edges: false },
+  );
+  pupils.position.set(0, SCREEN.y, capFront - 0.031);
 
   // ---------------- camera ----------------
-  const camera = part(
-    "camera",
-    "PiCam",
-    "Camera module for the Zero 2W, the brain's eyes for perception.",
-    new THREE.Vector3(0, 0, 1.35),
-  );
+  const camera = part("camera", new THREE.Vector3(0, 0, 1.0));
   camera.position.set(0, yC + CAMSLOT.y, BODY.len / 2 - 0.03 + capFront - 0.05);
-  const camPcb = mk(new RoundedBoxGeometry(CAMSLOT.w - 0.012, CAMSLOT.h - 0.012, 0.01, 1, 0.003), pcbDark, camera, "cam-pcb");
-  camPcb.position.z = 0;
-  const camHousing = mk(new RoundedBoxGeometry(0.062, 0.062, 0.026, 2, 0.006), chip, camera, "cam-housing");
+  mk(new THREE.BoxGeometry(CAMSLOT.w - 0.012, CAMSLOT.h - 0.012, 0.01), "muted", camera, "cam-pcb");
+  const camHousing = mk(new THREE.BoxGeometry(0.062, 0.062, 0.026), "ink", camera, "cam-housing");
   camHousing.position.set(0, 0, 0.016);
-  const lensRing = mk(new THREE.TorusGeometry(0.021, 0.0045, 8, 24), silver, camera, "lens-ring");
+  const lensRing = mk(new THREE.TorusGeometry(0.021, 0.0045, 8, 24), "ink", camera, "lens-ring");
   lensRing.position.set(0, 0, 0.03);
-  const lens = mk(new THREE.SphereGeometry(0.021, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2), lensGlass, camera, "lens");
+  const lens = mk(new THREE.SphereGeometry(0.021, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2), "ink", camera, "lens");
   lens.position.set(0, 0, 0.026);
   lens.scale.set(1, 1, 0.45);
   const camChipGeo = new THREE.BoxGeometry(0.018, 0.012, 0.006);
@@ -648,129 +486,93 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     [0.055, -0.014],
     [-0.055, 0.0],
   ]) {
-    const c = mk(camChipGeo, x > 0 ? silver : chip, camera, "cam-smd");
+    const c = mk(camChipGeo, "ink", camera, "cam-smd");
     c.position.set(x, y, 0.008);
   }
 
   // ---------------- status LED ----------------
-  const statusLed = part(
-    "status-led",
-    "Status LED",
-    "Single WS2812 addressable LED: status and mood indicator.",
-    new THREE.Vector3(0, 1.45, 0),
-  );
+  // One WS2812, drawn as a flat lit dot in a dark bezel.
+  const statusLed = part("status-led", new THREE.Vector3(0, 1.45, 0));
   {
     const a = Math.asin(0.07 / BODY.r);
-    const nx = Math.cos(a);
-    const ny = Math.sin(a);
-    const px = BODY.w / 2 - BODY.r + BODY.r * nx;
-    const py = BODY.h / 2 - BODY.r + BODY.r * ny;
+    const px = BODY.w / 2 - BODY.r + BODY.r * Math.cos(a);
+    const py = BODY.h / 2 - BODY.r + BODY.r * Math.sin(a);
     statusLed.position.set(px, yC + py, -BODY.len / 2 + 0.24);
     statusLed.rotation.z = -(Math.PI / 2 - a);
-    const ring = mk(new THREE.CylinderGeometry(0.03, 0.032, 0.008, 20), graphiteDark, statusLed, "led-bezel");
+    const ring = mk(new THREE.CylinderGeometry(0.03, 0.032, 0.008, 20), "ink", statusLed, "led-bezel");
     ring.position.y = 0.002;
-    const dome = mk(new THREE.SphereGeometry(0.022, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), ledMat, statusLed, "led-dome");
-    dome.position.y = 0.005;
-    dome.scale.set(1, 0.6, 1);
-    const glowTex = glowTexture(`#${glowColor.getHexString()}`);
-    if (glowTex) {
-      const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
-      );
-      sprite.name = "led-glow";
-      sprite.scale.set(0.16, 0.16, 1);
-      sprite.position.y = 0.02;
-      statusLed.add(sprite);
-    }
+    const dot = mk(new THREE.CircleGeometry(0.019, 20).rotateX(-Math.PI / 2), "light", statusLed, "led-dot", { edges: false });
+    dot.position.y = 0.0065;
   }
 
-  // ---------------- electronics (inferred internals) ----------------
-  const electronics = part(
-    "electronics",
-    "Pico + Zero 2W + IMU",
-    "Raspberry Pi Pico runs the 12-servo real-time loop; Pi Zero 2W is the brain; MPU6050 IMU for balance.",
-    new THREE.Vector3(0, 0.95, 0),
-  );
+  // ---------------- electronics (layout approximate) ----------------
+  const electronics = part("electronics", new THREE.Vector3(0, 0.95, 0));
   electronics.position.set(0, yC + 0.02, 0);
   {
     const PCB_T = 0.012;
-    const board = (w: number, d: number, mat: THREE.Material, x: number, z: number, name: string) => {
-      const b = mk(new RoundedBoxGeometry(w, PCB_T, d, 1, 0.004), mat, electronics, name);
+    const board = (w: number, d: number, x: number, z: number, name: string) => {
+      const b = mk(new THREE.BoxGeometry(w, PCB_T, d), "muted", electronics, name);
       b.position.set(x, 0, z);
       return b;
     };
     // mounting plate
-    const plate = mk(new THREE.BoxGeometry(0.5, 0.01, 1.2), graphiteDark, electronics, "board-plate");
+    const plate = mk(new THREE.BoxGeometry(0.5, 0.01, 1.2), "wash", electronics, "board-plate");
     plate.position.set(0, -0.03, -0.02);
     // Pi Zero 2W: 65 x 30 mm
-    board(0.155, 0.34, pcbGreen, -0.08, 0.28, "zero2w-pcb");
-    const soc = mk(new THREE.BoxGeometry(0.06, 0.008, 0.06), chip, electronics, "zero2w-rp3a0");
+    board(0.155, 0.34, -0.08, 0.28, "zero2w-pcb");
+    const soc = mk(new THREE.BoxGeometry(0.06, 0.008, 0.06), "ink", electronics, "zero2w-rp3a0");
     soc.position.set(-0.08, 0.01, 0.27);
-    const sd = mk(new THREE.BoxGeometry(0.06, 0.008, 0.06), silver, electronics, "zero2w-sd");
+    const sd = mk(new THREE.BoxGeometry(0.06, 0.008, 0.06), "ink", electronics, "zero2w-sd");
     sd.position.set(-0.08, 0.01, 0.42);
     // 2x20 header pins as one InstancedMesh
-    const pinGeo = new THREE.BoxGeometry(0.006, 0.04, 0.006);
-    const pins = new THREE.InstancedMesh(pinGeo, gold, 40);
-    pins.name = "zero2w-header";
     const tmp = new THREE.Object3D();
+    const pins = new THREE.InstancedMesh(new THREE.BoxGeometry(0.006, 0.04, 0.006), placeholder, 40);
+    pins.name = "zero2w-header";
+    pins.userData.tone = "ink";
     for (let i = 0; i < 40; i++) {
       tmp.position.set(-0.08 - 0.065 + (i % 2) * 0.013, 0.022, 0.13 + Math.floor(i / 2) * 0.0132);
       tmp.updateMatrix();
       pins.setMatrixAt(i, tmp.matrix);
     }
     electronics.add(pins);
-    meshes.push(pins);
-    const headerBase = mk(new THREE.BoxGeometry(0.028, 0.012, 0.27), chip, electronics, "zero2w-header-base");
+    const headerBase = mk(new THREE.BoxGeometry(0.028, 0.012, 0.27), "ink", electronics, "zero2w-header-base");
     headerBase.position.set(-0.139, 0.01, 0.255);
     // Raspberry Pi Pico: 51 x 21 mm
-    board(0.11, 0.265, pcbGreen, 0.1, -0.32, "pico-pcb");
-    const rp2040 = mk(new THREE.BoxGeometry(0.036, 0.007, 0.036), chip, electronics, "pico-rp2040");
+    board(0.11, 0.265, 0.1, -0.32, "pico-pcb");
+    const rp2040 = mk(new THREE.BoxGeometry(0.036, 0.007, 0.036), "ink", electronics, "pico-rp2040");
     rp2040.position.set(0.1, 0.009, -0.32);
-    const usb = mk(new THREE.BoxGeometry(0.042, 0.016, 0.03), silver, electronics, "pico-usb");
+    const usb = mk(new THREE.BoxGeometry(0.042, 0.016, 0.03), "ink", electronics, "pico-usb");
     usb.position.set(0.1, 0.012, -0.44);
-    const castGeo = new THREE.BoxGeometry(0.006, 0.014, 0.006);
-    const cast = new THREE.InstancedMesh(castGeo, gold, 40);
+    const cast = new THREE.InstancedMesh(new THREE.BoxGeometry(0.006, 0.014, 0.006), placeholder, 40);
     cast.name = "pico-castellations";
+    cast.userData.tone = "ink";
     for (let i = 0; i < 40; i++) {
       tmp.position.set(0.1 + (i % 2 ? 0.05 : -0.05), 0.004, -0.42 + Math.floor(i / 2) * 0.0132);
       tmp.updateMatrix();
       cast.setMatrixAt(i, tmp.matrix);
     }
     electronics.add(cast);
-    meshes.push(cast);
     // MPU6050 (GY-521): 21 x 16 mm
-    board(0.085, 0.11, pcbBlue, 0.1, 0.02, "mpu6050-pcb");
-    const imu = mk(new THREE.BoxGeometry(0.022, 0.006, 0.022), chip, electronics, "mpu6050-chip");
+    board(0.085, 0.11, 0.1, 0.02, "mpu6050-pcb");
+    const imu = mk(new THREE.BoxGeometry(0.022, 0.006, 0.022), "ink", electronics, "mpu6050-chip");
     imu.position.set(0.1, 0.009, 0.02);
-    // ribbon / jumper bundle between boards
-    const ribbon = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-0.08, 0.03, 0.13),
-      new THREE.Vector3(0.0, 0.06, -0.05),
-      new THREE.Vector3(0.1, 0.02, -0.2),
-    ]);
-    mk(new THREE.TubeGeometry(ribbon, 16, 0.008, 5), wireMats[1], electronics, "i2c-bundle");
   }
 
-  // ---------------- power (inferred internals) ----------------
-  const power = part(
-    "power",
-    "Battery + buck converters",
-    "3-cell pack feeding two XL4016 bucks: ~7.2 V servo rail and a 5 V logic rail.",
-    new THREE.Vector3(0, 0.45, 0),
-  );
+  // ---------------- power (layout approximate) ----------------
+  const power = part("power", new THREE.Vector3(0, 0.45, 0));
   power.position.set(0, yC - BODY.h / 2 + BODY.wall + 0.06, 0);
   {
-    // 3 x 18650 cells (18 x 65 mm) in a printed tray
+    // 3 cells (18 x 65 mm) in a printed tray
     const cellGeo = new THREE.CylinderGeometry(0.047, 0.047, 0.34, 20, 1).rotateX(Math.PI / 2);
     const cellCapGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.006, 16).rotateX(Math.PI / 2);
     for (let i = 0; i < 3; i++) {
       const x = (i - 1) * 0.1;
-      const c = mk(cellGeo, cellWrap[0], power, `cell-${i}`);
+      const c = mk(cellGeo, "muted", power, `cell-${i}`);
       c.position.set(x, 0.0, -0.45);
-      const cap = mk(cellCapGeo, cellWrap[1], power, `cell-cap-${i}`);
+      const cap = mk(cellCapGeo, "ink", power, `cell-cap-${i}`);
       cap.position.set(x, 0.0, -0.45 + 0.172);
     }
-    const tray = mk(new THREE.BoxGeometry(0.33, 0.03, 0.38), graphiteDark, power, "cell-tray");
+    const tray = mk(new THREE.BoxGeometry(0.33, 0.03, 0.38), "wash", power, "cell-tray");
     tray.position.set(0, -0.045, -0.45);
     // 2 x XL4016 modules (approx 60 x 51 mm)
     for (const sx of [-1, 1]) {
@@ -778,30 +580,28 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
       g.name = sx > 0 ? "buck-servo-rail" : "buck-logic-rail";
       g.position.set(sx * 0.165, -0.03, 0.32);
       power.add(g);
-      const pcb = mk(new RoundedBoxGeometry(0.26, 0.012, 0.3, 1, 0.004), pcbBlue, g, "xl4016-pcb");
-      pcb.position.y = 0;
+      mk(new THREE.BoxGeometry(0.26, 0.012, 0.3), "muted", g, "xl4016-pcb");
       for (const hz of [-0.08, 0.08]) {
-        const hs = mk(new THREE.BoxGeometry(0.07, 0.07, 0.06), aluminium, g, "xl4016-heatsink");
+        const hs = mk(new THREE.BoxGeometry(0.07, 0.07, 0.06), "ink", g, "xl4016-heatsink");
         hs.position.set(-0.07, 0.04, hz);
       }
-      const inductor = mk(new THREE.TorusGeometry(0.038, 0.018, 10, 20).rotateX(Math.PI / 2), copper, g, "xl4016-inductor");
+      const inductor = mk(new THREE.TorusGeometry(0.038, 0.018, 10, 20).rotateX(Math.PI / 2), "ink", g, "xl4016-inductor");
       inductor.position.set(0.05, 0.024, -0.05);
       for (const cz of [0.05, 0.11]) {
-        const cap = mk(new THREE.CylinderGeometry(0.022, 0.022, 0.07, 14), capBody, g, "xl4016-cap");
+        const cap = mk(new THREE.CylinderGeometry(0.022, 0.022, 0.07, 14), "ink", g, "xl4016-cap");
         cap.position.set(0.06, 0.041, cz);
       }
-      const pot = mk(new THREE.BoxGeometry(0.02, 0.02, 0.04), pcbBlue, g, "xl4016-trimpot");
-      pot.position.set(-0.0, 0.016, 0.12);
+      const pot = mk(new THREE.BoxGeometry(0.02, 0.02, 0.04), "ink", g, "xl4016-trimpot");
+      pot.position.set(0, 0.016, 0.12);
     }
   }
 
   // ---------------- legs ----------------
-  const legJoints = new Map<string, RoboPetLegJoints>();
-  const legDefs: Array<{ id: RoboPetPartId; label: string; side: 1 | -1; z: number }> = [
-    { id: "leg-fl", label: "Front-left leg", side: 1, z: HIP_Z_FRONT },
-    { id: "leg-fr", label: "Front-right leg", side: -1, z: HIP_Z_FRONT },
-    { id: "leg-rl", label: "Rear-left leg", side: 1, z: HIP_Z_REAR },
-    { id: "leg-rr", label: "Rear-right leg", side: -1, z: HIP_Z_REAR },
+  const legDefs: Array<{ id: RoboPetPartId; side: 1 | -1; z: number }> = [
+    { id: "leg-fl", side: 1, z: HIP_Z_FRONT },
+    { id: "leg-fr", side: -1, z: HIP_Z_FRONT },
+    { id: "leg-rl", side: 1, z: HIP_Z_REAR },
+    { id: "leg-rr", side: -1, z: HIP_Z_REAR },
   ];
 
   // shared leg geometry (built for a left leg, x = outward; right legs mirror by scale.x = -1)
@@ -809,23 +609,20 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   const cupLipGeo = new THREE.TorusGeometry(0.172, 0.013, 8, 32).rotateY(Math.PI / 2);
   const bracketShape = roundedRectPath(new THREE.Shape(), 0.34, SERVO.wid + 0.09, 0.04, 0.035, 0.015);
   bracketShape.holes.push(roundedRectPath(new THREE.Path(), SERVO.len + 0.008, SERVO.wid + 0.008, 0.01, 0.035, 0.015));
-  const bracketGeo = extrudeSide(bracketShape, 0.07, 0.1, 0.01);
+  const bracketGeo = extrudeSide(bracketShape, 0.07, 0.1);
 
-  const hornShape = slotPath(new THREE.Shape(), 0, -0.075, 0.022);
-  const hornGeo = extrudeSide(hornShape, 0, 0.01, 0.002);
-  const linkShape = slotPath(new THREE.Shape(), -0.035, -0.135, 0.015);
-  const linkGeo = extrudeSide(linkShape, 0.011, 0.007, 0.0015);
+  const hornGeo = extrudeSide(slotPath(new THREE.Shape(), 0, -0.075, 0.022), 0, 0.01);
+  const linkGeo = extrudeSide(slotPath(new THREE.Shape(), -0.035, -0.135, 0.015), 0.011, 0.007);
   const THIGH_TOP = -0.11;
   const THIGH_BOT = -0.44;
-  const thighShape = slotPath(new THREE.Shape(), THIGH_TOP, THIGH_BOT, 0.068);
-  const thighGeo = layerUV(extrudeSide(thighShape, 0.02, 0.04, 0.008, 14), 40, 40);
+  const thighGeo = extrudeSide(slotPath(new THREE.Shape(), THIGH_TOP, THIGH_BOT, 0.068), 0.02, 0.04, 14);
 
   // shank: bracket with a servo window, bar down to the foot with a printed step notch
   const shankBracketShape = new THREE.Shape();
   roundedRectPath(shankBracketShape, 0.29, 0.22, 0.03, 0.06, -0.005);
   shankBracketShape.holes.push(roundedRectPath(new THREE.Path(), 0.21, 0.14, 0.012, 0.065, -0.002));
-  const shankBracketGeo = extrudeSide(shankBracketShape, -0.035, 0.03, 0.006);
-  const shankInnerGeo = extrudeSide(roundedRectPath(new THREE.Shape(), 0.29, 0.22, 0.03, 0.06, -0.005), -0.245, 0.025, 0.006);
+  const shankBracketGeo = extrudeSide(shankBracketShape, -0.035, 0.03);
+  const shankInnerGeo = extrudeSide(roundedRectPath(new THREE.Shape(), 0.29, 0.22, 0.03, 0.06, -0.005), -0.245, 0.025);
   const SHANK_LEN = 0.58;
   const shankBar = new THREE.Shape();
   shankBar.moveTo(-0.005, -0.09);
@@ -841,56 +638,27 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
   shankBar.lineTo(0.012, -0.16);
   shankBar.lineTo(-0.005, -0.16);
   shankBar.closePath();
-  const shankBarGeo = layerUV(
-    extrudeSide(shankBar, -0.11, 0.07, 0.012, 8).translate(0.075, 0, 0).scale(1.2, 1, 1.25).translate(-0.075, 0, 0),
-    40,
-    40,
-  );
-  const shankBottomGeo = new RoundedBoxGeometry(0.2, 0.016, 0.2, 1, 0.005);
+  const shankBarGeo = extrudeSide(shankBar, -0.11, 0.07, 8).translate(0.075, 0, 0).scale(1.2, 1, 1.25).translate(-0.075, 0, 0);
+  const shankBottomGeo = new THREE.BoxGeometry(0.2, 0.016, 0.2);
   const footGeo = new RoundedBoxGeometry(0.104, 0.1, 0.15, 3, 0.042);
 
-  /** Sagging tri-colour servo loom: three parallel strands following one centre curve. */
-  const loom = (parent: THREE.Object3D, pts: THREE.Vector3[], name: string) => {
-    const centre = new THREE.CatmullRomCurve3(pts, false, "centripetal");
-    const n = 28;
-    const frames = centre.computeFrenetFrames(n, false);
-    const g = new THREE.Group();
-    g.name = name;
-    parent.add(g);
-    for (let s = 0; s < 3; s++) {
-      const off = (s - 1) * 0.0105;
-      const strand: THREE.Vector3[] = [];
-      for (let i = 0; i <= n; i++) {
-        const p = centre.getPointAt(i / n);
-        strand.push(p.add(frames.binormals[i].clone().multiplyScalar(off)));
-      }
-      const curve = new THREE.CatmullRomCurve3(strand);
-      mk(new THREE.TubeGeometry(curve, n, 0.0055, 5, false), wireMats[s], g, `${name}-${s}`);
-    }
-    return g;
-  };
 
   for (const def of legDefs) {
-    const leg = part(
-      def.id,
-      def.label,
-      "3 x MG996R (hip, upper leg, lower leg), printed PLA segments, rubber foot.",
-      // Straight out on the lateral axis only, so the teardown reads as engineered.
-      new THREE.Vector3(def.side * 0.8, 0, 0),
-    );
+    // Straight out on the lateral axis only, so the teardown reads as engineered.
+    const leg = part(def.id, new THREE.Vector3(def.side * 0.8, 0, 0));
     leg.position.set(def.side * (BODY.w / 2 - 0.01), yC + HIP_DROP, def.z);
-    if (def.side < 0) leg.scale.x = -1; // reflection, not rotation (renderer flips winding)
+    if (def.side < 0) leg.scale.x = -1; // reflection, not rotation (the renderer flips winding)
 
     const hipRoll = new THREE.Group();
     hipRoll.name = `${def.id}-hip-roll`;
     hipRoll.rotation.z = HIP_ROLL_REST;
     leg.add(hipRoll);
 
-    // hip cup + servo bracket (graphite PLA)
-    mk(cupGeo, graphite, hipRoll, `${def.id}-hip-cup`);
-    const lip = mk(cupLipGeo, graphite, hipRoll, `${def.id}-hip-cup-lip`);
+    // hip cup and servo bracket (printed PLA)
+    mk(cupGeo, "wash", hipRoll, `${def.id}-hip-cup`);
+    const lip = mk(cupLipGeo, "wash", hipRoll, `${def.id}-hip-cup-lip`);
     lip.position.x = 0.08;
-    mk(bracketGeo, graphite, hipRoll, `${def.id}-servo-bracket`);
+    mk(bracketGeo, "wash", hipRoll, `${def.id}-servo-bracket`);
     for (const [sy, sz] of [
       [0.075, 0.17],
       [-0.075, 0.17],
@@ -898,13 +666,13 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     ])
       screw(hipRoll, 0.17, sy, sz);
 
-    // hip-roll servo: hidden inside the cup/body, shaft along Z (inferred)
+    // hip-roll servo, hidden inside the cup and body, shaft along Z (planned 12-servo layout)
     const servoHip = buildServo(`${def.id}-servo-hip`);
     servoHip.rotation.y = -Math.PI / 2;
     servoHip.position.set(-0.12, 0, 0.12);
     hipRoll.add(servoHip);
 
-    // hip-pitch ("upper") servo: black case in the bracket, shaft pointing outward
+    // hip-pitch ("upper") servo in the bracket, shaft pointing outward
     const servoUpper = buildServo(`${def.id}-servo-upper`);
     const PITCH = new THREE.Vector3(0.235, 0.015, -0.02);
     servoUpper.position.copy(PITCH);
@@ -916,15 +684,15 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     hipPitch.rotation.x = THIGH_REST;
     hipRoll.add(hipPitch);
 
-    // horn + steel link + thigh plate
-    mk(hornGeo, brass, hipPitch, `${def.id}-horn`);
+    // horn, steel link and thigh plate
+    mk(hornGeo, "ink", hipPitch, `${def.id}-horn`);
     screw(hipPitch, 0.01, 0, 0);
     screw(hipPitch, 0.01, -0.06, 0);
-    mk(linkGeo, steel, hipPitch, `${def.id}-link`);
+    mk(linkGeo, "ink", hipPitch, `${def.id}-link`);
     screw(hipPitch, 0.018, -0.125, 0);
-    mk(thighGeo, graphite, hipPitch, `${def.id}-thigh`);
+    mk(thighGeo, "wash", hipPitch, `${def.id}-thigh`);
     for (const ty of [THIGH_TOP, THIGH_BOT]) {
-      const b = mk(bushingGeo, brass, hipPitch, `${def.id}-bushing`);
+      const b = mk(bushingGeo, "ink", hipPitch, `${def.id}-bushing`);
       b.position.set(0.062, ty, 0);
     }
 
@@ -937,63 +705,23 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     const servoLower = buildServo(`${def.id}-servo-lower`);
     servoLower.position.set(-0.03, 0, 0); // shaft faces the thigh plate, case extends forward
     knee.add(servoLower);
-    mk(shankBracketGeo, graphite, knee, `${def.id}-shank-bracket`);
-    mk(shankInnerGeo, graphite, knee, `${def.id}-shank-inner`);
-    const sb = mk(shankBottomGeo, graphite, knee, `${def.id}-shank-floor`);
+    mk(shankBracketGeo, "wash", knee, `${def.id}-shank-bracket`);
+    mk(shankInnerGeo, "wash", knee, `${def.id}-shank-inner`);
+    const sb = mk(shankBottomGeo, "wash", knee, `${def.id}-shank-floor`);
     sb.position.set(-0.13, -0.098, 0.06);
-    mk(shankBarGeo, graphite, knee, `${def.id}-shank`);
+    mk(shankBarGeo, "wash", knee, `${def.id}-shank`);
     for (const [sy, sz] of [
       [0.06, -0.06],
       [0.06, 0.18],
       [-0.09, 0.18],
     ])
       screw(knee, -0.005, sy, sz);
-    const foot = mk(footGeo, rubber, knee, `${def.id}-foot`);
+    const foot = mk(footGeo, "muted", knee, `${def.id}-foot`);
     foot.position.set(-0.075, -SHANK_LEN + 0.03, 0.016);
 
-    // wire looms (rest pose). Upper servo loom loops down outside, lower one rises to the belly.
-    leg.updateMatrixWorld(true);
-    const toHip = (o: THREE.Object3D, v: THREE.Vector3) => hipRoll.worldToLocal(o.localToWorld(v.clone()));
-    const upperExit = toHip(servoUpper, servoUpper.userData.wireExit as THREE.Vector3);
-    // entry hole just inside the belly of the lower shell
-    const belly = new THREE.Vector3(-0.14, -BODY.h / 2 - HIP_DROP + 0.03, 0);
-    loom(
-      hipRoll,
-      [
-        upperExit,
-        upperExit.clone().add(new THREE.Vector3(0.05, -0.06, -0.06)),
-        new THREE.Vector3(0.2, -0.24, -0.14),
-        new THREE.Vector3(0.1, -0.3, -0.05),
-        belly.clone().add(new THREE.Vector3(0.06, -0.02, -0.03)),
-        belly.clone().add(new THREE.Vector3(-0.02, 0.06, -0.03)),
-      ],
-      `${def.id}-loom-upper`,
-    );
-    const lowerExit = toHip(servoLower, servoLower.userData.wireExit as THREE.Vector3);
-    loom(
-      hipRoll,
-      [
-        lowerExit,
-        // leave through the open rear end of the shank bracket, between its two side plates
-        toHip(servoLower, (servoLower.userData.wireExit as THREE.Vector3).clone().add(new THREE.Vector3(0, -0.01, -0.07))),
-        toHip(servoLower, (servoLower.userData.wireExit as THREE.Vector3).clone().add(new THREE.Vector3(-0.03, 0.03, -0.13))),
-        lowerExit.clone().lerp(belly, 0.55).add(new THREE.Vector3(-0.02, -0.05, 0.02)),
-        belly.clone().add(new THREE.Vector3(0.02, -0.04, 0.05)),
-        belly.clone().add(new THREE.Vector3(-0.03, 0.04, 0.05)),
-      ],
-      `${def.id}-loom-lower`,
-    );
-
-    leg.userData.joints = { hipRoll, hipPitch, knee } satisfies RoboPetLegJoints;
-    leg.userData.restJoints = { hipRoll: HIP_ROLL_REST, hipPitch: THIGH_REST, knee: KNEE_REST };
-    legJoints.set(def.id, { hipRoll, hipPitch, knee });
   }
 
   // ---------------- finalize ----------------
-  for (const m of meshes) {
-    m.castShadow = shadows;
-    m.receiveShadow = shadows;
-  }
   // snap feet to y = 0 and center XZ on the body
   root.updateMatrixWorld(true);
   const box = new THREE.Box3();
@@ -1001,7 +729,6 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     const m = o as THREE.Mesh;
     if (m.isMesh && !(o as THREE.InstancedMesh).isInstancedMesh) box.expandByObject(m, true);
   });
-  // only meshes are expanded; sprites are ignored by design
   const dy = -box.min.y;
   const dz = -(box.min.z + box.max.z) / 2;
   for (const p of parts) {
@@ -1009,84 +736,264 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     p.position.z += dz;
     p.userData.restPosition = p.position.clone();
   }
-  root.userData.parts = parts.map((p) => p.userData.part as RoboPetPartInfo);
-  root.userData.triangles = countTriangles(root);
-  // uniform scale so the overall length matches options.length; feet stay on y = 0
   const naturalLength = box.max.z - box.min.z;
-  const k = (options.length ?? 2.45) / naturalLength;
-  root.scale.setScalar(k);
-  root.userData.bounds = {
-    length: naturalLength * k,
-    height: (box.max.y - box.min.y) * k,
-    width: (box.max.x - box.min.x) * k,
+  root.scale.setScalar((options.length ?? 2.45) / naturalLength);
+  root.updateMatrixWorld(true);
+
+  const sources = new Set<THREE.BufferGeometry>();
+  const faceMeshes: THREE.Mesh[] = [];
+  const unlit = {
+    panel: new THREE.MeshBasicMaterial({ color: new THREE.Color(0, 0, 0), toneMapped: false }),
+    light: new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1), toneMapped: false }),
   };
-  root.userData.eyes = eyeState;
-  root.userData.legJoints = legJoints;
-  root.userData.explodeT = 0;
+  for (const p of parts) flattenPart(p, unlit, sources, faceMeshes);
+  sources.forEach((g) => g.dispose());
+  placeholder.dispose();
+
+  root.userData.parts = parts;
+  root.userData.faceMeshes = faceMeshes;
+  root.userData.unlit = unlit;
   return root;
+}
+
+/**
+ * Replace a part's hierarchy with one mesh per tone (in part space) plus its edge lines.
+ * Joint groups are static now that the robot never walks on the page, so baking is safe.
+ */
+function flattenPart(
+  part: THREE.Group,
+  unlit: { panel: THREE.MeshBasicMaterial; light: THREE.MeshBasicMaterial },
+  sources: Set<THREE.BufferGeometry>,
+  faceMeshes: THREE.Mesh[],
+) {
+  const toPart = part.matrixWorld.clone().invert();
+  const meshes: THREE.Mesh[] = [];
+  part.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
+  });
+
+  const buckets = new Map<FaceTone, { position: number[]; normal: number[] }>();
+  const hard: number[] = [];
+  const soft: number[] = [];
+  const m4 = new THREE.Matrix4();
+  const n3 = new THREE.Matrix3();
+  const v = new THREE.Vector3();
+  const n = new THREE.Vector3();
+
+  for (const mesh of meshes) {
+    const geo = mesh.geometry;
+    sources.add(geo);
+    if (!geo.boundingSphere) geo.computeBoundingSphere();
+    const tone = mesh.userData.tone as FaceTone;
+    const base = new THREE.Matrix4().multiplyMatrices(toPart, mesh.matrixWorld);
+    const instanced = (mesh as THREE.InstancedMesh).isInstancedMesh ? (mesh as THREE.InstancedMesh) : null;
+    const transforms: THREE.Matrix4[] = [];
+    if (instanced) {
+      for (let i = 0; i < instanced.count; i++) {
+        instanced.getMatrixAt(i, m4);
+        transforms.push(base.clone().multiply(m4));
+      }
+    } else transforms.push(base);
+
+    const radius = (geo.boundingSphere as THREE.Sphere).radius * base.getMaxScaleOnAxis();
+    const wantEdges = !instanced && mesh.userData.edges !== false && radius >= MIN_EDGE_RADIUS;
+    const data = analyze(geo, wantEdges);
+
+    let bucket = buckets.get(tone);
+    if (!bucket) buckets.set(tone, (bucket = { position: [], normal: [] }));
+    for (const t of transforms) {
+      n3.getNormalMatrix(t);
+      const flip = t.determinant() < 0;
+      const { position, normal } = data;
+      for (let i = 0; i < position.length; i += 9) {
+        for (let c = 0; c < 3; c++) {
+          // A mirrored transform reverses winding, so swap the last two corners back.
+          const k = i + (flip && c > 0 ? (3 - c) * 3 : c * 3);
+          v.set(position[k], position[k + 1], position[k + 2]).applyMatrix4(t);
+          n.set(normal[k], normal[k + 1], normal[k + 2]).applyMatrix3(n3).normalize();
+          bucket.position.push(v.x, v.y, v.z);
+          bucket.normal.push(n.x, n.y, n.z);
+        }
+      }
+      if (!wantEdges || !data.edges) continue;
+      const { hard: h, soft: s } = data.edges;
+      for (let i = 0; i < h.length; i += 3) {
+        v.set(h[i], h[i + 1], h[i + 2]).applyMatrix4(t);
+        hard.push(v.x, v.y, v.z);
+      }
+      for (let i = 0; i < s.length; i += 12) {
+        v.set(s[i], s[i + 1], s[i + 2]).applyMatrix4(t);
+        soft.push(v.x, v.y, v.z);
+        v.set(s[i + 3], s[i + 4], s[i + 5]).applyMatrix4(t);
+        soft.push(v.x, v.y, v.z);
+        n.set(s[i + 6], s[i + 7], s[i + 8]).applyMatrix3(n3).normalize();
+        soft.push(n.x, n.y, n.z);
+        n.set(s[i + 9], s[i + 10], s[i + 11]).applyMatrix3(n3).normalize();
+        soft.push(n.x, n.y, n.z);
+      }
+    }
+  }
+
+  part.clear();
+  part.updateMatrixWorld(true);
+
+  // Lit faces sit slightly behind their own edges so the lines are never half buried.
+  const lambert = () =>
+    new THREE.MeshLambertMaterial({ polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  const materials: PartMaterials = {
+    wash: lambert(),
+    muted: lambert(),
+    ink: lambert(),
+    // Double sided: the mirrored legs flip winding, which would cull every line quad.
+    line: new LineMaterial({ linewidth: 1, worldUnits: false, side: THREE.DoubleSide }),
+  };
+  part.userData.materials = materials;
+
+  const samples: number[] = [];
+  for (const [tone, data] of buckets) {
+    if (!data.position.length) continue;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(data.position, 3));
+    g.setAttribute("normal", new THREE.Float32BufferAttribute(data.normal, 3));
+    g.computeBoundingSphere();
+    const mat = tone === "panel" || tone === "light" ? unlit[tone] : materials[tone];
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.name = `${part.name}-${tone}`;
+    part.add(mesh);
+    faceMeshes.push(mesh);
+    // A sparse vertex sample is enough for the stage to frame the camera.
+    const step = Math.max(1, Math.floor(data.position.length / 3 / 600)) * 3;
+    for (let i = 0; i < data.position.length; i += step) samples.push(data.position[i], data.position[i + 1], data.position[i + 2]);
+  }
+  part.userData.samples = new Float32Array(samples);
+
+  if (hard.length) {
+    const g = new LineSegmentsGeometry();
+    g.setPositions(new Float32Array(hard));
+    const lines = new LineSegments2(g, materials.line);
+    lines.name = `${part.name}-edges`;
+    lines.raycast = () => {};
+    part.add(lines);
+  }
+  if (soft.length) {
+    const edges = new Float32Array(soft);
+    const count = edges.length / 12;
+    const g = new LineSegmentsGeometry();
+    g.setPositions(new Float32Array(count * 6));
+    g.instanceCount = 0;
+    const lines = new LineSegments2(g, materials.line);
+    lines.name = `${part.name}-silhouette`;
+    lines.frustumCulled = false; // the buffer is rewritten per view, so its bounds are meaningless
+    lines.raycast = () => {};
+    part.add(lines);
+    const buffer = (g.getAttribute("instanceStart") as InterleavedBufferAttribute).data as InstancedInterleavedBuffer;
+    part.userData.silhouette = { edges, geometry: g, buffer } satisfies Silhouette;
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
 // Runtime helpers
 // ---------------------------------------------------------------------------------------------
-const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const partsOf = (model: THREE.Object3D) => (model.userData.parts ?? []) as THREE.Group[];
 
-/** Move every named part from its rest position along userData.explode. t is clamped to 0..1. */
+/** Move every part from its rest position along its explode offset. t is clamped to 0..1, linear. */
 export function setRoboPetExplode(model: THREE.Object3D, t: number) {
-  const k = easeInOutCubic(THREE.MathUtils.clamp(t, 0, 1));
-  for (const child of model.children) {
-    const rest = child.userData.restPosition as THREE.Vector3 | undefined;
-    const ex = child.userData.explode as THREE.Vector3 | undefined;
-    if (!rest || !ex) continue;
+  const k = THREE.MathUtils.clamp(t, 0, 1);
+  for (const child of partsOf(model)) {
+    const rest = child.userData.restPosition as THREE.Vector3;
+    const ex = child.userData.explode as THREE.Vector3;
     child.position.copy(rest).addScaledVector(ex, k);
   }
-  model.userData.explodeT = t;
 }
 
-/** Redraw the OLED face. look shifts the pupils in OLED pixels (x negative = robot's right). */
-export function setRoboPetEyes(model: THREE.Object3D, mode: RoboPetEyeMode, look?: { x?: number; y?: number }) {
-  const s = model.userData.eyes as EyeState | undefined;
-  if (!s) return;
-  s.mode = mode;
-  if (look?.x !== undefined) s.lookX = look.x;
-  if (look?.y !== undefined) s.lookY = look.y;
-  drawEyes(s);
+/** Paint every part from the palette. Selected parts invert: ink faces, paper edges. */
+export function paintRoboPet(model: THREE.Object3D, palette: RoboPetPalette, selected: ReadonlySet<RoboPetPartId>) {
+  for (const p of partsOf(model)) {
+    const mats = p.userData.materials as PartMaterials;
+    const on = selected.has(p.userData.partId as RoboPetPartId);
+    mats.wash.color.copy(on ? palette.ink : palette.wash);
+    mats.muted.color.copy(on ? palette.ink : palette.muted);
+    mats.ink.color.copy(palette.ink);
+    mats.line.color.copy(on ? palette.paper : palette.ink);
+  }
 }
 
-/** Set joint angles (radians, added to the rest pose) for one leg. */
-export function setRoboPetLegPose(
-  model: THREE.Object3D,
-  legId: "leg-fl" | "leg-fr" | "leg-rl" | "leg-rr",
-  pose: { hipRoll?: number; hipPitch?: number; knee?: number },
-) {
-  const leg = model.getObjectByName(legId);
-  if (!leg) return;
-  const j = leg.userData.joints as RoboPetLegJoints;
-  const rest = leg.userData.restJoints as { hipRoll: number; hipPitch: number; knee: number };
-  j.hipRoll.rotation.z = rest.hipRoll + (pose.hipRoll ?? 0);
-  j.hipPitch.rotation.x = rest.hipPitch + (pose.hipPitch ?? 0);
-  j.knee.rotation.x = rest.knee + (pose.knee ?? 0);
+/** LineMaterial widths are in units of this resolution; pass the canvas size in CSS pixels. */
+export function setRoboPetLineResolution(model: THREE.Object3D, width: number, height: number) {
+  for (const p of partsOf(model)) (p.userData.materials as PartMaterials).line.resolution.set(width, height);
 }
 
-/** Look up a part group by id. */
-export function getRoboPetPart(model: THREE.Object3D, id: RoboPetPartId) {
-  return model.getObjectByName(id) as THREE.Group | undefined;
+const _inv = new THREE.Matrix4();
+const _cam = new THREE.Vector3();
+
+/**
+ * Rebuild the silhouette lines for the current camera position (world space). An edge between
+ * two smooth faces is part of the outline when one face looks toward the camera and the other
+ * looks away. World matrices must be current.
+ */
+export function updateRoboPetSilhouettes(model: THREE.Object3D, cameraPosition: THREE.Vector3) {
+  for (const p of partsOf(model)) {
+    const s = p.userData.silhouette as Silhouette | undefined;
+    if (!s) continue;
+    _cam.copy(cameraPosition).applyMatrix4(_inv.copy(p.matrixWorld).invert());
+    const src = s.edges;
+    const out = s.buffer.array as Float32Array;
+    let count = 0;
+    for (let i = 0; i < src.length; i += 12) {
+      const x = _cam.x - src[i];
+      const y = _cam.y - src[i + 1];
+      const z = _cam.z - src[i + 2];
+      const a = src[i + 6] * x + src[i + 7] * y + src[i + 8] * z;
+      const b = src[i + 9] * x + src[i + 10] * y + src[i + 11] * z;
+      if (a * b >= 0) continue;
+      const o = count * 6;
+      out[o] = src[i];
+      out[o + 1] = src[i + 1];
+      out[o + 2] = src[i + 2];
+      out[o + 3] = src[i + 3];
+      out[o + 4] = src[i + 4];
+      out[o + 5] = src[i + 5];
+      count++;
+    }
+    s.geometry.instanceCount = count;
+    s.buffer.clearUpdateRanges();
+    s.buffer.addUpdateRange(0, Math.max(1, count) * 6);
+    s.buffer.needsUpdate = true;
+  }
 }
 
-/** Dispose all geometries, materials and canvas textures owned by the model. */
+/** World-space sample points of every part under the current matrices, for camera framing. */
+export function sampleRoboPetPoints(model: THREE.Object3D): THREE.Vector3[] {
+  const out: THREE.Vector3[] = [];
+  for (const p of partsOf(model)) {
+    const s = p.userData.samples as Float32Array;
+    for (let i = 0; i < s.length; i += 3) out.push(new THREE.Vector3(s[i], s[i + 1], s[i + 2]).applyMatrix4(p.matrixWorld));
+  }
+  return out;
+}
+
+/** The face meshes, for picking. Edge lines are never hit. */
+export function getRoboPetFaceMeshes(model: THREE.Object3D) {
+  return (model.userData.faceMeshes ?? []) as THREE.Mesh[];
+}
+
+/** Walk up from a picked object to the part it belongs to. */
+export function getRoboPetPartId(object: THREE.Object3D | null): RoboPetPartId | null {
+  for (let o = object; o; o = o.parent) if (o.userData.partId) return o.userData.partId as RoboPetPartId;
+  return null;
+}
+
+/** Dispose all geometries and materials owned by the model. */
 export function disposeRoboPetModel(model: THREE.Object3D) {
   const geos = new Set<THREE.BufferGeometry>();
   const mats = new Set<THREE.Material>();
   model.traverse((o) => {
     const m = o as THREE.Mesh;
     if (m.geometry) geos.add(m.geometry);
-    const mm = (o as THREE.Mesh | THREE.Sprite).material;
+    const mm = m.material;
     if (Array.isArray(mm)) mm.forEach((x) => mats.add(x));
     else if (mm) mats.add(mm);
   });
   geos.forEach((g) => g.dispose());
-  mats.forEach((mat) => {
-    for (const v of Object.values(mat)) if (v instanceof THREE.Texture) v.dispose();
-    mat.dispose();
-  });
+  mats.forEach((mat) => mat.dispose());
 }

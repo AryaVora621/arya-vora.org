@@ -1,110 +1,108 @@
-// Curated against public repository metadata and READMEs. See docs/redesign.md.
-export const selectedWork = [
-  {
-    id: "robopet",
-    name: "roboPet",
-    category: "Robotics",
-    number: "01",
-    headline: "A little robot. A lot to learn.",
-    description:
-      "A four-legged companion built to learn mechatronics from the ground up. Custom printed parts, servo control, and a two-board architecture.",
-    detail:
-      "The current work is hardware bring-up and locomotion: a Raspberry Pi Pico for real-time control, with a Pi Zero 2W planned as the higher-level brain. Learned locomotion and onboard AI are goals, not finished features.",
-    stack: ["MicroPython", "Raspberry Pi", "CAD"],
-    status: "Hardware in progress",
-    url: "https://github.com/AryaVora621/roboPet",
-    visual: "robot",
-  },
+// Rows for the "Other projects" list, in the order they render.
+// DRAFT: each description was written on 2026-10-08 from that repo's README and
+// code, for Arya to confirm or rewrite in his own words. Text between backticks
+// renders as inline code. The last-commit date comes from src/data/github.ts.
+// The rows are kept to different lengths on purpose, and only notchTerm uses a
+// semicolon. No row opens with its own name, which the heading above it already
+// says. Open question for Arya: one first-hand detail each (what broke first, or
+// who uses it) for two of these, so they can run longer.
+//
+// Sources for the rows that carry a date or a count (checked 2026-10-08):
+// - TeamStat Insights: the repo was created and last pushed on 2025-05-25; its layout title is
+//   "Thomson Scouting App"; its description says it was built for team 23786; all 48 teams in
+//   src/lib/team-data.ts are in the 53-team Michiana Premier Event, Thomson Division (FTCScout
+//   2024/FPEMITHO, 2025-06-19 to 22), where 23786 went 5-5 and ranked 20th. The repo does not say
+//   the app was used there, or how long it took to write, so both are for Arya to confirm.
+// - ShipKit: its README says the repo "was extracted from a larger workspace so it can be
+//   deployed and iterated on as a standalone public app". It does not say who extracted it.
+
+export type ProjectStatus = "Working" | "In progress" | "Paused" | "Abandoned";
+
+export type Project = {
+  id: string;
+  name: string;
+  url: string;
+  description: string;
+  stack: readonly string[];
+  // Arya should confirm each status word. They are guesses from the repo's
+  // README and commit history.
+  status: ProjectStatus;
+};
+
+export const otherProjects: readonly Project[] = [
   {
     id: "notchterm",
     name: "notchTerm",
-    category: "Systems",
-    number: "02",
-    headline: "Your agents, at a glance.",
-    description:
-      "A macOS notch companion that brings Claude and Codex terminal sessions into a compact SwiftUI overlay.",
-    detail:
-      "The overlay expands on hover, previews terminal output, and routes messages to the selected session. Terminal automation requires macOS permissions. This portfolio preview is an illustration, not a running macOS app.",
-    stack: ["Swift", "SwiftUI", "macOS"],
-    status: "Native application",
     url: "https://github.com/AryaVora621/notchTerm",
-    visual: "notch",
-  },
-  {
-    id: "openultracode",
-    name: "OpenUltraCode",
-    category: "AI",
-    number: "03",
-    headline: "Parallel agents. Explicit boundaries.",
     description:
-      "A local CLI for parallel coding agents, adaptive model routing, and inspectable run artifacts. An organization repository in my GitHub workbench.",
-    detail:
-      "An early TypeScript CLI foundation with deterministic planning, model-tier routing, isolated edit worktrees, cost accounting, and opt-in patch application. The interactive lab below illustrates orchestration; it does not execute the CLI or call a model.",
-    stack: ["TypeScript", "Node.js", "CLI"],
-    status: "Early CLI foundation",
-    url: "https://github.com/openultracode/openultracode",
-    visual: "agents",
+      "My Claude and Codex sessions in Terminal show up in a SwiftUI overlay around the MacBook notch; it reads their output over AppleScript and sends what I type to the matching tab. It opens when the pointer gets close.",
+    stack: ["Swift", "SwiftUI", "AppleScript"],
+    status: "Working", // Arya to confirm
   },
   {
     id: "teamstat",
     name: "TeamStat Insights",
-    category: "Robotics",
-    number: "04",
-    headline: "Make the next match count.",
-    description:
-      "An FTC scouting app made by Team 23786 MakEMinds. Competition software for the people behind the robot.",
-    detail:
-      "The repository identifies this as an FTC scouting app by Team 23786. The sketch shows match phases only, not actual team results or competition statistics.",
-    stack: ["TypeScript", "Next.js", "FTC"],
-    status: "Team software",
     url: "https://github.com/AryaVora621/TeamStat-Insights",
-    visual: "scouting",
+    description:
+      "In May 2025 I built this in Firebase Studio to scout our division at the Michiana Premier Event that June. It has a table of the 48 teams that you can sort and search, and a match simulator where each team's score can swing by a percentage you set.",
+    stack: ["Next.js", "TypeScript", "Genkit"],
+    status: "Paused", // Arya to confirm
   },
   {
     id: "shipkit",
     name: "ShipKit",
-    category: "Systems",
-    number: "05",
-    headline: "From prototype to production.",
-    description:
-      "A production-readiness scanner for AI-built web apps, with security, deployment, and quality findings in one place.",
-    detail:
-      "A Next.js application with Supabase for authentication and data, plus deployment and billing flows. The preview is illustrative and does not scan the visitor’s files or claim a security certification.",
-    stack: ["Next.js", "Supabase", "Stripe"],
-    status: "Web application",
     url: "https://github.com/AryaVora621/shipkit",
-    visual: "scanner",
+    description:
+      "I pulled this out of a larger workspace so it could deploy on its own. It scans AI-generated web projects for security, deployment and quality problems and explains how to fix what it finds.",
+    stack: ["Next.js", "Supabase", "Stripe", "Vitest"],
+    status: "Paused", // Arya to confirm
   },
   {
-    id: "smartai",
-    name: "Jarvis-Bee / smartAI",
-    category: "AI",
-    number: "06",
-    headline: "Local intelligence, under construction.",
+    id: "openultracode",
+    name: "OpenUltraCode",
+    url: "https://github.com/openultracode/openultracode",
     description:
-      "An offline-first agent system for macOS, pairing a Queen-and-Swarm architecture with an interactive HUD.",
-    detail:
-      "The public roadmap marks the swarm core, tools, WebSocket server, and HUD as implemented. Fine-tuning, self-healing, and several safety features remain roadmap items; they are not presented here as completed capabilities.",
-    stack: ["Python", "FastAPI", "WebSockets"],
-    status: "Experimental",
-    url: "https://github.com/AryaVora621/smartAI",
-    visual: "swarm",
+      "When I give `ouc` a coding goal, it splits the work into tasks and sends the low-risk ones to free or cheap models. Edits and tests go to the stronger models. Each edit runs in its own git worktree, and none of them touch my repository until I opt in.",
+    stack: ["TypeScript", "Node.js"],
+    status: "In progress", // Arya to confirm
   },
-] as const;
+  {
+    id: "jarvis-bee",
+    name: "Jarvis-Bee",
+    url: "https://github.com/AryaVora621/smartAI",
+    description:
+      'A local agent swarm for my Mac, with a Queen agent handing work to Developer and Productivity sub-agents. The FastAPI server and the browser HUD (which listens for "Hey Jarvis") are done, but the Queen only repeats what you type until I connect a model.',
+    stack: ["Python", "FastAPI", "JavaScript"],
+    status: "In progress", // Arya to confirm
+  },
+];
 
+// Every GitHub link on the page uses this URL. It opens the repositories tab, not the profile
+// page, on purpose: the profile README (AryaVora621/AryaVora621, a separate repo) still says
+// "Won it as captain, 5-0", "won the NJ State Championship, won the NJ University Cup" and
+// "I'm a junior", and FTCScout records a 0-2 loss in the state final, no University Cup win and
+// the class of 2028. Once Arya approves a corrected README, point this back at
+// https://github.com/AryaVora621.
+export const githubUrl = "https://github.com/AryaVora621?tab=repositories";
+
+// Read by the Intro and the Contact section. Hugging Face is left out: the Frinklyy account
+// exists but has no models, datasets or spaces (huggingface.co/api/users/Frinklyy/overview,
+// 2026-10-08), so a link would only pad the list. Add it back once something is published.
 export const socialLinks = [
   {
     label: "GitHub",
     handle: "@AryaVora621",
-    url: "https://github.com/AryaVora621",
+    url: githubUrl,
   },
   {
     label: "LinkedIn",
-    handle: "Arya Vora",
+    // The slug comes from Arya's own profile README; linkedin.com answers bots with
+    // status 999, so it could not be checked here. Arya to confirm.
+    handle: "aryavora",
     url: "https://linkedin.com/in/aryavora",
   },
   {
-    label: "X / Twitter",
+    label: "X",
     handle: "@aryavora621",
     url: "https://x.com/aryavora621",
   },
@@ -112,10 +110,5 @@ export const socialLinks = [
     label: "Instagram",
     handle: "@aryavora621",
     url: "https://www.instagram.com/aryavora621/",
-  },
-  {
-    label: "Hugging Face",
-    handle: "Frinklyy",
-    url: "https://huggingface.co/Frinklyy",
   },
 ] as const;

@@ -1,0 +1,37 @@
+/* The intro sits directly under the header: the name, one paragraph and three links. */
+.intro {
+  padding-top: var(--space-7);
+}
+
+.intro-lead {
+  max-width: 22em;
+  margin-top: var(--space-5);
+  font-size: var(--text-lead);
+  line-height: var(--leading-lead);
+}
+
+.intro-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-body);
+}
+
+/* Taller links give a 44px touch target without changing the row's look. */
+.intro-links a {
+  display: inline-block;
+  padding-block: var(--space-2);
+}
+
+@media (min-width: 640px) {
+  .intro {
+    padding-top: var(--space-8);
+  }
+
+  .intro-lead {
+    margin-top: var(--space-6);
+  }
+}

@@ -1,0 +1,11 @@
+.site-footer {
+  padding-top: var(--space-5);
+  padding-bottom: var(--space-7);
+}
+
+/* "Updated" and its date stay together when they fit. As an inline block the pair moves to the
+   next line whole, and only breaks inside itself when the line is narrower than the pair. */
+.site-footer-updated {
+  display: inline-block;
+  max-width: 100%;
+}

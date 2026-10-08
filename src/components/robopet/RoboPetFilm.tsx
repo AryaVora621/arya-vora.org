@@ -1,329 +1,371 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ArrowUpRight } from "lucide-react";
-import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { FILM_FRAMES } from "./filmFrames";
 
-const FRAME_COUNT = 240;
-const framePath = (size: "lg" | "sm", index: number) =>
-  `/sequence/robopet/${size}/${String(index + 1).padStart(3, "0")}.webp`;
+// The one scroll-scrubbed act on the page: a generated turntable of the roboPet concept,
+// graded to black and white, cropped to the robot and packed by scripts/grade-frames-bw.mjs.
+// Scrolling turns the robot once. It carries no text of its own: the facts live in the parts
+// table and the build log below it. With reduced motion or no JavaScript it is one still.
+//
+// Whether the film pins and scrubs is decided by SCRUB in film.css, not by React, so the server
+// HTML already has the final height and links to later sections land where they should. This
+// component only draws into the plate that CSS has laid out.
+//
+// The poster stays visible under the canvas until the canvas has drawn its first frame, when this
+// sets data-ready on the root and uncovers the canvas to assistive technology. If every pack
+// fails before any frame arrives it sets data-failed instead, and film.css unpins the figure.
+// Both are set on the DOM and not through state, so a re-render never has to know about them.
 
-// Copy is lifted from the roboPet README hardware table; the film is a concept render.
-const beats = [
-  {
-    id: "legs",
-    at: 0.22,
-    kicker: "LOCOMOTION",
-    title: "Twelve servos. Three joints a leg.",
-    body: "Hip, upper leg, lower leg. MG996R servos on a printed PLA frame, driven at 50 Hz by a non-blocking state machine.",
-    side: "left",
-  },
-  {
-    id: "brains",
-    at: 0.44,
-    kicker: "ARCHITECTURE",
-    title: "Two brains, on purpose.",
-    body: "A Raspberry Pi Pico runs the real-time loop: sense, think, act. A Pi Zero 2W handles camera, audio, RC and, eventually, the agent.",
-    side: "right",
-  },
-  {
-    id: "power",
-    at: 0.66,
-    kicker: "POWER",
-    title: "Two rails. No brownouts.",
-    body: "One buck converter feeds the servos at about 7.2 V, another holds the logic at 5 V. Gait current spikes never reach the boards.",
-    side: "left",
-  },
-] as const;
+const SCRUB = "(scripting: enabled) and (prefers-reduced-motion: no-preference)";
+
+// Read for both the scrubbed canvas and the still, so it names no motion, and per DESIGN.md
+// it names no color.
+const ALT =
+  "Concept animation of roboPet: a four-legged robot with a rounded shell and an OLED face showing two eyes.";
+
+const { width: FRAME_W, height: FRAME_H } = FILM_FRAMES.sizes.lg;
+
+// Decoded frames are about 5 MB each at the large size, so only the frames nearest the one on
+// screen stay decoded. The packed WebP files (about 2 MB in all) stay in memory as blobs.
+const DECODE_BUDGET = 64 * 1024 * 1024;
+const MAX_DECODING = 3;
+
+function subscribe(callback: () => void) {
+  const query = window.matchMedia(SCRUB);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+// Server render and hydration say no; the canvas mounts right after. Layout is the same either
+// way because the canvas sits on top of the plate.
+const useScrub = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(SCRUB).matches,
+    () => false,
+  );
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+type Decoded = { source: CanvasImageSource; close: () => void };
+
+// Decode at width x height when that is smaller than the file, so a frame drawn small is
+// held small.
+async function decodeFrame(blob: Blob, width: number, height: number, full: number): Promise<Decoded> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const options: ImageBitmapOptions | undefined =
+        width < full ? { resizeWidth: width, resizeHeight: height, resizeQuality: "high" } : undefined;
+      const bitmap = await createImageBitmap(blob, options);
+      return { source: bitmap, close: () => bitmap.close() };
+    } catch {
+      // Fall through to an image element.
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const image = new Image();
+  image.src = url;
+  try {
+    await image.decode();
+  } catch (error) {
+    URL.revokeObjectURL(url);
+    throw error;
+  }
+  return { source: image, close: () => URL.revokeObjectURL(url) };
+}
+
+/**
+ * Stream one pack and hand back each WebP file as it completes. A WebP file is a RIFF chunk
+ * whose bytes 4 to 8 give its length minus eight, so the pack needs no index.
+ */
+async function readPack(url: string, signal: AbortSignal, onFile: (file: Blob, index: number) => void) {
+  const response = await fetch(url, { signal });
+  if (!response.ok || !response.body) throw new Error(`${response.status} ${url}`);
+  const reader = response.body.getReader();
+  let buffer = new Uint8Array(0);
+  let index = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) {
+      const merged = new Uint8Array(buffer.length + value.length);
+      merged.set(buffer);
+      merged.set(value, buffer.length);
+      buffer = merged;
+      while (buffer.length >= 8) {
+        const length = 8 + new DataView(buffer.buffer, buffer.byteOffset + 4, 4).getUint32(0, true);
+        if (buffer.length < length) break;
+        onFile(new Blob([buffer.slice(0, length)], { type: "image/webp" }), index++);
+        buffer = buffer.subarray(length);
+      }
+    }
+    if (done) return;
+  }
+}
 
 export function RoboPetFilm() {
-  const motion = useMotionAllowed();
-  const sectionRef = useRef<HTMLElement>(null);
+  const scrub = useScrub();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const figureRef = useRef<HTMLElement>(null);
+  const plateRef = useRef<HTMLDivElement>(null);
+  const runRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const counterRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (!motion) return;
-    const section = sectionRef.current;
+    if (!scrub) return;
+    const root = rootRef.current;
+    const figure = figureRef.current;
+    const plate = plateRef.current;
+    const run = runRef.current;
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
-    if (!section || !canvas || !context) return;
-    gsap.registerPlugin(ScrollTrigger);
+    if (!root || !figure || !plate || !run || !canvas || !context) return;
 
-    const size = window.innerWidth < 760 ? "sm" : "lg";
-    const frames: HTMLImageElement[] = [];
-    const state = { frame: 0 };
+    const COUNT = FILM_FRAMES.count;
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    // The small frames are half size; use them while they are no more than slightly enlarged.
+    const small = plate.clientWidth * ratio <= FILM_FRAMES.sizes.sm.width * 1.2;
+    const size = small ? "sm" : "lg";
+    const sourceWidth: number = FILM_FRAMES.sizes[size].width;
+
+    const blobs: (Blob | undefined)[] = new Array(COUNT);
+    const decoded = new Map<number, Decoded>();
+    const decoding = new Set<number>();
+    const abort = new AbortController();
+    let disposed = false;
+    let near = false;
+    let progress = 0;
     let drawn = -1;
-    let loadingStarted = false;
+    let raf = 0;
+    let last = 0;
+    let stickTop = 0;
+    // Where the frame is drawn, in canvas pixels, and the size frames are decoded at.
+    const box = { x: 0, y: 0, w: 0, h: 0 };
+    let decodeW = sourceWidth;
+    let decodeH: number = FILM_FRAMES.sizes[size].height;
+    let keep = 9;
 
-    const nearestLoaded = (index: number) => {
-      for (let offset = 0; offset < FRAME_COUNT; offset++) {
-        const before = frames[index - offset];
-        if (before?.complete && before.naturalWidth) return before;
-        const after = frames[index + offset];
-        if (after?.complete && after.naturalWidth) return after;
+    const want = () => Math.round(progress * (COUNT - 1));
+
+    // Fit the whole frame inside the plate. CSS sizes the plate to the frame's aspect ratio
+    // unless the screen is short, and the frame's edges are already faded to the plate's black,
+    // so any band left at the sides is the same black.
+    const layout = () => {
+      const W = plate.clientWidth;
+      const H = plate.clientHeight;
+      canvas.width = Math.round(W * ratio);
+      canvas.height = Math.round(H * ratio);
+      const fw = Math.min(W, (H * FRAME_W) / FRAME_H);
+      const fh = (fw * FRAME_H) / FRAME_W;
+      box.w = fw * ratio;
+      box.h = fh * ratio;
+      box.x = ((W - fw) / 2) * ratio;
+      box.y = ((H - fh) / 2) * ratio;
+      stickTop = parseFloat(getComputedStyle(figure).top) || 0;
+
+      // Decode no larger than drawn; a change of more than a tenth starts the window over.
+      const width = Math.min(sourceWidth, Math.round(box.w));
+      if (Math.abs(width - decodeW) > decodeW * 0.1) {
+        for (const frame of decoded.values()) frame.close();
+        decoded.clear();
       }
-      return null;
+      decodeW = width;
+      decodeH = Math.round((width * FRAME_H) / FRAME_W);
+      keep = clamp(Math.floor(DECODE_BUDGET / (decodeW * decodeH * 4)), 9, 31);
+      drawn = -1;
     };
 
-    const draw = (force = false) => {
-      const index = Math.round(state.frame);
-      if (index === drawn && !force) return;
-      const image = nearestLoaded(index);
-      if (!image) return;
+    let ready = false;
+    const markReady = () => {
+      if (ready) return;
+      ready = true;
+      delete root.dataset.failed;
+      root.dataset.ready = "";
+      canvas.removeAttribute("aria-hidden");
+    };
+
+    const draw = () => {
+      const goal = want();
+      let index = -1;
+      for (let offset = 0; offset < COUNT && index === -1; offset++) {
+        if (decoded.has(goal - offset)) index = goal - offset;
+        else if (decoded.has(goal + offset)) index = goal + offset;
+      }
+      if (index === -1 || index === drawn) return;
       drawn = index;
-      const { width, height } = canvas;
-      // Landscape: contain with margin so callouts sit beside the robot, not on it; the
-      // frame background matches --film-bg so the letterbox is invisible. Portrait: the
-      // robot spans the middle ~55% of the source, so crop the sides to fill the width.
-      const portrait = width < height;
-      const scale = portrait
-        ? (width * 1.25) / image.naturalWidth
-        : Math.min(width / image.naturalWidth, height / image.naturalHeight) * 0.86;
-      const w = image.naturalWidth * scale;
-      const h = image.naturalHeight * scale;
+      context.clearRect(0, 0, canvas.width, canvas.height);
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "high";
-      context.fillStyle = "#07070c";
-      context.fillRect(0, 0, width, height);
-      const x = (width - w) / 2;
-      // Portrait keeps the robot in the upper-middle so the beat copy owns the bottom.
-      const y = portrait ? height * 0.38 - h / 2 : (height - h) / 2;
-      context.drawImage(image, x, y, w, h);
-      // The lit floor makes the frame's own edges visible against the letterbox, so
-      // feather every edge of the drawn frame into the stage colour.
-      // Each band starts 2px outside the frame so no source edge pixel survives.
-      const fx = w * 0.14;
-      const fy = h * 0.16;
-      const band = (
-        rx: number,
-        ry: number,
-        rw: number,
-        rh: number,
-        gx0: number,
-        gy0: number,
-        gx1: number,
-        gy1: number,
-      ) => {
-        const gradient = context.createLinearGradient(gx0, gy0, gx1, gy1);
-        gradient.addColorStop(0, "#07070c");
-        gradient.addColorStop(1, "#07070c00");
-        context.fillStyle = gradient;
-        context.fillRect(rx, ry, rw, rh);
-      };
-      band(x - 2, y - 2, fx + 2, h + 4, x, 0, x + fx, 0);
-      band(x + w - fx, y - 2, fx + 2, h + 4, x + w, 0, x + w - fx, 0);
-      band(x - 2, y - 2, w + 4, fy + 2, 0, y, 0, y + fy);
-      band(x - 2, y + h - fy, w + 4, fy + 2, 0, y + h, 0, y + h - fy);
-      if (counterRef.current)
-        counterRef.current.textContent = String(index + 1).padStart(3, "0");
+      context.drawImage(decoded.get(index)!.source, box.x, box.y, box.w, box.h);
+      markReady();
     };
 
-    const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.round(canvas.clientWidth * ratio);
-      canvas.height = Math.round(canvas.clientHeight * ratio);
-      draw(true);
+    // Keep the `keep` loaded frames nearest the wanted one decoded, and let the rest go.
+    const refresh = () => {
+      if (disposed) return;
+      if (!near) {
+        for (const frame of decoded.values()) frame.close();
+        decoded.clear();
+        drawn = -1;
+        return;
+      }
+      const goal = want();
+      const loaded: number[] = [];
+      for (let i = 0; i < COUNT; i++) if (blobs[i]) loaded.push(i);
+      loaded.sort((a, b) => Math.abs(a - goal) - Math.abs(b - goal));
+      const wanted = new Set(loaded.slice(0, keep));
+      for (const [index, frame] of decoded) {
+        if (!wanted.has(index) && index !== drawn) {
+          frame.close();
+          decoded.delete(index);
+        }
+      }
+      for (const index of loaded.slice(0, keep)) {
+        if (decoding.size >= MAX_DECODING) break;
+        if (decoded.has(index) || decoding.has(index)) continue;
+        decoding.add(index);
+        const width = decodeW;
+        decodeFrame(blobs[index]!, decodeW, decodeH, sourceWidth)
+          .then((frame) => {
+            decoding.delete(index);
+            if (disposed || width !== decodeW) return frame.close();
+            decoded.set(index, frame);
+            draw();
+            refresh();
+          })
+          .catch(() => decoding.delete(index));
+      }
     };
 
-    const load = (index: number) => {
-      if (frames[index]) return;
-      const image = new Image();
-      image.decoding = "async";
-      image.src = framePath(size, index);
-      image.onload = () => {
-        if (Math.abs(index - state.frame) < 6 || drawn === -1) draw(true);
-      };
-      frames[index] = image;
+    const target = () => {
+      const span = run.offsetHeight;
+      const top = root.getBoundingClientRect().top;
+      return span > 0 ? clamp((stickTop - top) / span, 0, 1) : 0;
     };
 
-    const loadAll = () => {
-      if (loadingStarted) return;
-      loadingStarted = true;
-      for (let i = 0; i < FRAME_COUNT; i++) load(i);
+    // A light lerp toward the scroll position, frame-rate independent. Away from the viewport
+    // it snaps, so an anchor jump past the film does not replay the turn.
+    const tick = (now: number) => {
+      raf = 0;
+      const goal = target();
+      const rect = root.getBoundingClientRect();
+      const onScreen = rect.bottom > 0 && rect.top < window.innerHeight;
+      const dt = last ? Math.min(now - last, 64) : 16.7;
+      last = now;
+      const k = 1 - Math.pow(1 - 0.2, dt / 16.7);
+      const before = want();
+      progress = onScreen ? progress + (goal - progress) * k : goal;
+      if (Math.abs(goal - progress) < 0.0004) progress = goal;
+      if (want() !== before) refresh();
+      draw();
+      if (progress !== goal) raf = requestAnimationFrame(tick);
+      else last = 0;
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(tick);
     };
 
-    load(0);
-    resize();
-    // Two-stage loading: a coarse 1-in-8 pass as the film approaches, the full set only
-    // once it is actually on screen, so visitors who never scroll this far pay little.
-    const coarse = () => {
-      for (let i = 0; i < FRAME_COUNT; i += 8) load(i);
+    // Pack 0 (every eighth frame) loads as the film approaches; the rest once it is on screen,
+    // one pack at a time, so visitors who never scroll this far fetch about a tenth of it.
+    const passes = FILM_FRAMES.passes;
+    let started = 0;
+    let loading: Promise<void> = Promise.resolve();
+    const loadPasses = (upTo: number) => {
+      for (; started < upTo; started++) {
+        const [offset, step] = passes[started];
+        const url = `${FILM_FRAMES.base}/${size}-${started}.bin`;
+        loading = loading
+          .then(() =>
+            readPack(url, abort.signal, (file, k) => {
+              const index = offset + k * step;
+              if (disposed || index >= COUNT) return;
+              blobs[index] = file;
+              refresh();
+            }),
+          )
+          .catch(() => {
+            // A failed pack leaves gaps; the nearest loaded frame is drawn instead. With no
+            // frame at all there is nothing to scrub, so the poster stays and the figure unpins.
+            if (!disposed && !ready && !blobs.some(Boolean)) root.dataset.failed = "";
+          });
+      }
     };
+
     const nearObserver = new IntersectionObserver(
-      (entries) => entries.some((e) => e.isIntersecting) && coarse(),
-      { rootMargin: "100% 0px" },
+      (entries) => {
+        near = entries.some((entry) => entry.isIntersecting);
+        if (near) loadPasses(1);
+        refresh();
+        draw();
+      },
+      { rootMargin: "150% 0px" },
     );
+    // "On screen" means the film's top has risen past two thirds of the viewport, so a first
+    // screen that only grazes the plate's top edge does not fetch the whole turn.
     const onObserver = new IntersectionObserver(
-      (entries) => entries.some((e) => e.isIntersecting) && loadAll(),
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadPasses(passes.length);
+      },
+      { rootMargin: "0px 0px -35% 0px" },
     );
-    nearObserver.observe(section);
-    onObserver.observe(section);
-    window.addEventListener("resize", resize);
+    nearObserver.observe(root);
+    onObserver.observe(root);
 
-    const ctx = gsap.context(() => {
-      const timeline = gsap.timeline({
-        defaults: { ease: "none" },
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.5,
-          // The HUD has its own progress rail; hide the nav's while pinned.
-          onToggle: (self) => {
-            document.documentElement.dataset.film = self.isActive ? "on" : "off";
-          },
-        },
-      });
-      timeline.to(
-        state,
-        { frame: FRAME_COUNT - 1, duration: 1, onUpdate: () => draw() },
-        0,
-      );
-      timeline.fromTo(
-        ".film-intro",
-        { opacity: 1, scale: 1, filter: "blur(0px)" },
-        { opacity: 0, scale: 0.92, filter: "blur(6px)", duration: 0.12 },
-        0.02,
-      );
-      // The robot starts low and small under the title, then rises into frame as the
-      // title clears, so type and product never fight for the same pixels.
-      timeline.fromTo(
-        ".film-canvas",
-        { yPercent: 26, scale: 0.78 },
-        { yPercent: 0, scale: 1, duration: 0.16, ease: "power1.inOut" },
-        0,
-      );
-      // A slow push-in across the middle act, so the camera is never static.
-      timeline.to(".film-canvas", { scale: 1.08, duration: 0.6, ease: "sine.inOut" }, 0.18);
-      const wide = window.innerWidth >= 760;
-      beats.forEach((beat) => {
-        const selector = `.film-beat[data-beat="${beat.id}"]`;
-        // The product moves out of the way of the copy, not the other way round.
-        if (wide)
-          timeline.to(
-            ".film-canvas",
-            {
-              xPercent: beat.side === "left" ? 9 : -9,
-              duration: 0.1,
-              ease: "power2.inOut",
-            },
-            beat.at - 0.1,
-          );
-        timeline.fromTo(
-          selector,
-          { opacity: 0, y: 40 },
-          { opacity: 1, y: 0, duration: 0.06, ease: "power2.out" },
-          beat.at - 0.08,
-        );
-        timeline.to(
-          selector,
-          { opacity: 0, y: -40, duration: 0.06, ease: "power2.in" },
-          beat.at + 0.1,
-        );
-      });
-      if (wide)
-        timeline.to(
-          ".film-canvas",
-          { xPercent: 0, duration: 0.1, ease: "power2.inOut" },
-          0.8,
-        );
-      timeline.fromTo(
-        ".film-outro",
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 0.06, ease: "power2.out" },
-        0.84,
-      );
-      // Exit: pull back and dim so the hand-off to the next section is deliberate.
-      timeline.to(
-        ".film-canvas",
-        { scale: 0.86, opacity: 0.15, duration: 0.06, ease: "power2.in" },
-        0.94,
-      );
-      timeline.to(".film-outro, .film-hud", { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.94);
-      timeline.fromTo(".film-progress-bar", { scaleX: 0 }, { scaleX: 1, duration: 1 }, 0);
-    }, section);
+    const resized = new ResizeObserver(() => {
+      layout();
+      refresh();
+      draw();
+    });
+    resized.observe(plate);
+
+    layout();
+    progress = target();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
 
     return () => {
-      ctx.revert();
+      disposed = true;
+      abort.abort();
+      cancelAnimationFrame(raf);
       nearObserver.disconnect();
       onObserver.disconnect();
-      delete document.documentElement.dataset.film;
-      window.removeEventListener("resize", resize);
-      frames.forEach((image) => (image.onload = null));
+      resized.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      for (const frame of decoded.values()) frame.close();
+      decoded.clear();
+      delete root.dataset.ready;
+      delete root.dataset.failed;
+      canvas.setAttribute("aria-hidden", "true");
     };
-  }, [motion]);
+  }, [scrub]);
 
   return (
-    <section
-      ref={sectionRef}
-      id="robopet"
-      className="film"
-      data-mode={motion ? "scrub" : "static"}
-      aria-labelledby="film-title"
-    >
-      <div className="film-stage">
-        {/* eslint-disable-next-line @next/next/no-img-element -- static fallback frame */}
-        <img
-          className="film-poster"
-          src="/sequence/robopet/poster.webp"
-          alt="Concept render of roboPet, a small four-legged robot with an off-white shell and an OLED face showing two violet eyes."
-          width={1920}
-          height={1080}
-          loading="lazy"
-        />
-        <canvas ref={canvasRef} className="film-canvas" aria-hidden="true" />
-        <div className="film-vignette" aria-hidden="true" />
-        <div className="film-intro site-shell">
-          <p className="eyebrow">
-            <span className="status-dot" />
-            FEATURED BUILD / 01
-          </p>
-          <h2 id="film-title">
-            Meet <span className="accent-text">roboPet.</span>
-          </h2>
-          <p>A four-legged companion, built to learn mechatronics end to end.</p>
+    // data-mode reports whether the canvas is running; layout never reads it.
+    <div ref={rootRef} className="film" data-mode={scrub ? "scrub" : "static"}>
+      <figure ref={figureRef} className="film-figure wrap">
+        <div ref={plateRef} className="film-plate">
+          {/* The still for reduced motion, no JavaScript and the wait for the first frame.
+              film.css hides it once the canvas has drawn. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- static still, prepared offline */}
+          <img
+            className="film-poster"
+            src={FILM_FRAMES.poster}
+            alt={ALT}
+            width={FRAME_W}
+            height={FRAME_H}
+            loading="lazy"
+            decoding="async"
+          />
+          {/* Hidden from assistive technology until it has drawn; the poster says it until then. */}
+          {scrub && (
+            <canvas ref={canvasRef} className="film-canvas" role="img" aria-label={ALT} aria-hidden="true" />
+          )}
         </div>
-        <ol className="film-beats site-shell">
-          {beats.map((beat) => (
-            <li
-              key={beat.id}
-              className={`film-beat film-beat-${beat.side}`}
-              data-beat={beat.id}
-            >
-              <span className="micro">{beat.kicker}</span>
-              <h3>{beat.title}</h3>
-              <p>{beat.body}</p>
-            </li>
-          ))}
-        </ol>
-        <div className="film-outro site-shell">
-          <p className="film-outro-line">
-            Hardware in progress.
-            <br />
-            <span className="muted-text">Every decision documented.</span>
-          </p>
-          <a
-            className="text-link"
-            href="https://github.com/AryaVora621/roboPet"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read the build log <ArrowUpRight size={17} aria-hidden="true" />
-          </a>
-        </div>
-        <div className="film-hud site-shell" aria-hidden="true">
-          <span>
-            FRAME <span ref={counterRef}>001</span>/{FRAME_COUNT}
-          </span>
-          <span className="film-progress">
-            <span className="film-progress-bar" />
-          </span>
-          <span>CONCEPT RENDER, NOT A PHOTO</span>
-        </div>
-      </div>
-    </section>
+        <figcaption className="meta film-caption">
+          Concept animation, made with Google Veo from a Gemini image of the design.
+        </figcaption>
+      </figure>
+      <div ref={runRef} className="film-run" aria-hidden="true" />
+    </div>
   );
 }
