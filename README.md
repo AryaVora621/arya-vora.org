@@ -6,6 +6,7 @@ A Next.js portfolio with an interactive robot schematic, illustrated project gal
 - Main composition: `src/components/portfolio/Portfolio.tsx`
 - Curated content: `src/data/portfolio.ts`
 - GitHub snapshot refresh: `npm run data:github`
+- Games (`/games`, served at games.arya-vora.org via a host rewrite in `next.config.ts`): `src/app/games/`, data in `src/data/games.ts`
 
 ## Checks
 

@@ -24,6 +24,25 @@ const nextConfig: NextConfig = {
     },
   },
 
+  // games.arya-vora.org serves the /games section from this same deployment.
+  rewrites: async () => ({
+    beforeFiles: [
+      {
+        source: "/",
+        has: [{ type: "host", value: "games.arya-vora.org" }],
+        destination: "/games",
+      },
+      {
+        // Skip Next internals, files with an extension, and paths already under /games.
+        source: "/:path((?!_next/|games(?:/|$))[^.]+)",
+        has: [{ type: "host", value: "games.arya-vora.org" }],
+        destination: "/games/:path",
+      },
+    ],
+    afterFiles: [],
+    fallback: [],
+  }),
+
   headers: async () => [
     {
       source: "/:path*",

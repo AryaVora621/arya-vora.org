@@ -85,6 +85,7 @@ export function PortfolioNav() {
                 {label}
               </a>
             ))}
+            <a href="/games">Games</a>
           </div>
           <div className="nav-actions">
             <MotionExperience />
@@ -128,6 +129,10 @@ export function PortfolioNav() {
               <ArrowUpRight size={18} aria-hidden="true" />
             </a>
           ))}
+          <a href="/games">
+            Games
+            <ArrowUpRight size={18} aria-hidden="true" />
+          </a>
         </div>
       </header>
       <CommandMenu />

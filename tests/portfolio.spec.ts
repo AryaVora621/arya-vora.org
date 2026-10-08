@@ -322,7 +322,7 @@ test("scroll effects respond to position and stop when paused", async ({ page })
 test("metadata, local assets, and internal link targets resolve", async ({ page, request }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Arya Vora | Robots, Software & Experiments");
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", "https://aryavora.com/portfolio-og.png");
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", "https://www.arya-vora.org/portfolio-og.png");
   const card = await request.get("/portfolio-og.png");
   expect(card.status()).toBe(200);
   expect(card.headers()["content-type"]).toContain("image/png");
