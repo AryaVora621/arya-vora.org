@@ -53,3 +53,5 @@ next-env.d.ts
 /.vale/
 /TRACKER.md
 /.claude/
+/assets-src/cad-v2/
+/assets-src/reaper-img2threejs/

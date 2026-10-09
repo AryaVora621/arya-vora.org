@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
+import { ReaperDock, useReaperStage } from "@/components/ftc/ReaperStage";
+import type { ReaperPartId } from "@/components/ftc/createReaperModel";
 
 // Robot facts come from the team’s 2025-26 engineering portfolio (pages 9 to 15).
 // Roles come from the 2024-25 portfolio (page 3, "Design Lead, Cadded design changes before
@@ -19,7 +21,19 @@ import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
 // are Meer, Arnav Doshi and Saiganesh, so the programming credit goes to "the programming
 // team". The WorldsRobo Onshape document is the team’s, and incomplete.
 // Event results are from FIRST’s event pages and FTCScout, checked 2026-10-08.
-// Images are cut from the portfolio by scripts/prepare-ftc-images.mjs.
+// Images are cut from the portfolio by scripts/prepare-ftc-images.mjs; the real-robot strip's
+// four cut-outs (Reaper, the shooter and the two iterations) by
+// assets-src/reaper-img2threejs/tools/prepare-real-robot.mjs, which keeps only the robot, pulls
+// the cut edge in past the page white and the team's own halo, and feathers it.
+// They are already sized for the page, so they are served as they are (unoptimized) rather than
+// through /_next/image. That route reads each file through the visitor's own request, and
+// `next start` keeps one pending job per image: a visitor who leaves while the job is reading
+// leaves every later request for that image waiting, until the server restarts.
+//
+// The robot in the opener and beside the mechanisms is a procedural three.js model
+// (src/components/ftc), built with the img2threejs pipeline from the team's incomplete
+// WorldsRobo Onshape assembly and the photo of the finished robot. It is approximate: the hubs,
+// battery, wiring and the inside of the transfer are placed by inference.
 //
 // What the page cannot say yet, and why. Which outtake or transfer version Arya drew himself is
 // not written down anywhere: the portfolios credit him with the mechanical team's design changes
@@ -31,10 +45,67 @@ import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
 // (what went wrong with the first robot). The portfolio's note that rubber bands "may break, or
 // artifacts may get stuck" sits in its Intake box, so it is not attributed to the transfer here.
 
-const PHOTOS = {
-  reaper: { src: "/ftc/reaper.webp", width: 1040, height: 1180 },
-  cad: { src: "/ftc/worldsrobo-cad.webp", width: 1414, height: 1200 },
+// The real robot, smaller, under the mechanisms. Captions say only what the portfolio shows:
+// page 9 is Reaper itself, page 10 the first and third iterations, and page 8's Testing &
+// Iterations photo the shooter from above with an artifact in it (the page does not say which
+// iteration that shooter belongs to).
+const REAL_ROBOT = [
+  {
+    src: "/ftc/reaper-cutout.webp",
+    width: 492,
+    height: 563,
+    caption: "Reaper, the fifth version",
+    alt: "Reaper from the front: a flywheel shooter under an adjustable hood with a Limelight camera mounted below it, above a full-width intake with mecanum rollers.",
+  },
+  {
+    src: "/ftc/shooter-testing.webp",
+    width: 594,
+    height: 534,
+    caption: "The shooter in testing, from above",
+    alt: "Looking down into a black printed shooter: an artifact sits beside the flywheel, with a motor along one side and wiring below.",
+  },
+  {
+    src: "/ftc/iteration-3.webp",
+    width: 560,
+    height: 665,
+    caption: "Iteration 3",
+    alt: "The third iteration: aluminum channel towers around a printed hood over a flywheel, with gecko wheels across the front.",
+  },
+  {
+    src: "/ftc/iteration-1.webp",
+    width: 649,
+    height: 685,
+    caption: "Iteration 1",
+    alt: "The first iteration: an open aluminum frame with a single flywheel on a motor mount and an artifact on top.",
+  },
+] as const;
+
+type SpecKey = "shooter" | "aiming" | "intake" | "protection" | "code";
+
+/** Which parts of the 3D model each spec row lights up. */
+const SPEC_PARTS: Record<SpecKey, readonly ReaperPartId[]> = {
+  shooter: ["shooter"],
+  aiming: ["aiming"],
+  intake: ["intake", "transfer"],
+  protection: ["protection"],
+  code: ["electronics"],
 };
+
+/** The row a click on the model selects. The drivetrain has no row of its own. */
+const PART_SPEC: Record<ReaperPartId, SpecKey | null> = {
+  drive: null,
+  intake: "intake",
+  transfer: "intake",
+  shooter: "shooter",
+  aiming: "aiming",
+  protection: "protection",
+  electronics: "code",
+};
+
+const MODEL_LABEL =
+  "A 3D model of Reaper built from the team’s CAD and photos: a flywheel shooter under an adjustable hood with a Limelight camera below it, above a full-width intake with mecanum wheels, between wooden side plates.";
+const MODEL_DETAIL_LABEL =
+  "The same 3D model of Reaper. Choosing a row below lights up that part of the robot.";
 
 type Version = {
   name: string;
@@ -345,6 +416,67 @@ function Spec({ value, unit }: { value: string; unit: string }) {
   );
 }
 
+const SPEC_ROWS: { key: SpecKey; term: string; body: ReactNode }[] = [
+  {
+    key: "shooter",
+    term: "Shooter",
+    body: (
+      <>
+        A <Spec value="6000" unit="RPM" /> motor spins a weighted flywheel, and the last
+        outtake version added a second motor on the other side of the wheel. A servo
+        tilts the hood to change the launch angle. All three stored artifacts leave
+        within a second.
+      </>
+    ),
+  },
+  {
+    key: "aiming",
+    term: "Aiming",
+    body: (
+      <>
+        A Limelight 3A is mounted under the hood. It reads AprilTags and gives the shooter its
+        distance to the goal.
+      </>
+    ),
+  },
+  {
+    key: "intake",
+    term: "Intake",
+    body: (
+      <>
+        The full-width intake lifts and flexes to fit around artifacts, and mecanum
+        wheels push them in from the sides. A <Spec value="1150" unit="RPM" /> motor turns
+        a gecko wheel that moves them up to a servo ramp feeding the shooter. Two RGB
+        lights show whether the lift is up or down.
+      </>
+    ),
+  },
+  {
+    key: "protection",
+    term: "Protection",
+    body: (
+      <>
+        On earlier versions, artifacts thrown by the shooter hit the electronics and
+        knocked wires loose. Reaper has acrylic shields over the control and expansion
+        hubs, wheel guards and wooden side plates.
+      </>
+    ),
+  },
+  {
+    key: "code",
+    term: "Code",
+    body: (
+      <>
+        The programming team wrote it. It uses Pedro Pathing for autonomous paths and
+        TeleOp assists, a goBILDA Pinpoint to track the robot’s position, and the
+        Limelight for aiming and flywheel speed. It runs an 18-artifact autonomous.
+        Its autonomous success rate rose from 52% to 92% as localization moved from motor
+        encoders to odometry pods and then to the Pinpoint.
+      </>
+    ),
+  },
+];
+
 function LedgerHead() {
   return (
     <thead>
@@ -399,10 +531,11 @@ function VersionRow({
             <figure>
               <div className="ftc-photo" data-ftc-depth="8">
                 <Image
+                  className="theme-tint"
                   src={version.src}
                   width={version.width}
                   height={version.height}
-                  sizes="(max-width: 760px) 44vw, 232px"
+                  unoptimized
                   alt={version.alt}
                   style={version.focus ? { objectPosition: version.focus } : undefined}
                 />
@@ -425,6 +558,21 @@ export function FtcSection() {
   const root = useRef<HTMLElement>(null);
   const motion = useMotionAllowed();
 
+  // A spec row lights up its part of the model while it is hovered or focused, and stays lit
+  // when clicked (aria-pressed). A click on the model selects the row for that part.
+  const [hovered, setHovered] = useState<SpecKey | null>(null);
+  const [pinned, setPinned] = useState<SpecKey | null>(null);
+  const onPick = useCallback((id: ReaperPartId | null) => {
+    setPinned(id ? PART_SPEC[id] : null);
+  }, []);
+  const selected = hovered ?? pinned;
+  const focus = useMemo(() => (selected ? SPEC_PARTS[selected] : null), [selected]);
+  // The spec rows are buttons only where the model draws. Without a script, without WebGL, on a
+  // software renderer, or before the model is first built, they would be controls that change
+  // nothing, so those visitors get the plain terms, and nothing claims to show a part.
+  const drawable = useReaperStage(root, { focus, onPick });
+  const active = drawable ? selected : null;
+
   useEffect(() => {
     const section = root.current;
     if (!motion || !section) return;
@@ -445,7 +593,7 @@ export function FtcSection() {
         { xPercent: -5, ease: "none", scrollTrigger: scrub },
       );
 
-      // Each pair of version photos drifts together, and the CAD drifts at its own rate.
+      // Each pair of version photos drifts together, and the real-robot strip at its own rate.
       gsap.utils.toArray<HTMLElement>("[data-ftc-depth]").forEach((element) => {
         const distance = Number(element.dataset.ftcDepth) || 20;
         gsap.fromTo(
@@ -482,14 +630,9 @@ export function FtcSection() {
         </div>
         <figure className="ftc-hero">
           <div className="ftc-hero-robot" data-ftc-robot>
-            <Image
-              src={PHOTOS.reaper.src}
-              width={PHOTOS.reaper.width}
-              height={PHOTOS.reaper.height}
-              sizes="(max-width: 760px) calc(100vw - 40px), 520px"
-              alt="Reaper from the front: a flywheel shooter under an adjustable hood with a Limelight camera mounted below it, above a full-width intake with mecanum rollers."
-            />
+            <ReaperDock className="ftc-hero-dock" label={MODEL_LABEL} />
           </div>
+          <figcaption className="reaper-hint">Drag to turn it.</figcaption>
         </figure>
         <div className="ftc-intro">
           <p className="ftc-lede">
@@ -516,67 +659,93 @@ export function FtcSection() {
         </ol>
       </div>
 
-      <div className="ftc-block ftc-mechanisms site-shell">
-        <div className="ftc-mechanisms-copy">
-          <h3>Mechanisms</h3>
-          <dl className="ftc-specs">
-            <div>
-              <dt>Shooter</dt>
-              <dd>
-                A <Spec value="6000" unit="RPM" /> motor spins a weighted flywheel, and the last
-                outtake version added a second motor on the other side of the wheel. A servo
-                tilts the hood to change the launch angle. All three stored artifacts leave
-                within a second.
-              </dd>
-            </div>
-            <div>
-              <dt>Aiming</dt>
-              <dd>
-                A Limelight 3A is mounted under the hood. It reads AprilTags and gives the shooter its
-                distance to the goal.
-              </dd>
-            </div>
-            <div>
-              <dt>Intake</dt>
-              <dd>
-                The full-width intake lifts and flexes to fit around artifacts, and mecanum
-                wheels push them in from the sides. A <Spec value="1150" unit="RPM" /> motor turns
-                a gecko wheel that moves them up to a servo ramp feeding the shooter. Two RGB
-                lights show whether the lift is up or down.
-              </dd>
-            </div>
-            <div>
-              <dt>Protection</dt>
-              <dd>
-                On earlier versions, artifacts thrown by the shooter hit the electronics and
-                knocked wires loose. Reaper has acrylic shields over the control and expansion
-                hubs, wheel guards and wooden side plates.
-              </dd>
-            </div>
-            <div>
-              <dt>Code</dt>
-              <dd>
-                The programming team wrote it. It uses Pedro Pathing for autonomous paths and
-                TeleOp assists, a goBILDA Pinpoint to track the robot’s position, and the
-                Limelight for aiming and flywheel speed. It runs an 18-artifact autonomous.
-                Its autonomous success rate rose from 52% to 92% as localization moved from motor
-                encoders to odometry pods and then to the Pinpoint.
-              </dd>
-            </div>
-          </dl>
-        </div>
-        <figure className="ftc-cad" data-ftc-depth="14">
-          <Image
-            src={PHOTOS.cad.src}
-            width={PHOTOS.cad.width}
-            height={PHOTOS.cad.height}
-            sizes="(max-width: 760px) calc(100vw - 40px), 44vw"
-            alt="Onshape render of the team’s robot assembly: aluminum channel frame, mecanum wheels and a boxed shooter housing over the flywheel."
-          />
+      <div className="ftc-block ftc-mechanisms site-shell" data-reaper-track>
+        <h3 className="ftc-mechanisms-title">Mechanisms</h3>
+        <figure className="ftc-model">
+          <ReaperDock className="ftc-model-dock" label={MODEL_DETAIL_LABEL} />
+          {/* On phones the model rides at the top of the screen while the rows scroll under it,
+              and ftc.css moves this caption after the rows (see the 760px block). There the
+              row half of the hint is said once, above the rows, by .ftc-spec-cue instead. */}
           <figcaption>
-            The team’s robot in Onshape. The model is incomplete.
+            Built in code from the team’s robot in Onshape and photos of Reaper. The model is
+            incomplete, so the hubs, wiring and transfer are placed by estimate.
+            <span className="reaper-hint">
+              {" "}
+              Drag to turn it<span className="ftc-hint-rows">, or pick a row to light up its part</span>.
+            </span>
           </figcaption>
         </figure>
+        {drawable && (
+          <p id="ftc-spec-hint" className="ftc-visually-hidden">
+            Shows this part on the 3D model.
+          </p>
+        )}
+        {drawable && (
+          <p className="ftc-spec-cue reaper-hint" aria-hidden="true">
+            Pick a row to light up its part on the model.
+          </p>
+        )}
+        <dl className="ftc-specs" data-active={active ?? undefined}>
+          {SPEC_ROWS.map((row) => (
+            <div
+              key={row.key}
+              className="ftc-spec"
+              data-active={active === row.key || undefined}
+              onPointerEnter={(event) => {
+                if (drawable && event.pointerType === "mouse") setHovered(row.key);
+              }}
+              onPointerLeave={(event) => {
+                if (event.pointerType === "mouse") setHovered(null);
+              }}
+            >
+              <dt>
+                {drawable ? (
+                  <button
+                    type="button"
+                    className="ftc-spec-key"
+                    aria-pressed={pinned === row.key}
+                    aria-describedby="ftc-spec-hint"
+                    onFocus={() => setHovered(row.key)}
+                    onBlur={() => setHovered(null)}
+                    onClick={() => setPinned((current) => (current === row.key ? null : row.key))}
+                  >
+                    {row.term}
+                  </button>
+                ) : (
+                  <span className="ftc-spec-key">{row.term}</span>
+                )}
+              </dt>
+              <dd>{row.body}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <div className="ftc-block ftc-real site-shell">
+        <div className="ftc-sub-head">
+          <h4>The real robot</h4>
+          <p>Reaper as the team built it, with the shooter in testing and two earlier iterations.</p>
+        </div>
+        <ul className="ftc-real-strip">
+          {REAL_ROBOT.map((photo) => (
+            <li key={photo.src}>
+              <figure>
+                <div className="ftc-real-photo" data-ftc-depth="6">
+                  <Image
+                    className="theme-tint"
+                    src={photo.src}
+                    width={photo.width}
+                    height={photo.height}
+                    unoptimized
+                    alt={photo.alt}
+                  />
+                </div>
+                <figcaption>{photo.caption}</figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+        <p className="ftc-credit">Photos: Team 23786 MakEMinds</p>
       </div>
 
       <div className="ftc-block ftc-iterations site-shell">

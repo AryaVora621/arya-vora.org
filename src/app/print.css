@@ -21,6 +21,10 @@
     --text: #000 !important;
     --muted: #4d4d4d !important;
     --accent: #000 !important;
+    /* Violet toggles a duotone filter and a lavender mat for light screenshots. On paper both
+       themes print the one black and white sheet: the filter goes and the mat takes the same
+       color mono gives it, --text, which is black above. */
+    --tint-highlight: var(--text) !important;
     --section-gap: 36px !important;
     /* Paper is read closer than a screen, so the type scale steps down. */
     --text-caption: 11px !important;
@@ -66,6 +70,10 @@
   .hero-robot-canvas,
   nextjs-portal {
     display: none !important;
+  }
+
+  .theme-tint {
+    filter: none !important;
   }
 
   /* Whatever GSAP left on an element mid-scroll: hidden, shifted or scaled. */

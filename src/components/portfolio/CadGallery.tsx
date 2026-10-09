@@ -6,6 +6,11 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
 
 // Shaded views from Arya’s Onshape documents, made grey by scripts/prepare-cad-images.mjs.
+// Each is a product-style three-quarter view (elevation 22 degrees, azimuth 215 or 325, picked
+// per model for what it shows best) rendered from assets-src/cad-v2. The images carry the class
+// "theme-tint": a no-op in the black and white theme, a violet duotone in the violet theme. The
+// FRC task's ball is drawn as clear glass by the script, so the arm, sprockets and gearmotors
+// read before the sphere does.
 //
 // The gallery holds only models Arya drew. Left out on purpose: the open-source Sesame robot
 // (someone else’s design), Totebot (authorship not confirmed), the custom claw (unfinished), the
@@ -26,9 +31,9 @@ import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
 // bolted arms).
 //
 // Sources, checked 2026-10-08:
-// - The renders (assets-src/cad/*.png) for what each model shows.
+// - The renders (assets-src/cad-v2/*.png) for what each model shows.
 // - The Onshape document list in the parent session for the year (the year each document was
-//   last modified) and the element kind (assembly or part studio, from assets-src/cad/index.json).
+//   last modified) and the element kind (assembly or part studio, from the Onshape element list).
 // - github.com/AryaVora621/drone PROJECT_GOALS.md for the esp-fc firmware and four A2212 motors.
 // - github.com/AryaVora621/mediapad README for the switches, knob, OLED and build status: the
 //   PCB is ordered from JLCPCB, the case v2 redesign is unchecked, and the Onshape document was
@@ -43,7 +48,7 @@ import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
 type Kind = "assembly" | "part studio";
 
 type Piece = {
-  /** File key in public/cad, from assets-src/cad/index.json. */
+  /** File key in public/cad, set in scripts/prepare-cad-images.mjs. */
   key: string;
   name: string;
   text: string;
@@ -52,6 +57,8 @@ type Piece = {
   /** Size of public/cad/<key>.webp. The -sm file is 900 px wide. */
   width: number;
   height: number;
+  /** Width of public/cad/<key>-xl.webp, a candidate for 2x screens, when the piece has one. */
+  xl?: number;
   alt: string;
   /** Parallax travel as a percent of the render’s own height, each way. */
   depth: number;
@@ -80,11 +87,12 @@ const GROUPS: readonly Group[] = [
         kind: "assembly",
         year: 2026,
         width: 1800,
-        height: 1094,
+        height: 791,
+        xl: 2800,
         alt: "Flat quadcopter frame seen from above at an angle, with a motor and a three-blade propeller at each corner.",
-        depth: 9,
+        depth: 14,
         drift: 4,
-        sizes: "(max-width: 900px) 100vw, 72vw",
+        sizes: "(max-width: 900px) 100vw, 96vw",
       },
       {
         key: "drone-test-india-test",
@@ -93,10 +101,10 @@ const GROUPS: readonly Group[] = [
         kind: "assembly",
         year: 2026,
         width: 1800,
-        height: 1174,
+        height: 855,
         alt: "X-shaped drone frame with four bolt-on arms, a base plate, a top plate and a small camera mount.",
-        depth: 12,
-        sizes: "(max-width: 900px) 100vw, 55vw",
+        depth: 14,
+        sizes: "(max-width: 900px) 100vw, 56vw",
       },
     ],
   },
@@ -110,10 +118,10 @@ const GROUPS: readonly Group[] = [
         text: "Each of the four legs has two servos, one in a pocket on the rim and a second hanging off it. The middle of the plate has to fit a Pi Zero 2W, a Pico, a camera and an IMU.",
         kind: "assembly",
         year: 2026,
-        width: 1800,
-        height: 1187,
-        alt: "Round shallow chassis with four servo pockets on the rim, a second servo hanging off each, and small boards and a camera in the middle.",
-        depth: 8,
+        width: 2140,
+        height: 1116,
+        alt: "Round shallow chassis with four servo pockets on the rim, a second servo beside each, and small boards in the middle.",
+        depth: 10,
         sizes: "(max-width: 900px) 100vw, 70vw",
       },
       {
@@ -123,10 +131,10 @@ const GROUPS: readonly Group[] = [
         kind: "assembly",
         year: 2025,
         width: 1800,
-        height: 1173,
+        height: 866,
         alt: "Square printer gantry of aluminum extrusion with linear rails, belts, a carriage in the middle and printed corner blocks.",
-        depth: 7,
-        sizes: "(max-width: 900px) 100vw, 58vw",
+        depth: 12,
+        sizes: "(max-width: 900px) 100vw, 62vw",
       },
       {
         key: "frc-mech-task-2025-assembly-1",
@@ -134,11 +142,11 @@ const GROUPS: readonly Group[] = [
         text: "A curved arm with a wheel at each end cradles a large ball, and gearmotors with chain sprockets sit on the frame.",
         kind: "assembly",
         year: 2025,
-        width: 1664,
-        height: 1308,
-        alt: "Large ball cradled by a curved plate arm with a wheel at each end, beside an upright tube and two cylindrical gearmotors.",
+        width: 1800,
+        height: 1417,
+        alt: "Curved plate arm with a wheel at each end, chain sprockets and two cylindrical gearmotors beside an upright tube, around a large ball drawn as clear glass.",
         depth: 8,
-        sizes: "(max-width: 900px) 100vw, 58vw",
+        sizes: "(max-width: 900px) 100vw, 48vw",
       },
     ],
   },
@@ -153,10 +161,10 @@ const GROUPS: readonly Group[] = [
         kind: "assembly",
         year: 2026,
         width: 1800,
-        height: 1211,
-        alt: "Flat rectangular macro pad with three keycaps in a row, a round knob above them and a small screen window.",
-        depth: 7,
-        sizes: "(max-width: 900px) 100vw, 64vw",
+        height: 940,
+        alt: "Flat rectangular macro pad with three keycaps in a row, a round knob beside them and a small screen window.",
+        depth: 10,
+        sizes: "(max-width: 900px) 100vw, 56vw",
       },
       {
         key: "lovebox-assembly-1",
@@ -164,11 +172,11 @@ const GROUPS: readonly Group[] = [
         text: "A heart-shaped box around an ATmega328P board, a 9 V battery, a 16x2 LCD and a button. The display and button are in the lid. The board and battery are in the base.",
         kind: "assembly",
         year: 2025,
-        width: 1800,
-        height: 753,
-        alt: "Heart-shaped box shown open beside its lid, with a circuit board and battery in the base and a two-line LCD and a button on the lid.",
-        depth: 12,
-        sizes: "(max-width: 900px) 100vw, 36vw",
+        width: 1141,
+        height: 1498,
+        alt: "Heart-shaped box shown open with its lid raised above it, a circuit board and battery in the base and a two-line LCD and a button on the lid.",
+        depth: 9,
+        sizes: "(max-width: 900px) 74vw, 30vw",
       },
       {
         key: "mycovent-part-studio-1",
@@ -176,9 +184,9 @@ const GROUPS: readonly Group[] = [
         text: "A six-sided canister with a lid. The lid and the walls are cut through with small hexagonal holes.",
         kind: "part studio",
         year: 2026,
-        width: 992,
-        height: 1284,
-        alt: "Upright six-sided canister with a flat lid, the lid and the walls covered in a pattern of small hexagonal holes.",
+        width: 1068,
+        height: 1498,
+        alt: "Upright six-sided canister with a flat lid and a pointed base, the lid and the walls covered in a pattern of small hexagonal holes.",
         depth: 9,
         sizes: "(max-width: 900px) 74vw, 30vw",
       },
@@ -201,11 +209,16 @@ function CadPiece({ piece, lead }: { piece: Piece; lead: boolean }) {
           data-depth={piece.depth}
           data-drift={piece.drift}
         >
-          {/* Plain img: the two grey WebP sizes are prepared ahead of time, with alpha. */}
+          {/* Plain img: the grey WebP sizes (900 w, full, and 2x for the lead drone) are prepared
+              ahead of time, with alpha. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            className="theme-tint"
             src={`/cad/${piece.key}.webp`}
-            srcSet={`/cad/${piece.key}-sm.webp 900w, /cad/${piece.key}.webp ${piece.width}w`}
+            srcSet={
+              `/cad/${piece.key}-sm.webp 900w, /cad/${piece.key}.webp ${piece.width}w` +
+              (piece.xl ? `, /cad/${piece.key}-xl.webp ${piece.xl}w` : "")
+            }
             sizes={piece.sizes}
             width={piece.width}
             height={piece.height}

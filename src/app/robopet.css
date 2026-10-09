@@ -1,7 +1,9 @@
 /* roboPet: the hero model, the pinned film and the exploded view.
    Static layout is the default (no JS, reduced motion, failed load); [data-mode="scrub"]
    upgrades the film and the exploded view into pinned, scroll-driven scenes.
-   Black and white only: colours come from the tokens in portfolio.css. */
+   No colour is written here: everything comes from the tokens in portfolio.css, which are black
+   and white by default and take the violet palette under html[data-theme="violet"]. The 3D scenes
+   read the same tokens through themeColor() (src/lib/theme.ts). */
 
 /* Part numbers and code are the only mono text in these sections. They keep the size of the
    sentence around them, so the line does not change height or texture at the part number. */
@@ -22,6 +24,7 @@
   text-underline-offset: 5px;
 }
 .film-link:hover {
+  color: var(--accent);
   text-decoration-thickness: 2px;
 }
 
@@ -50,11 +53,34 @@
   font-size: var(--text-lead);
   line-height: 1.55;
 }
-.film-poster {
+.film-poster,
+.film-poster-violet {
   display: block;
   width: min(1100px, 100%);
   height: auto;
   margin: 40px auto 0;
+}
+/* One poster per theme; the one that does not match <html data-theme> is display: none, so it is
+   never requested. print.css addresses the mono poster as .film-poster, so the violet one gets
+   its own print rule below. */
+.film-poster-violet {
+  display: none;
+}
+html[data-theme="violet"] .film-poster-mono {
+  display: none;
+}
+html[data-theme="violet"] .film-poster-violet {
+  display: block;
+}
+@media print {
+  html[data-theme="violet"] .film[data-mode] .film-poster-mono {
+    display: none !important;
+  }
+  html[data-theme="violet"] .film[data-mode] .film-poster-violet {
+    display: block !important;
+    width: min(100%, 440px) !important;
+    margin: 20px auto 0 !important;
+  }
 }
 .film-caption {
   margin-top: 12px;
@@ -150,7 +176,8 @@
      clipping box for the copy laid over it. */
   clip-path: inset(0);
 }
-.film[data-mode="scrub"] .film-poster {
+.film[data-mode="scrub"] .film-poster,
+.film[data-mode="scrub"] .film-poster-violet {
   display: none;
 }
 /* The frame layer is the stage's size and carries every GSAP move; the canvas inside it is
@@ -438,12 +465,12 @@
     color 0.15s;
 }
 .exploded-parts button:hover {
-  border-color: var(--text);
+  border-color: var(--accent);
 }
 .exploded-parts button[aria-pressed="true"] {
   color: var(--surface);
-  background: var(--text);
-  border-color: var(--text);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 /* The panel is the live region and is empty until a part is picked. Its rule belongs to the
    body, so the line ends where the text does. */
@@ -645,6 +672,52 @@
   .exploded-parts button {
     transition: none;
   }
+}
+
+/* One still per theme (the eyes are white in mono, violet in violet). The stills are rendered
+   by scripts/capture-robopet-stills.mjs. The one that does not match <html data-theme> is
+   display: none, and a hidden lazy image is never fetched. */
+.hero-robot-still-violet,
+.exploded-still-violet {
+  display: none;
+}
+html[data-theme="violet"] .hero-robot-still-mono,
+html[data-theme="violet"] .exploded-still-mono {
+  display: none;
+}
+html[data-theme="violet"] .hero-robot-still-violet,
+html[data-theme="violet"] .exploded-still-violet {
+  display: block;
+}
+/* The wrapper that keeps a no-script visit from fetching the violet picture (ThemeStill). */
+.hero-robot-stage picture,
+.exploded-canvas picture,
+.film-stage picture {
+  display: contents;
+}
+
+/* A theme switch whose new stills have not arrived yet. themeStills.ts sets data-theme-wait on
+   <html> from the switch until they are decoded (or a few seconds pass), and for that time the
+   stills stay as they were, so the picture never goes blank: the page's colors change at once
+   and the pictures follow. The film poster only counts in the static layout, where it shows. The
+   Reaper's still is a CSS background in ftc.css, held the same way. */
+html[data-theme="violet"][data-theme-wait] :is(.hero-robot-still-mono, .exploded-still-mono),
+html[data-theme="violet"][data-theme-wait] .film:not([data-mode="scrub"]) .film-poster-mono,
+html:not([data-theme="violet"])[data-theme-wait] :is(.hero-robot-still-violet, .exploded-still-violet),
+html:not([data-theme="violet"])[data-theme-wait] .film:not([data-mode="scrub"]) .film-poster-violet {
+  display: block;
+}
+html[data-theme="violet"][data-theme-wait] :is(.hero-robot-still-violet, .exploded-still-violet),
+html[data-theme="violet"][data-theme-wait] .film:not([data-mode="scrub"]) .film-poster-violet,
+html:not([data-theme="violet"])[data-theme-wait] :is(.hero-robot-still-mono, .exploded-still-mono),
+html:not([data-theme="violet"])[data-theme-wait] .film:not([data-mode="scrub"]) .film-poster-mono {
+  display: none;
+}
+html[data-theme="violet"][data-theme-wait] .reaper-dock[data-still] .reaper-still {
+  background-image: url("/ftc/reaper-model-mono.webp");
+}
+html:not([data-theme="violet"])[data-theme-wait] .reaper-dock[data-still] .reaper-still {
+  background-image: url("/ftc/reaper-model-violet.webp");
 }
 
 /* Hand-off from the film to the parts. The film's stage leaves over a full screen of its own

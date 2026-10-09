@@ -15,7 +15,9 @@
  *
  * Palette: every material is a neutral grey (R = G = B) so the model sits on the black and white
  * page. The shell is light grey, the legs graphite, the servos black, the OLED eyes and the
- * status LED white. Nothing glows: the LED is an emissive dome with no halo sprite.
+ * status LED white. Nothing glows: the LED is an emissive dome with no halo sprite. The eyes and
+ * the LED are the only colored parts: they take `eyeColor`, and setRoboPetEyeColor changes it on
+ * a built model, which is how the page's theme (white or violet eyes) reaches the 3D scenes.
  */
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -53,6 +55,9 @@ export type RoboPetLegJoints = {
   hipPitch: THREE.Object3D;
   knee: THREE.Object3D;
 };
+
+/** Name of the status LED's material, which setRoboPetEyeColor looks for (clones keep it). */
+const LED_MATERIAL = "led-emissive";
 
 type EyeState = {
   canvas: HTMLCanvasElement | null;
@@ -431,7 +436,7 @@ export function createRoboPetModel(options: RoboPetModelOptions = {}): THREE.Gro
     metalness: 0.2,
   });
   const ledMat = new THREE.MeshStandardMaterial({
-    name: "led-emissive",
+    name: LED_MATERIAL,
     color: eyeColor,
     emissive: eyeColor,
     emissiveIntensity: 1,
@@ -1026,6 +1031,36 @@ export function setRoboPetEyes(model: THREE.Object3D, mode: RoboPetEyeMode, look
   s.mode = mode;
   if (look?.x !== undefined) s.lookX = look.x;
   if (look?.y !== undefined) s.lookY = look.y;
+  drawEyes(s);
+}
+
+/**
+ * Recolor the OLED eyes and the status LED on a built model, without rebuilding it. `spare` are
+ * materials that belong to the model but are not on a mesh right now (the exploded view swaps a
+ * ghost over the parts it dims and keeps their own copies aside); they are recolored too, so the
+ * LED is right when its part comes back.
+ */
+export function setRoboPetEyeColor(
+  model: THREE.Object3D,
+  color: THREE.ColorRepresentation,
+  spare: Iterable<THREE.Material> = [],
+) {
+  const c = new THREE.Color(color);
+  const paint = (material: THREE.Material) => {
+    if (material.name !== LED_MATERIAL) return;
+    const led = material as THREE.MeshStandardMaterial;
+    led.color.copy(c);
+    led.emissive.copy(c);
+  };
+  model.traverse((object) => {
+    const material = (object as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+    if (Array.isArray(material)) material.forEach(paint);
+    else if (material) paint(material);
+  });
+  for (const material of spare) paint(material);
+  const s = model.userData.eyes as EyeState | undefined;
+  if (!s) return;
+  s.color = `#${c.getHexString()}`;
   drawEyes(s);
 }
 

@@ -65,6 +65,11 @@
 .work-media.is-crop[data-tone="light"] {
   background: var(--text);
 }
+/* In violet the crop is toned by .theme-tint, which maps white to --tint-highlight, so the
+   mat takes that color too and still reads as the app's own background. */
+html[data-theme="violet"] .work-media.is-crop[data-tone="light"] {
+  background: var(--tint-highlight);
+}
 .work-media.is-crop img {
   display: block;
   width: 100%;

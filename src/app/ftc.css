@@ -1,7 +1,9 @@
 /*
   FTC 23786 MakEMinds (src/components/portfolio/FtcSection.tsx).
   Colors come only from the tokens in portfolio.css. Rules separate real data rows
-  (roles by year, results); nothing else is ruled or boxed.
+  (roles by year, results); nothing else is ruled or boxed. The robot is a live 3D model
+  (src/components/ftc/ReaperStage.tsx) that moves between two docks, the opener and the sticky
+  one beside the spec rows; each dock shows a still until the canvas is in it.
 */
 .ftc-section {
   /* The Reaper heading carries its own leading and the film below opens with deep padding of
@@ -68,15 +70,80 @@
 .ftc-hero {
   grid-column: 6 / -1;
   grid-row: 1 / span 2;
-  margin-top: clamp(96px, 10.5vw, 158px);
+  /* The model's canvas has open space above the hood, so the dock starts high enough for the
+     hood to rise past the bottom of the name, and low enough that the hood's corner clears the
+     last letter by more than 32px at every desktop width, also while the parallax runs. */
+  margin-top: clamp(88px, calc(6vw + 40px), 136px);
   position: relative;
   z-index: 1;
   min-width: 0;
 }
 .ftc-hero-robot {
-  /* The photo is 520 px of detail in a 1040 px file, so it is shown at that width and no larger. */
-  width: min(100%, 520px);
+  width: min(100%, 640px);
   margin-left: auto;
+}
+.ftc-hero .reaper-hint {
+  width: min(100%, 640px);
+  margin: 4px 0 0 auto;
+  text-align: right;
+}
+
+/* A dock for the 3D robot: the theme's still, and the live canvas over it once it arrives. */
+.reaper-dock {
+  position: relative;
+  aspect-ratio: 1 / 1;
+}
+.reaper-still,
+.reaper-host {
+  position: absolute;
+  inset: 0;
+}
+/* Stills rendered from the model by assets-src/reaper-img2threejs (one per theme, transparent).
+   A background only loads for the rule that matches, so a visit fetches one still, and only once
+   the dock sets data-still (ReaperDock: on screen, or after the page has loaded and the dock is
+   near). Without script, the scripting: none rule shows it from the start. */
+.reaper-still {
+  background: center / contain no-repeat;
+  transition: opacity 0.45s ease;
+}
+.reaper-dock[data-still] .reaper-still {
+  background-image: url("/ftc/reaper-model-mono.webp");
+}
+html[data-theme="violet"] .reaper-dock[data-still] .reaper-still {
+  background-image: url("/ftc/reaper-model-violet.webp");
+}
+@media (scripting: none) {
+  .reaper-still {
+    background-image: url("/ftc/reaper-model-mono.webp");
+  }
+}
+.reaper-dock[data-live] .reaper-still {
+  opacity: 0;
+}
+.reaper-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* When the camera moves in on a small part, or a drag swings the robot wide, the model runs
+     past the canvas; its edges fade out instead of cutting it off square. */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 5%, #000 95%, transparent),
+    linear-gradient(transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 5%, #000 95%, transparent),
+    linear-gradient(transparent, #000 5%, #000 95%, transparent);
+  mask-composite: intersect;
+  /* Vertical swipes still scroll the page; horizontal drags turn the robot. */
+  touch-action: pan-y;
+  cursor: grab;
+}
+.reaper-canvas[data-dragging] {
+  cursor: grabbing;
+}
+/* "Drag to turn it" only makes sense once the live model is drawing. */
+.ftc-section:not([data-reaper-live]) .reaper-hint {
+  display: none;
 }
 .ftc-intro {
   grid-column: 1 / 6;
@@ -97,20 +164,26 @@
   margin-top: 20px;
 }
 
-/* Mechanisms: spec rows beside the team CAD. */
+/* Mechanisms: spec rows beside the sticky 3D robot. A row lights up its part of the model while
+   it is hovered or focused, and stays lit when pressed; the other rows' text steps back. */
 .ftc-mechanisms {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto 1fr;
   column-gap: 24px;
   align-items: start;
 }
-.ftc-mechanisms-copy {
+.ftc-mechanisms-title {
   grid-column: 1 / 7;
+  grid-row: 1;
 }
 .ftc-specs {
+  grid-column: 1 / 7;
+  grid-row: 2;
   margin-top: 32px;
 }
 .ftc-specs > div {
+  position: relative;
   display: grid;
   grid-template-columns: 8.5em minmax(0, 1fr);
   column-gap: 24px;
@@ -125,16 +198,115 @@
   font-size: var(--text-body);
   line-height: 1.6;
   text-wrap: pretty;
+  transition: color 0.2s ease;
 }
-.ftc-cad {
+.ftc-spec-key {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+  transition: text-decoration-color 0.2s ease;
+}
+/* Where the model draws, the keys are buttons, and they look it: a thin muted underline at
+   rest that turns the accent, and thicker, on the lit row. The lit row also takes a short accent
+   rule in the gutter to its left, so the pressed row is plain on a phone, where nothing hovers. */
+button.ftc-spec-key {
+  cursor: pointer;
+  text-decoration-color: color-mix(in srgb, var(--muted) 75%, transparent);
+  text-decoration-thickness: 1px;
+  transition:
+    text-decoration-color 0.2s ease,
+    text-decoration-thickness 0.2s ease;
+}
+.ftc-spec[data-active] .ftc-spec-key,
+.ftc-spec-key[aria-pressed="true"] {
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+.ftc-spec::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: -14px;
+  width: 2px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.25s ease;
+}
+.ftc-spec[data-active]::before {
+  transform: scaleY(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ftc-spec::before,
+  button.ftc-spec-key {
+    transition: none;
+  }
+}
+/* The phone layout's one-line hint above the rows (see the 760px block). */
+.ftc-spec-cue {
+  display: none;
+}
+.ftc-specs[data-active] .ftc-spec:not([data-active]) dd {
+  color: var(--muted);
+}
+.ftc-model {
   grid-column: 7 / -1;
+  grid-row: 1 / span 2;
   position: sticky;
-  top: 64px;
-  margin-top: 72px;
+  top: 24px;
+  margin: 8px 0 0;
 }
-.ftc-cad figcaption {
-  margin-top: 12px;
+.ftc-model-dock {
+  aspect-ratio: 1 / 1;
+}
+.ftc-model figcaption {
+  margin-top: 4px;
   max-width: 30em;
+}
+
+/* The real robot: the team's photos, smaller, in one row. They are cut-outs, so they sit on
+   the page without frames and line up along their bottoms. */
+.ftc-real-strip {
+  list-style: none;
+  margin: 36px 0 0;
+  padding: clamp(28px, 3vw, 40px) 0 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: clamp(20px, 3vw, 48px);
+  row-gap: 32px;
+  align-items: end;
+}
+.ftc-real-strip figure {
+  margin: 0;
+}
+.ftc-real-photo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: clamp(150px, 17vw, 240px);
+}
+.ftc-section .ftc-real-photo img {
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.ftc-real-strip figcaption {
+  margin-top: 14px;
+}
+.ftc-real > .ftc-credit {
+  margin-top: 28px;
 }
 
 /* My part: the heading sits over the roles, and the four roles run across the page in order, one
@@ -383,12 +555,13 @@
     grid-column: 1 / 6;
     margin-top: 48px;
   }
-  .ftc-mechanisms-copy {
+  .ftc-mechanisms-title,
+  .ftc-specs {
     grid-column: 1 / 8;
   }
-  .ftc-cad {
+  .ftc-model {
     grid-column: 8 / -1;
-    margin-top: 120px;
+    margin-top: 48px;
   }
   .ftc-specs > div {
     grid-template-columns: minmax(0, 1fr);
@@ -425,9 +598,85 @@
   .ftc-intro {
     margin-top: 32px;
   }
-  .ftc-cad {
-    position: static;
-    margin-top: 48px;
+  /* The robot rides at the top of the screen while the spec rows scroll up under it. Only the
+     model rides: the figure steps aside (display: contents) so its caption can follow the rows,
+     the panel is held to about a third of the screen, and the rows slide under a short fade at
+     its bottom edge instead of a hard cut. The dock's grid area spans its own row and the rows
+     after it, so it stays stuck until the last row has gone by. It runs edge to edge
+     (calc(50% - 50vw) is minus the page gutter). The hint that the rows light up the model sits
+     once above them (.ftc-spec-cue), where a reader meets it before the first row, and the
+     caption after the rows keeps only "Drag to turn it". */
+  .ftc-mechanisms {
+    --ftc-panel: min(calc((100vw - 40px) * 0.72), 36svh);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto calc(var(--ftc-panel) + 20px) auto auto auto;
+  }
+  .ftc-mechanisms-title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .ftc-model {
+    display: contents;
+  }
+  .ftc-model-dock {
+    grid-column: 1;
+    grid-row: 2 / 5;
+    align-self: start;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    aspect-ratio: auto;
+    height: var(--ftc-panel);
+    margin: 20px calc(50% - 50vw) 0;
+    background: var(--surface);
+  }
+  .ftc-model-dock::after {
+    content: "";
+    position: absolute;
+    inset: 100% 0 auto;
+    height: 28px;
+    background: linear-gradient(var(--surface), color-mix(in srgb, var(--surface) 0%, transparent));
+    pointer-events: none;
+  }
+  .ftc-spec-cue {
+    display: block;
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: 20px;
+    font-size: var(--text-caption);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .ftc-specs {
+    grid-column: 1;
+    grid-row: 4;
+    margin-top: 20px;
+  }
+  .ftc-spec-cue + .ftc-specs {
+    margin-top: 4px;
+  }
+  .ftc-model figcaption {
+    grid-column: 1;
+    grid-row: 5;
+    margin-top: 24px;
+  }
+  .ftc-hint-rows {
+    display: none;
+  }
+  .ftc-spec::before {
+    left: -12px;
+  }
+  /* A row brought into view (by focus, or a link) stops below the panel, not under it. */
+  .ftc-spec {
+    scroll-margin-top: calc(var(--ftc-panel) + 48px);
+  }
+  .ftc-real-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 28px;
+  }
+  .ftc-real-photo {
+    height: 150px;
   }
   .ftc-roles {
     grid-template-columns: minmax(0, 1fr);

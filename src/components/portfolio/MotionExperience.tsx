@@ -161,11 +161,19 @@ function followAnchorClicks(): () => void {
 // scroll that is still running when that happens. So once a keyboard focus has stopped
 // moving the page, the control is checked and, only if it is still outside the window,
 // brought in. When the browser already did its job this does nothing.
+//
+// It acts only for focus the keyboard moved, and only until the visitor takes the scroll. The
+// browser also focuses a fragment target (the section a /#about link names) once the page has
+// loaded, and on a busy machine that lands after hydration. Chasing that focus would drag the
+// page back to the section just as the visitor scrolls away from it.
 const SETTLED_FRAMES = 15;
 const SETTLE_LIMIT_FRAMES = 150;
+const SCROLL_TAKEOVER = ["wheel", "touchstart", "pointerdown"] as const;
 
 function keepFocusOnScreen(): () => void {
   let frame = 0;
+  // True from a key press until the next wheel, touch or pointer press.
+  let byKeyboard = false;
 
   const bringIn = (element: Element) => {
     if (!element.isConnected || !element.matches(":focus-visible")) return;
@@ -179,10 +187,19 @@ function keepFocusOnScreen(): () => void {
     }
   };
 
+  const onKey = () => {
+    byKeyboard = true;
+  };
+  const onTakeover = () => {
+    byKeyboard = false;
+    cancelAnimationFrame(frame);
+  };
+
   const onFocusIn = (event: FocusEvent) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
     cancelAnimationFrame(frame);
+    if (!byKeyboard) return;
     let last = window.scrollY;
     let still = 0;
     let frames = 0;
@@ -199,8 +216,13 @@ function keepFocusOnScreen(): () => void {
     frame = requestAnimationFrame(tick);
   };
 
+  document.addEventListener("keydown", onKey, true);
+  for (const type of SCROLL_TAKEOVER)
+    window.addEventListener(type, onTakeover, { passive: true, capture: true });
   document.addEventListener("focusin", onFocusIn);
   return () => {
+    document.removeEventListener("keydown", onKey, true);
+    for (const type of SCROLL_TAKEOVER) window.removeEventListener(type, onTakeover, true);
     document.removeEventListener("focusin", onFocusIn);
     cancelAnimationFrame(frame);
   };

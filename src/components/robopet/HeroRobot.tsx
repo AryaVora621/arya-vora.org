@@ -2,8 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
+import { onThemeChange, themeColor } from "@/lib/theme";
 import { prefersStill, shouldUseStill } from "./gpu";
 import { addStudio } from "./studio";
+import { ThemeStill } from "./ThemeStill";
+import { useThemeStills } from "./themeStills";
+import { EYE_WORD, useThemeName } from "./useThemeName";
 
 // Run `task` when the browser is idle, so three.js and the first model build do not compete
 // with hydration. Safari has no requestIdleCallback; the timeout covers it and a busy page.
@@ -19,8 +23,25 @@ function whenIdle(task: () => void) {
 // Hero roboPet: the same procedural model as the exploded view, so the hero, film and
 // teardown all show one robot. A pre-rendered still covers first paint, reduced-motion
 // software renderers and no-WebGL. The head follows the mouse pointer and the eyes blink.
+// The eyes and the status LED take the theme's --eye color (white, or violet) and change with
+// it live; there is one still per theme and CSS shows the one that matches <html data-theme>.
+//
+// Which still a visit needs is only known once the inline theme script has run, and that script
+// waits behind the stylesheets, after the preload scanner has already read the markup. So both
+// stills are lazy and carry no preload: a lazy image under display: none is never requested, the
+// visible one is requested as soon as the first layout places it, and neither theme downloads the
+// other's still. A plain high-priority img would be fetched for every visitor, and React would
+// add a preload for it to the head. (With scripting off lazy loading is ignored, and ThemeStill
+// keeps the violet one from being fetched there.) Each still has an 800 px copy for phones (made
+// from the full one with sharp, resize(800) and webp quality 86), about half the bytes of the
+// 1278 px one; the browser picks by the stage's width and the device pixel ratio.
+const STILL_SIZES = "(max-width: 760px) 100vw, 640px";
+
 export function HeroRobot() {
   const motion = useMotionAllowed();
+  const theme = useThemeName();
+  // Keeps every still of the page (not only this one) from going blank at a theme switch.
+  useThemeStills();
   const [ready, setReady] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   // The scene is built once. Motion preference changes reach it through this ref and
@@ -47,9 +68,8 @@ export function HeroRobot() {
       const { RoomEnvironment } = await import(
         "three/examples/jsm/environments/RoomEnvironment.js"
       );
-      const { createRoboPetModel, disposeRoboPetModel, setRoboPetEyes } = await import(
-        "./createRoboPetModel"
-      );
+      const { createRoboPetModel, disposeRoboPetModel, setRoboPetEyeColor, setRoboPetEyes } =
+        await import("./createRoboPetModel");
       if (disposed) return;
 
       let renderer: import("three").WebGLRenderer;
@@ -78,7 +98,8 @@ export function HeroRobot() {
       scene.environmentIntensity = 0.3;
       const studio = addStudio(THREE, scene, { shadowExtent: 2.5, floorRadius: 1.7 });
 
-      const model = createRoboPetModel({ eyeMode: "open", shadows: true });
+      const eyeColor = () => themeColor("--eye", "#ffffff");
+      const model = createRoboPetModel({ eyeColor: eyeColor(), eyeMode: "open", shadows: true });
       const rig = new THREE.Group();
       rig.add(model);
       scene.add(rig);
@@ -161,6 +182,12 @@ export function HeroRobot() {
       });
       visibility.observe(host);
 
+      // A theme change recolors the eyes and the LED in place and draws once.
+      const offTheme = onThemeChange(() => {
+        setRoboPetEyeColor(model, eyeColor());
+        render();
+      });
+
       // The pose returns to centre when motion is switched off mid-visit.
       onMotionRef.current = () => {
         if (motionRef.current) return;
@@ -187,6 +214,7 @@ export function HeroRobot() {
 
       cleanup = () => {
         onMotionRef.current = () => {};
+        offTheme();
         renderer.domElement.removeEventListener("webglcontextlost", onLost);
         renderer.domElement.removeEventListener("webglcontextrestored", onRestored);
         cancelAnimationFrame(frame);
@@ -223,16 +251,33 @@ export function HeroRobot() {
         className="hero-robot-stage"
         data-ready={ready}
         role="img"
-        aria-label="A 3D model of roboPet's planned design: a small four-legged robot with a rounded light grey shell and an OLED face showing two eyes."
+        aria-label={`A 3D model of roboPet's planned design: a small four-legged robot with a rounded light grey shell and an OLED face showing two ${EYE_WORD[theme]} eyes.`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- first-paint still of the 3D model */}
-        <img
-          className="hero-robot-still"
+        <ThemeStill
+          theme="mono"
+          kind="hero"
+          className="hero-robot-still hero-robot-still-mono"
           src="/robopet/hero-still.webp"
+          srcSet="/robopet/hero-still-sm.webp 800w, /robopet/hero-still.webp 1278w"
+          sizes={STILL_SIZES}
+          fetchPriority="high"
           alt=""
           width={1278}
           height={1066}
+          loading="lazy"
+        />
+        <ThemeStill
+          theme="violet"
+          kind="hero"
+          className="hero-robot-still hero-robot-still-violet"
+          src="/robopet/hero-still-violet.webp"
+          srcSet="/robopet/hero-still-violet-sm.webp 800w, /robopet/hero-still-violet.webp 1278w"
+          sizes={STILL_SIZES}
           fetchPriority="high"
+          alt=""
+          width={1278}
+          height={1066}
+          loading="lazy"
         />
         <div ref={hostRef} className="hero-robot-canvas" aria-hidden="true" />
       </div>

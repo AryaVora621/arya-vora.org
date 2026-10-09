@@ -312,6 +312,7 @@ function IndexRow({ project }: { project: SoftwareProject }) {
           <div className="work-media is-shot is-crop" data-tone={crop.tone}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              className="theme-tint"
               src={crop.src}
               width={crop.width}
               height={crop.height}
@@ -326,6 +327,7 @@ function IndexRow({ project }: { project: SoftwareProject }) {
           <figure className="work-row-shot">
             <div className="work-media is-shot">
               <Image
+                className="theme-tint"
                 src={shot.src}
                 alt={shot.alt}
                 width={shot.width}

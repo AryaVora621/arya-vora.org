@@ -32,7 +32,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 20px;
   min-height: 64px;
+}
+/* The theme switch (components/portfolio/ThemeToggle.tsx) sits between the wordmark and the
+   link home. Its auto margin pushes it and the link to the right; its own 8px of padding and
+   the -8px on its last word are already in portfolio.css. */
+.games-nav-inner .theme-toggle {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
 }
 .games-nav-label {
   font-family: var(--font-mono), monospace;
@@ -45,6 +54,9 @@
   font-family: var(--font-mono), monospace;
   font-size: 13px;
   min-height: 44px;
+  /* On the narrowest phones the nav wraps and the link drops to a row of its own; it is never
+     split across lines. */
+  white-space: nowrap;
 }
 .games-main {
   flex: 1;

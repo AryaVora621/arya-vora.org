@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { onThemeChange, themeColor } from "@/lib/theme";
 import { prefersStill, shouldUseStill } from "./gpu";
 import { PartText } from "./PartText";
 import { addStudio } from "./studio";
+import { ThemeStill } from "./ThemeStill";
 import { useScrubStage } from "./useScrubStage";
 
 // UI-side part data, so the explainer works without WebGL. `ids` maps a part to the model's
@@ -131,9 +133,8 @@ export function RoboPetExploded() {
       const { RoomEnvironment } = await import(
         "three/examples/jsm/environments/RoomEnvironment.js"
       );
-      const { createRoboPetModel, disposeRoboPetModel, setRoboPetExplode } = await import(
-        "./createRoboPetModel"
-      );
+      const { createRoboPetModel, disposeRoboPetModel, setRoboPetExplode, setRoboPetEyeColor } =
+        await import("./createRoboPetModel");
       if (disposed) return;
 
       let renderer: import("three").WebGLRenderer;
@@ -165,7 +166,11 @@ export function RoboPetExploded() {
       const studio = addStudio(THREE, scene, { shadowExtent: 3, floorRadius: 2.8 });
       const { floorMaterial } = studio;
 
-      const model = createRoboPetModel({ shadows: true });
+      // The eyes and the status LED take the theme's --eye color, the x-ray ghost its --accent
+      // (white in mono, violet in violet), and both follow a theme change live.
+      const eyeColor = () => themeColor("--eye", "#ffffff");
+      const accentColor = () => themeColor("--accent", "#ffffff");
+      const model = createRoboPetModel({ eyeColor: eyeColor(), shadows: true });
       const pivot = new THREE.Group();
       pivot.add(model);
       scene.add(pivot);
@@ -205,10 +210,10 @@ export function RoboPetExploded() {
       const keyOf = (id: string | null) =>
         PARTS.find((part) => (part.ids as readonly string[]).includes(id ?? ""))?.key ?? null;
 
-      // Unselected parts become a flat white ghost (an x-ray, not muddy glass); the
-      // selected one keeps its real material.
+      // Unselected parts become a flat ghost in the accent color (white, or violet under the
+      // violet theme; an x-ray, not muddy glass); the selected one keeps its real material.
       const ghost = new THREE.MeshBasicMaterial({
-        color: "#ffffff",
+        color: accentColor(),
         transparent: true,
         opacity: GHOST_OPACITY,
         depthWrite: false,
@@ -343,6 +348,14 @@ export function RoboPetExploded() {
       };
       renderer.domElement.addEventListener("pointerup", onClick);
 
+      // A theme change recolors the eyes, the LED and the ghost in place and draws once. The
+      // per-part material copies are passed along because a dimmed part is wearing the ghost.
+      const offTheme = onThemeChange(() => {
+        setRoboPetEyeColor(model, eyeColor(), perPart.values());
+        ghost.color.set(accentColor());
+        render();
+      });
+
       // A lost context clears the canvas for good unless it is handled: show the still while
       // it is gone and draw again when the browser hands it back.
       const onLost = (event: Event) => {
@@ -405,6 +418,7 @@ export function RoboPetExploded() {
 
       cleanup = () => {
         mm?.revert();
+        offTheme();
         resizeObserver.disconnect();
         renderer.domElement.removeEventListener("pointerup", onClick);
         renderer.domElement.removeEventListener("webglcontextlost", onLost);
@@ -487,15 +501,30 @@ export function RoboPetExploded() {
         </div>
         <div ref={mountRef} className="exploded-canvas" aria-hidden="true">
           {showStill && (
-            // eslint-disable-next-line @next/next/no-img-element -- static stand-in for WebGL
-            <img
-              className="exploded-still"
-              src="/robopet/exploded-still.webp"
-              alt=""
-              width={1169}
-              height={1147}
-              loading="lazy"
-            />
+            // One still per theme; CSS shows the one that matches <html data-theme>, and a hidden
+            // lazy image is never fetched.
+            <>
+              <ThemeStill
+                theme="mono"
+                kind="exploded"
+                className="exploded-still exploded-still-mono"
+                src="/robopet/exploded-still.webp"
+                alt=""
+                width={1169}
+                height={1147}
+                loading="lazy"
+              />
+              <ThemeStill
+                theme="violet"
+                kind="exploded"
+                className="exploded-still exploded-still-violet"
+                src="/robopet/exploded-still-violet.webp"
+                alt=""
+                width={1169}
+                height={1147}
+                loading="lazy"
+              />
+            </>
           )}
         </div>
         {/* With JavaScript off the buttons below do nothing, so the parts are listed here. */}
@@ -519,7 +548,9 @@ export function RoboPetExploded() {
                   type="button"
                   aria-pressed={active === part.key}
                   onClick={() => {
-                    const next = active === part.key ? null : part.key;
+                    // A second press clears a part the visitor picked. A part the scroll tour
+                    // is showing was not picked, so pressing it keeps it, and the tour stops.
+                    const next = active === part.key && userPicked.current ? null : part.key;
                     userPicked.current = next !== null;
                     setActive(next);
                     highlightRef.current(next);

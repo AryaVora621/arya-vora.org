@@ -11,7 +11,8 @@
  * To add the photo: desaturate it, save it as a WebP in public/robopet/, then fill in the
  * fields below. `date` is when it was shot (YYYY-MM-DD) and `caption` says what is in frame; the
  * page prints them as "<caption>, <date>".
- * The page is black and white, so the photo must be grayscale.
+ * The page is black and white, so the photo must be grayscale. The closing image carries the
+ * page's theme-tint class, so under the violet theme it is toned to violet by the page.
  *
  *   export const FRAME_PHOTO: FrameImage | null = {
  *     src: "/robopet/frame-bench.webp",

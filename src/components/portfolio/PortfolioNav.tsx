@@ -1,4 +1,7 @@
+"use client";
+
 import { MotionExperience } from "./MotionExperience";
+import { ThemeToggle } from "./ThemeToggle";
 import "./interaction.css";
 
 const links = [
@@ -21,6 +24,10 @@ export function PortfolioNav() {
           <a href="#top" className="wordmark">
             Arya Vora
           </a>
+          {/* The switch comes before the links so Tab follows what is on screen: on a narrow
+              phone it sits beside the wordmark and the links wrap underneath, and on a wide
+              screen it leads the right-hand group. */}
+          <ThemeToggle />
           <div className="nav-links">
             {links.map(([id, label]) => (
               <a href={`#${id}`} key={id}>
@@ -36,22 +43,26 @@ export function PortfolioNav() {
   );
 }
 
-// The same six sections as the header, plus the top. The header is part of the page rather
-// than pinned over it, so past the film and the exploded view this is the way back to a
-// section without a long scroll.
+// The same six sections as the header, plus the top, and a second theme switch. The header is
+// part of the page rather than pinned over it, so past the film and the exploded view this is
+// the way back to a section, or to the other theme, without a long scroll. The switch sits
+// beside the navigation landmark rather than inside it, since it is a control, not a link.
 export function FooterNav() {
   return (
-    <nav className="footer-nav" aria-label="Footer navigation">
-      <ul role="list">
-        {links.map(([id, label]) => (
-          <li key={id}>
-            <a href={`#${id}`}>{label}</a>
+    <div className="footer-end">
+      <nav className="footer-nav" aria-label="Footer navigation">
+        <ul role="list">
+          {links.map(([id, label]) => (
+            <li key={id}>
+              <a href={`#${id}`}>{label}</a>
+            </li>
+          ))}
+          <li>
+            <a href="#top">Top</a>
           </li>
-        ))}
-        <li>
-          <a href="#top">Top</a>
-        </li>
-      </ul>
-    </nav>
+        </ul>
+      </nav>
+      <ThemeToggle />
+    </div>
   );
 }

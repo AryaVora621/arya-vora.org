@@ -3,18 +3,35 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { getTheme, onThemeChange, type Theme } from "@/lib/theme";
 import { FILM_FRAMES } from "./filmFrames";
+import { FILM_FRAMES_VIOLET } from "./filmFramesViolet";
 import { OUTRO_IMAGE } from "./framePhoto";
+import { leanConnection } from "./leanConnection";
 import { PartText } from "./PartText";
+import { ThemeStill } from "./ThemeStill";
+import { EYE_WORD, useThemeName } from "./useThemeName";
 import { useScrubStage } from "./useScrubStage";
 
 // The pinned film: a generated turntable of the roboPet concept, graded to black and white,
 // cropped to the robot and packed by scripts/grade-frames-bw.mjs. Scrolling turns the robot once
 // while four beats of copy take turns on either side of it. With reduced motion, no JavaScript,
 // a viewport too short to pin or a failed load it is one still and a grid of the same four beats.
+//
+// There is one set of packed frames per theme. Under the violet theme the same turntable is
+// graded by scripts/grade-frames-violet.mjs: the same gray everywhere, and the OLED eyes and the
+// status LED in violet. The violet set is fetched only once the violet theme is chosen, and a
+// theme change mid-visit swaps the set in place and keeps the scrub position. A second set is
+// about 2 MB more on a desktop and 1 MB on a phone, so on a metered or slow link (Save-Data, or
+// a connection rated 3g or worse) a visitor who has frames of one set keeps them: the film
+// stays in the colors it loaded in, and the poster, the stills and the rest of the page follow
+// the theme as usual.
 
-const ALT =
-  "Concept animation of roboPet: a four-legged robot with a rounded shell and an OLED face showing two eyes.";
+const FILM_SETS = { mono: FILM_FRAMES, violet: FILM_FRAMES_VIOLET } as const;
+const themeOf = (set: (typeof FILM_SETS)[Theme]): Theme => (set === FILM_SETS.mono ? "mono" : "violet");
+
+const altFor = (theme: Theme) =>
+  `Concept animation of roboPet: a four-legged robot with a rounded shell and an OLED face showing two ${EYE_WORD[theme]} eyes.`;
 const BUILD_LOG_URL = "https://github.com/AryaVora621/roboPet/blob/main/devlogs/DEVLOG.md";
 
 // Every line is checked against the roboPet README and build log. The film itself is a
@@ -133,6 +150,11 @@ async function readPack(url: string, signal: AbortSignal, onFile: (file: Blob, i
 
 export function RoboPetFilm() {
   const roomy = useScrubStage();
+  const theme = useThemeName();
+  // The set the canvas is drawing from when it is not the page's theme: kept on a lean
+  // connection, or the black and white set standing in for a violet one that did not load.
+  const [drawn, setDrawn] = useState<Theme | null>(null);
+  const alt = altFor(drawn ?? theme);
   const [failed, setFailed] = useState(false);
   const scrub = roomy && !failed;
   const sectionRef = useRef<HTMLElement>(null);
@@ -160,7 +182,12 @@ export function RoboPetFilm() {
     const blobs: (Blob | undefined)[] = new Array(COUNT);
     const decoded = new Map<number, Decoded>();
     const decoding = new Set<number>();
-    const abort = new AbortController();
+    // Fetches and decodes belong to a generation. A new one starts whenever the packs on disk
+    // change (a different size or a different theme's set), and anything still in flight from
+    // an earlier one is dropped when it lands.
+    let generation = 0;
+    let packAbort = new AbortController();
+    let set: (typeof FILM_SETS)[Theme] = FILM_SETS[getTheme()];
     const state = { frame: 0 };
     let disposed = false;
     let near = false;
@@ -223,15 +250,18 @@ export function RoboPetFilm() {
         if (decoded.has(index) || decoding.has(index)) continue;
         decoding.add(index);
         const width = decodeW;
+        const gen = generation;
         decodeFrame(blobs[index]!, decodeW, decodeH, FILM_FRAMES.sizes[size].width)
           .then((frame) => {
-            decoding.delete(index);
-            if (disposed || width !== decodeW) return frame.close();
+            if (gen === generation) decoding.delete(index);
+            if (disposed || gen !== generation || width !== decodeW) return frame.close();
             decoded.set(index, frame);
             draw();
             refresh();
           })
-          .catch(() => decoding.delete(index));
+          .catch(() => {
+            if (gen === generation) decoding.delete(index);
+          });
       }
     };
 
@@ -287,11 +317,7 @@ export function RoboPetFilm() {
       if (nextSize !== size) {
         // The pack on disk changes, so what is loaded has to be fetched again at the new size.
         size = nextSize;
-        started = 0;
-        blobs.fill(undefined);
-        for (const frame of decoded.values()) frame.close();
-        decoded.clear();
-        loadPasses(near ? FILM_FRAMES.passes.length : 0);
+        restart();
       }
       // Decode no larger than drawn; a change of more than a tenth starts the window over.
       const width = Math.min(FILM_FRAMES.sizes[size].width, Math.round(box.w));
@@ -331,24 +357,63 @@ export function RoboPetFilm() {
       for (; started < upTo; started++) {
         const pass = started;
         const [offset, step] = passes[pass];
-        const packSize = size;
-        const url = `${FILM_FRAMES.base}/${packSize}-${pass}.bin`;
+        const gen = generation;
+        const signal = packAbort.signal;
+        const url = `${set.base}/${size}-${pass}.bin`;
         loading = loading
           .then(() =>
-            readPack(url, abort.signal, (file, k) => {
+            readPack(url, signal, (file, k) => {
               const index = offset + k * step;
-              if (disposed || packSize !== size || index >= COUNT) return;
+              if (disposed || gen !== generation || index >= COUNT) return;
               blobs[index] = file;
               refresh();
             }),
           )
           .catch(() => {
+            if (disposed || gen !== generation || blobs.some(Boolean)) return;
             // A failed pack leaves gaps and the nearest loaded frame is drawn instead. With
-            // no frame at all there is nothing to scrub, so fall back to the still.
-            if (!disposed && packSize === size && !blobs.some(Boolean)) setFailed(true);
+            // no frame at all there is nothing to scrub. The violet set falls back to the
+            // black and white one, which is the film that is always there; if that fails too
+            // it is the still.
+            if (set !== FILM_SETS.mono) {
+              set = FILM_SETS.mono;
+              setDrawn("mono");
+              restart();
+            } else setFailed(true);
           });
       }
     }
+    // Start the packs over: forget what was fetched and decoded, drop what is in flight, and
+    // fetch again from `set` at `size`. The canvas keeps the last frame it drew until the first
+    // new one has decoded, so a swap never blanks the picture.
+    function restart() {
+      generation++;
+      packAbort.abort();
+      packAbort = new AbortController();
+      loading = Promise.resolve();
+      started = 0;
+      blobs.fill(undefined);
+      decoding.clear();
+      for (const frame of decoded.values()) frame.close();
+      decoded.clear();
+      drawn = -1;
+      loadPasses(near ? passes.length : 0);
+    }
+    // A theme change swaps the frame set. The scrub position is the timeline's, so it stays.
+    const offTheme = onThemeChange((next) => {
+      if (FILM_SETS[next] === set) {
+        setDrawn(null);
+        return;
+      }
+      // Frames of one set are already on the way: a lean connection does not fetch the other.
+      if (started > 0 && leanConnection()) {
+        setDrawn(themeOf(set));
+        return;
+      }
+      set = FILM_SETS[next];
+      setDrawn(null);
+      restart();
+    });
 
     const nearObserver = new IntersectionObserver(
       (entries) => {
@@ -463,6 +528,12 @@ export function RoboPetFilm() {
       const target = event.target;
       if (!trigger || !(target instanceof Element) || !target.closest(".film-outro")) return;
       if (trigger.progress > 0.86 && trigger.progress < 0.97) return;
+      // The page can have changed height since the trigger was measured: a late font or image
+      // above the film moves it, and the re-measure for that waits for the next frame or for a
+      // scroll to end. Aimed with the old numbers, the jump lands short of the outro and the link
+      // stays transparent. So measure again first when the film is no longer where it was.
+      const top = section.getBoundingClientRect().top + window.scrollY;
+      if (Math.abs(top - trigger.start) > 1) ScrollTrigger.refresh();
       window.scrollTo({
         top: trigger.start + (trigger.end - trigger.start) * 0.9,
         left: window.scrollX,
@@ -610,7 +681,9 @@ export function RoboPetFilm() {
 
     return () => {
       disposed = true;
-      abort.abort();
+      setDrawn(null);
+      packAbort.abort();
+      offTheme();
       section.removeEventListener("focusin", onFocusIn);
       mm.revert();
       nearObserver.disconnect();
@@ -638,11 +711,28 @@ export function RoboPetFilm() {
             follows the open-source Sesame robot design.
           </p>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element -- static fallback frame */}
-        <img
-          className="film-poster"
-          src={FILM_FRAMES.poster}
-          alt={ALT}
+        {/* One poster per theme, both in the server markup, so the first paint, the reduced-motion
+            layout and the narrow-screen layout show the saved theme's poster with no src swap
+            after hydration. CSS shows the one that matches <html data-theme>; the other is
+            display: none, so it is never requested and screen readers skip it. The mono one
+            keeps the film-poster class that print.css and the tests address. */}
+        <ThemeStill
+          theme="mono"
+          kind="poster"
+          className="film-poster film-poster-mono"
+          src={FILM_SETS.mono.poster}
+          alt={altFor("mono")}
+          width={FRAME_W}
+          height={FRAME_H}
+          loading="lazy"
+          decoding="async"
+        />
+        <ThemeStill
+          theme="violet"
+          kind="poster"
+          className="film-poster-violet"
+          src={FILM_SETS.violet.poster}
+          alt={altFor("violet")}
           width={FRAME_W}
           height={FRAME_H}
           loading="lazy"
@@ -650,7 +740,7 @@ export function RoboPetFilm() {
         />
         {scrub && (
           <div className="film-frame">
-            <canvas ref={canvasRef} className="film-canvas" role="img" aria-label={ALT} />
+            <canvas ref={canvasRef} className="film-canvas" role="img" aria-label={alt} />
           </div>
         )}
         <p className="film-caption site-shell">
@@ -681,6 +771,7 @@ export function RoboPetFilm() {
             <figure className="film-photo">
               {/* eslint-disable-next-line @next/next/no-img-element -- grayscale bench photo */}
               <img
+                className="theme-tint"
                 src={OUTRO_IMAGE.src}
                 srcSet={OUTRO_IMAGE.srcSet}
                 sizes="(max-width: 760px) 90vw, 520px"

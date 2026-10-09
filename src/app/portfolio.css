@@ -1,7 +1,16 @@
 /*
-  The only colors the page uses. Every value has R = G = B. Body text is white;
-  --muted is for one level of metadata (8.6:1 on black) and for control borders.
-  --line is for 1px rules between real rows and is never used for text.
+  The only colors the page uses, in two themes picked on <html data-theme> (src/lib/theme.ts).
+
+  mono, the default: the v8 black and white. Every value has R = G = B. Body text is white;
+  --muted is for one level of metadata (8.6:1 on black) and for control borders. --line is for
+  1px rules between real rows and is never used for text.
+
+  violet: the v6 palette on the same names. Surfaces take a faint violet cast and text stays
+  near-white; violet itself is only an accent. --accent is the color of focus rings, hovered
+  links and selected states; --accent-strong is its lighter partner for thin marks that need
+  more contrast; --eye is the robot's OLED eyes and status LED, read by the WebGL code through
+  themeColor(). In mono all three are white, so a rule that uses --accent where v8 used --text
+  looks exactly as it did.
 */
 :root {
   --surface: #000000;
@@ -11,6 +20,8 @@
   --text: #ffffff;
   --muted: #a6a6a6;
   --accent: #ffffff;
+  --accent-strong: #ffffff;
+  --eye: #ffffff;
   /* Vertical rhythm. Two neighbouring sections add their paddings, so one step is kept small. */
   --section-gap: clamp(64px, 6.6vw, 96px);
 
@@ -27,6 +38,29 @@
   --text-h3: 30px;
   --text-h2: clamp(40px, 4.6vw, 68px);
   color-scheme: dark;
+}
+/* Contrast on --surface: text 18.1:1, muted 7.2:1, accent 7.4:1, accent-strong 10.9:1. */
+html[data-theme="violet"] {
+  --surface: #07070c;
+  --surface-raised: #0c0d16;
+  --surface-soft: #12141f;
+  --line: #262b3f;
+  --text: #f4f2fa;
+  --muted: #9b98ad;
+  --accent: #a78bfa;
+  --accent-strong: #c4b5fd;
+  --eye: #a78bfa;
+  /* What a pure white pixel becomes under .theme-tint (the top stop of the filter in
+     layout.tsx). A light screenshot's mat takes this color so the two meet without a seam. */
+  --tint-highlight: #ece8fb;
+}
+/* Showcase images (CAD renders, team photos, project shots) opt in with .theme-tint. Mono
+   leaves them as they are; violet reads their greys off the five-stop ramp of the SVG filter
+   in layout.tsx: blacks sit on the violet surface, mids take a faint lavender tint and whites
+   stay near white. The render keeps its own light and dark and takes only a cast, so a part
+   still reads as the same grey object the 3D scenes show. */
+html[data-theme="violet"] .theme-tint {
+  filter: url(#av-duotone-violet);
 }
 @media (max-width: 760px) {
   :root {
@@ -67,7 +101,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .portfolio :focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--accent);
   outline-offset: 4px;
 }
 .portfolio section:focus,
@@ -96,6 +130,7 @@ body {
   text-underline-offset: 0.18em;
 }
 .portfolio :where(p, li, dd, figcaption, td) a:where(:not([class])):hover {
+  color: var(--accent);
   text-decoration-thickness: 2px;
 }
 
@@ -131,13 +166,13 @@ body {
 }
 .primary-button {
   color: var(--surface);
-  background: var(--text);
-  border-color: var(--text);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 .primary-button:hover {
   background: transparent;
-  color: var(--text);
-  border-color: var(--text);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .secondary-button {
   border-color: var(--muted);
@@ -145,7 +180,7 @@ body {
   background: transparent;
 }
 .secondary-button:hover {
-  border-color: var(--text);
+  border-color: var(--accent);
 }
 .text-link {
   justify-content: flex-start;
@@ -154,6 +189,7 @@ body {
   text-underline-offset: 0.22em;
 }
 .text-link:hover {
+  color: var(--accent);
   text-decoration-thickness: 2px;
 }
 .skip-link {
@@ -161,7 +197,7 @@ body {
   top: 12px;
   left: 16px;
   padding: 12px 20px;
-  background: var(--text);
+  background: var(--accent);
   color: var(--surface);
   font-weight: 700;
   z-index: 100;
@@ -181,7 +217,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 4px 40px;
   padding-block: 20px;
 }
@@ -206,8 +242,88 @@ body {
   text-underline-offset: 0.3em;
 }
 .nav-links a:hover {
+  color: var(--accent);
   text-decoration-line: underline;
   text-decoration-thickness: 2px;
+}
+
+/* Theme switch: two words at the end of the nav, the current one lit and underlined. The lit
+   word follows data-theme on <html>, not aria-pressed, so it is right before hydration. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  /* The switch follows the wordmark in the markup, so pushing it to the right pushes the links
+     (which come after it) along with it, and what is on screen is also the Tab order. */
+  margin-inline-start: auto;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.theme-toggle-item {
+  display: inline-flex;
+  align-items: center;
+}
+/* A drawn rule rather than a slash character, so it is not text that has to meet contrast. */
+.theme-toggle-sep {
+  width: 1px;
+  height: 14px;
+  margin-inline: 4px;
+  background: var(--line);
+}
+.theme-toggle button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-underline-offset: 0.3em;
+  transition: color 0.15s;
+}
+/* The last button has the same 8px of padding as the first, so its focus ring clears the
+   word; the matching negative margin keeps the word itself flush with the nav edge. */
+.theme-toggle-item:last-child button {
+  margin-inline-end: -8px;
+}
+.theme-toggle button:hover {
+  color: var(--text);
+}
+.portfolio .theme-toggle button:focus-visible,
+.games .theme-toggle button:focus-visible {
+  outline-offset: 0;
+}
+:root:not([data-theme="violet"]) .theme-toggle [data-theme-option="mono"],
+:root[data-theme="violet"] .theme-toggle [data-theme-option="violet"] {
+  color: var(--text);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--accent);
+}
+/* The same switch in the footer (FooterNav) and in the games header. In the footer it sits
+   after the links, so the auto margin the header uses to push it right is dropped; the footer
+   row is right-aligned and the switch's last word is already flush with the edge. In the games
+   header the auto margin is wanted: it parks the switch beside the link to the main site. */
+.footer-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0 32px;
+}
+.footer-end .theme-toggle {
+  margin-inline-start: 0;
+}
+/* With scripting off the buttons could not switch anything. Before the page is hydrated they
+   do work: the inline script in <head> (THEME_INIT_SCRIPT in src/lib/theme.ts) answers them. */
+@media (scripting: none) {
+  .theme-toggle {
+    display: none;
+  }
+  .theme-toggle + .nav-links {
+    margin-inline-start: auto;
+  }
 }
 
 /* Hero */
@@ -258,6 +374,7 @@ body {
   text-underline-offset: 0.22em;
 }
 .hero-actions a:hover {
+  color: var(--accent);
   text-decoration-thickness: 2px;
 }
 .hero-art {
@@ -353,7 +470,7 @@ body {
   transition: background-color 0.15s;
 }
 .path-cell:hover {
-  border-color: var(--text);
+  border-color: var(--accent);
 }
 /* Explored cells are a flat dark grey: the legend says what it means, and the white route
    dot reads on it. */
@@ -375,7 +492,7 @@ body {
   width: 40%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--text);
+  background: var(--accent);
 }
 .lab-legend {
   display: flex;
@@ -425,7 +542,7 @@ body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--text);
+  background: var(--accent);
 }
 .lab-actions {
   grid-area: controls;
@@ -502,6 +619,7 @@ body {
   overflow-wrap: anywhere;
 }
 .email-address:hover {
+  color: var(--accent);
   text-decoration-thickness: 2px;
 }
 .contact-bottom > div > .copy-feedback {
@@ -524,6 +642,7 @@ body {
   text-decoration-line: none;
 }
 .portfolio .social-list a:hover > span {
+  color: var(--accent);
   text-decoration-line: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 0.22em;
@@ -558,6 +677,7 @@ body {
   text-underline-offset: 0.2em;
 }
 .footer-bottom a:hover {
+  color: var(--accent);
   text-decoration-thickness: 2px;
 }
 
@@ -571,6 +691,14 @@ body {
   .about-grid,
   .contact-bottom {
     gap: 48px;
+  }
+}
+/* Where the wordmark, the switch and the links no longer share one row, the switch stays up
+   with the wordmark and the links take the second row. No reordering is needed: the markup
+   already runs wordmark, switch, links. */
+@media (max-width: 880px) {
+  .nav-links {
+    flex: 1 1 100%;
   }
 }
 @media (max-width: 760px) {
@@ -652,6 +780,14 @@ body {
     flex-direction: column;
     gap: 4px;
   }
+  /* Stacked, the footer reads from the left, so the switch's first word lines up with the
+     links' first word instead of sitting 8px in. */
+  .footer-end {
+    justify-content: flex-start;
+  }
+  .footer-end .theme-toggle {
+    margin-inline-start: -8px;
+  }
 }
 @media (max-width: 560px) {
   /* Seven links (with Games) no longer fit one row on the narrowest phones, so they wrap. */
@@ -730,4 +866,33 @@ body {
   .portfolio * {
     transition: none !important;
   }
+}
+
+/* Violet accents for states drawn in the section stylesheets. Those rules use --text for a
+   hover or a selected state, which is right in mono; in violet the same few states take the
+   accent, as the ones above do. Text at rest stays near-white. */
+html[data-theme="violet"] .film-link:hover,
+html[data-theme="violet"] .work-feature h3 a:hover,
+html[data-theme="violet"] .work-row h3 a:hover,
+html[data-theme="violet"] .work-all a:hover,
+html[data-theme="violet"] .ftc-all > summary:hover,
+html[data-theme="violet"] .work-more > summary:hover {
+  color: var(--accent);
+}
+html[data-theme="violet"] .exploded-parts button:hover {
+  border-color: var(--accent);
+}
+html[data-theme="violet"] .exploded-parts button[aria-pressed="true"] {
+  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+html[data-theme="violet"] .work-code:focus-visible {
+  outline-color: var(--accent);
+}
+
+/* The theme switch cross-fades through a view transition (PortfolioNav.tsx). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.28s;
 }

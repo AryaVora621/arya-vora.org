@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/portfolio/ThemeToggle";
 import "../games.css";
 
 export const metadata: Metadata = {
@@ -26,6 +27,10 @@ export default function GamesLayout({ children }: { children: React.ReactNode })
             av<span aria-hidden="true">*</span>
             <span className="games-nav-label">games</span>
           </Link>
+          {/* The saved theme lives in localStorage, which is per origin. /games on the www site
+              reads the choice made there; games.arya-vora.org is a different origin that
+              rewrites to these same pages, so it starts in B&W and keeps its own choice. */}
+          <ThemeToggle />
           <a className="text-link games-home" href="https://www.arya-vora.org">
             arya-vora.org ↗
           </a>
