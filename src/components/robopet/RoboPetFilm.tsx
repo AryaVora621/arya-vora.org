@@ -36,14 +36,20 @@ const BUILD_LOG_URL = "https://github.com/AryaVora621/roboPet/blob/main/devlogs/
 
 // Every line is checked against the roboPet README and build log. The film itself is a
 // concept render, and the outro says once how far the real build has got, so the beats
-// describe the design and carry no caveats of their own. The print fact lives there and in the
-// CAD section's caption and nowhere else on the page.
+// describe the design and carry no caveats of their own. The film is the same on the home page,
+// which has no build log, so each beat has to stand on its own there; on /projects/robopet the
+// page header and the build log say again that the frame is printed, and the log tells the
+// servo story in full.
+//
+// Each beat's slot (`at`, `side`) is matched to the turntable: the face is toward the camera
+// until about 0.28 of the scroll, so the Face beat comes first, and from about half way the
+// robot shows its back and then its side with all four legs, which is where Legs sits.
 const beats = [
   {
-    id: "legs",
+    id: "face",
     at: 0.2,
-    title: "Legs",
-    body: "The MVP frame takes eight `MG996R` servos, two per leg. The full design uses twelve, three per leg: hip, upper leg and lower leg.",
+    title: "Face",
+    body: "An `SSD1306` OLED draws the eyes. It has shown test faces and a live orientation cube from the IMU.",
     side: "left",
   },
   {
@@ -61,10 +67,10 @@ const beats = [
     side: "left",
   },
   {
-    id: "face",
+    id: "legs",
     at: 0.71,
-    title: "Face",
-    body: "An `SSD1306` OLED draws the eyes. It has shown test faces and a live orientation cube from the IMU.",
+    title: "Legs",
+    body: "The MVP frame takes eight `MG996R` servos, two per leg. The full design uses twelve, three per leg.",
     side: "right",
   },
 ] as const;
@@ -90,6 +96,20 @@ const OUTRO_SCALE = 0.8;
 const ROBOT_SPAN = 0.72;
 const ROBOT_TOP = 0.14;
 const ROBOT_BOTTOM = 0.88;
+// The top edge of the robot's shell, as a share of the frame's height. It is within a pixel of
+// this in every frame of the turn (measured on the large pack).
+const SHELL_TOP = 0.08;
+// The home page's opening pose: the robot starts low and small under the title.
+const OPEN_Y = 26;
+const OPEN_SCALE = 0.78;
+// On a short phone the intro's paragraph ends about as low as on a tall one, so the opening pose
+// keeps the shell this far under its last line, and the robot holds there until the intro has
+// faded (OPEN_HOLD, in timeline progress) before it rises.
+const INTRO_CLEAR = 16;
+const OPEN_HOLD = 0.06;
+// On the project page, where the film is the first thing under the page header, how far under
+// the stage's top edge the shell rides until the pin starts.
+const LIFT_TOP = 24;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -148,7 +168,15 @@ async function readPack(url: string, signal: AbortSignal, onFile: (file: Blob, i
   }
 }
 
-export function RoboPetFilm() {
+// On the roboPet project page the page header already names the robot, so `hideIntro` keeps the
+// film's big title for screen readers only and drops its intro paragraph. The film then opens
+// on the robot itself: there is no title to rise under, so the robot starts at full size near
+// the top of the stage (see `lift`), and robopet.css pulls the section up under the header
+// (data-intro="hidden"). ProjectBlocks also passes every custom block the project's `slug`,
+// which the film does not need.
+type RoboPetFilmProps = { hideIntro?: boolean; slug?: string };
+
+export function RoboPetFilm({ hideIntro = false }: RoboPetFilmProps = {}) {
   const roomy = useScrubStage();
   const theme = useThemeName();
   // The set the canvas is drawing from when it is not the page's theme: kept on a lean
@@ -162,6 +190,7 @@ export function RoboPetFilm() {
 
   useEffect(() => {
     if (!scrub) return;
+    const bare = hideIntro;
     const section = sectionRef.current;
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
@@ -548,136 +577,194 @@ export function RoboPetFilm() {
       else trigger.animation?.progress(0.9);
     };
     section.addEventListener("focusin", onFocusIn);
+
+    // Home page, phones: the opening pose's shift, in percent of the stage, that keeps the top of
+    // the shell INTRO_CLEAR under the intro's last line. Layout boxes, not drawn ones, since the
+    // intro is scaled while it fades. Never less than the usual OPEN_Y, so a phone with room to
+    // spare opens as it always has.
+    const introText = section.querySelector<HTMLElement>(".film-intro p");
+    const openingShift = () => {
+      const H = stage.clientHeight;
+      const intro = introText?.offsetParent as HTMLElement | null;
+      if (!H || !introText || !intro || !frame.h) return OPEN_Y;
+      const introBottom = intro.offsetTop + introText.offsetTop + introText.offsetHeight;
+      // The frame layer scales about the stage's middle.
+      const shellTop = H / 2 + (frame.y + SHELL_TOP * frame.h - H / 2) * OPEN_SCALE;
+      return Math.max(OPEN_Y, ((introBottom + INTRO_CLEAR - shellTop) / H) * 100);
+    };
+
+    // Project page: how far up, in px, the frame rides until the pin starts, so the shell's top is
+    // LIFT_TOP under the stage's top edge. The robot is at full size there, and the stage clips
+    // anything above its edge.
+    const lift = () => Math.min(0, LIFT_TOP - (frame.y + SHELL_TOP * frame.h));
+    // The lift runs out between the first scroll position the film can be seen from (the top of
+    // the page, when the film starts on the first screen) and the start of the pin.
+    const liftStart = () =>
+      Math.max(0, section.getBoundingClientRect().top + window.scrollY - window.innerHeight);
+
     // Both conditions are listed because matchMedia only runs for a condition that matches.
-    mm.add({ wide: "(min-width: 761px)", narrow: "(max-width: 760.98px)" }, (context) => {
-      const wide = Boolean(context.conditions?.wide);
-      const timeline: gsap.core.Timeline = gsap.timeline({
-        defaults: { ease: "none" },
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.5,
-          // The robot's poses depend on the stage's size, so they are measured again after a resize.
-          invalidateOnRefresh: true,
-        },
-      });
-      trigger = timeline.scrollTrigger;
-      timeline.to(
-        state,
-        {
-          frame: COUNT - 1,
-          duration: 1,
-          onUpdate: () => {
-            watchPace();
-            const goal = want();
-            if (goal !== wanted) {
-              wanted = goal;
-              refresh();
-            }
-            draw();
-            // The outro takes clicks only while it is on screen; the CSS keeps it out of the
-            // way of everything else the rest of the time.
-            const p = timeline.progress();
-            if (p > 0.86 && p < 0.97) section.dataset.outro = "on";
-            else delete section.dataset.outro;
+    // `short` is a phone whose film intro would meet the rising robot.
+    mm.add(
+      {
+        wide: "(min-width: 761px)",
+        narrow: "(max-width: 760.98px)",
+        short: "(max-width: 760.98px) and (max-height: 800px)",
+      },
+      (context) => {
+        const wide = Boolean(context.conditions?.wide);
+        const short = !wide && Boolean(context.conditions?.short);
+        const timeline: gsap.core.Timeline = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.5,
+            // The robot's poses depend on the stage's size, so they are measured again after a resize.
+            invalidateOnRefresh: true,
           },
-        },
-        0,
-      );
-      // The title is gone before the rising robot reaches the paragraph under it.
-      timeline.fromTo(
-        ".film-intro",
-        { opacity: 1, scale: 1 },
-        { opacity: 0, scale: 0.94, duration: 0.07 },
-        0.01,
-      );
-      // The robot starts low and small under the title, then rises into frame as the
-      // title clears, so type and product never fight for the same pixels.
-      timeline.fromTo(
-        ".film-frame",
-        { yPercent: 26, scale: 0.78 },
-        { yPercent: 0, scale: 1, duration: 0.16, ease: "power1.inOut" },
-        0,
-      );
-      // A slow push-in across the middle act, so the camera is never static.
-      timeline.to(".film-frame", { scale: PUSH_IN, duration: 0.6, ease: "sine.inOut" }, 0.18);
-      // One beat's slot, in timeline progress, around its centre `at`: the robot steps aside
-      // (SHIFT), the copy fades in once it has stopped (IN), holds, and is gone (OUT) before
-      // the next shift starts, so copy and robot are never on screen in the same place. On a
-      // phone, where every beat sits in the same spot, two never overlap either.
-      const SHIFT_FROM = -0.1;
-      const SHIFT_LEN = 0.055;
-      const IN_FROM = -0.04;
-      const IN_LEN = 0.045;
-      const OUT_FROM = 0.055;
-      const OUT_LEN = 0.025;
-      beats.forEach((beat) => {
-        const selector = `.film-beat[data-beat="${beat.id}"]`;
-        // The product moves out of the way of the copy, not the other way round.
+        });
+        trigger = timeline.scrollTrigger;
+        timeline.to(
+          state,
+          {
+            frame: COUNT - 1,
+            duration: 1,
+            onUpdate: () => {
+              watchPace();
+              const goal = want();
+              if (goal !== wanted) {
+                wanted = goal;
+                refresh();
+              }
+              draw();
+              // The outro takes clicks only while it is on screen; the CSS keeps it out of the
+              // way of everything else the rest of the time.
+              const p = timeline.progress();
+              if (p > 0.86 && p < 0.97) section.dataset.outro = "on";
+              else delete section.dataset.outro;
+            },
+          },
+          0,
+        );
+        // The title is gone before the rising robot reaches the paragraph under it.
+        timeline.fromTo(
+          ".film-intro",
+          { opacity: 1, scale: 1 },
+          { opacity: 0, scale: 0.94, duration: 0.07 },
+          0.01,
+        );
+        if (!bare) {
+          // The robot starts low and small under the title, then rises into frame as the
+          // title clears, so type and product never fight for the same pixels. On a short phone
+          // it starts clear of the intro's last line and waits there until the intro has gone.
+          timeline.fromTo(
+            ".film-frame",
+            { yPercent: short ? openingShift : OPEN_Y, scale: OPEN_SCALE },
+            { yPercent: 0, scale: 1, duration: short ? 0.18 - OPEN_HOLD : 0.16, ease: "power1.inOut" },
+            short ? OPEN_HOLD : 0,
+          );
+        } else {
+          // The project page has no title to rise under: the robot is full size from the start.
+          // Until the pin starts, the stage's top edge is on the first screen and its middle is
+          // not, so the robot rides up near that edge and slides down to the middle as the stage
+          // climbs to the top of the window. This is its own scroll range, before the timeline's,
+          // and it moves `y`, which no tween in the timeline touches.
+          gsap.fromTo(
+            ".film-frame",
+            { y: lift },
+            {
+              y: 0,
+              ease: "none",
+              scrollTrigger: {
+                trigger: section,
+                start: liftStart,
+                end: "top top",
+                scrub: 0.5,
+                invalidateOnRefresh: true,
+              },
+            },
+          );
+        }
+        // A slow push-in across the middle act, so the camera is never static.
+        timeline.to(".film-frame", { scale: PUSH_IN, duration: 0.6, ease: "sine.inOut" }, 0.18);
+        // One beat's slot, in timeline progress, around its centre `at`: the robot steps aside
+        // (SHIFT), the copy fades in once it has stopped (IN), holds, and is gone (OUT) before
+        // the next shift starts, so copy and robot are never on screen in the same place. On a
+        // phone, where every beat sits in the same spot, two never overlap either.
+        const SHIFT_FROM = -0.1;
+        const SHIFT_LEN = 0.055;
+        const IN_FROM = -0.04;
+        const IN_LEN = 0.045;
+        const OUT_FROM = 0.055;
+        const OUT_LEN = 0.025;
+        beats.forEach((beat) => {
+          const selector = `.film-beat[data-beat="${beat.id}"]`;
+          // The product moves out of the way of the copy, not the other way round.
+          if (wide)
+            timeline.to(
+              ".film-frame",
+              {
+                xPercent: () => beatShift(beat.side),
+                duration: SHIFT_LEN,
+                ease: "power2.inOut",
+              },
+              beat.at + SHIFT_FROM,
+            );
+          // On a wide stage the beat is centred on the stage's middle by yPercent. It is set
+          // here, not with the CSS translate property, which GSAP drops on the first tick.
+          const centred = wide ? -50 : 0;
+          timeline.fromTo(
+            selector,
+            { opacity: 0, y: 40, yPercent: centred },
+            { opacity: 1, y: 0, yPercent: centred, duration: IN_LEN, ease: "power2.out" },
+            beat.at + IN_FROM,
+          );
+          timeline.to(
+            selector,
+            { opacity: 0, y: -40, duration: OUT_LEN, ease: "power2.in" },
+            beat.at + OUT_FROM,
+          );
+        });
+        // With a photo of the real frame the concept robot steps up and to the left and leaves the
+        // bottom of the stage to it and to the closing line. Without one it steps to the right of
+        // the line. Either way it has settled before the line fades in.
         if (wide)
           timeline.to(
             ".film-frame",
             {
-              xPercent: () => beatShift(beat.side),
-              duration: SHIFT_LEN,
+              xPercent: () => outroPose().xPercent,
+              yPercent: () => outroPose().yPercent,
+              scale: () => outroPose().scale,
+              duration: 0.065,
               ease: "power2.inOut",
             },
-            beat.at + SHIFT_FROM,
+            0.775,
           );
-        // On a wide stage the beat is centred on the stage's middle by yPercent. It is set
-        // here, not with the CSS translate property, which GSAP drops on the first tick.
-        const centred = wide ? -50 : 0;
         timeline.fromTo(
-          selector,
-          { opacity: 0, y: 40, yPercent: centred },
-          { opacity: 1, y: 0, yPercent: centred, duration: IN_LEN, ease: "power2.out" },
-          beat.at + IN_FROM,
+          ".film-outro",
+          { opacity: 0, y: 40 },
+          { opacity: 1, y: 0, duration: 0.05, ease: "power2.out" },
+          0.84,
         );
-        timeline.to(
-          selector,
-          { opacity: 0, y: -40, duration: OUT_LEN, ease: "power2.in" },
-          beat.at + OUT_FROM,
-        );
-      });
-      // With a photo of the real frame the concept robot steps up and to the left and leaves the
-      // bottom of the stage to it and to the closing line. Without one it steps to the right of
-      // the line. Either way it has settled before the line fades in.
-      if (wide)
+        // Exit: pull back and dim so the hand-off to the next section is deliberate.
         timeline.to(
           ".film-frame",
           {
-            xPercent: () => outroPose().xPercent,
-            yPercent: () => outroPose().yPercent,
-            scale: () => outroPose().scale,
-            duration: 0.065,
-            ease: "power2.inOut",
+            scale: wide ? () => outroPose().scale * 0.9 : 0.86,
+            opacity: 0.15,
+            duration: 0.06,
+            ease: "power2.in",
           },
-          0.775,
+          0.94,
         );
-      timeline.fromTo(
-        ".film-outro",
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 0.05, ease: "power2.out" },
-        0.84,
-      );
-      // Exit: pull back and dim so the hand-off to the next section is deliberate.
-      timeline.to(
-        ".film-frame",
-        {
-          scale: wide ? () => outroPose().scale * 0.9 : 0.86,
-          opacity: 0.15,
-          duration: 0.06,
-          ease: "power2.in",
-        },
-        0.94,
-      );
-      timeline.to(".film-outro, .film-caption", { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.94);
-      return () => {
-        trigger = undefined;
-        delete section.dataset.outro;
-      };
-    });
+        timeline.to(".film-outro, .film-caption", { opacity: 0, duration: 0.06, ease: "power2.in" }, 0.94);
+        return () => {
+          trigger = undefined;
+          delete section.dataset.outro;
+        };
+      },
+    );
 
     return () => {
       disposed = true;
@@ -692,7 +779,7 @@ export function RoboPetFilm() {
       for (const frame of decoded.values()) frame.close();
       decoded.clear();
     };
-  }, [scrub]);
+  }, [scrub, hideIntro]);
 
   return (
     <section
@@ -700,16 +787,20 @@ export function RoboPetFilm() {
       id="robopet"
       className="film"
       data-mode={scrub ? "scrub" : "static"}
+      data-intro={hideIntro ? "hidden" : undefined}
       data-failed={failed ? "" : undefined}
       aria-labelledby="film-title"
     >
       <div className="film-stage">
-        <div className="film-intro site-shell">
-          <h2 id="film-title">roboPet</h2>
-          <p>
-            A four-legged robot I&rsquo;m building to learn mechatronics. The two-board layout
-            follows the open-source Sesame robot design.
-          </p>
+        <div className="film-intro site-shell" data-hidden={hideIntro ? "" : undefined}>
+          <h2 id="film-title">{hideIntro ? "roboPet concept film" : "roboPet"}</h2>
+          {!hideIntro && (
+            <p>
+              A four-legged robot I&rsquo;m building to learn mechatronics. It starts from the
+              open-source Sesame robot, which runs on one ESP32; roboPet splits the work between a
+              Pico and a Pi Zero 2W.
+            </p>
+          )}
         </div>
         {/* One poster per theme, both in the server markup, so the first paint, the reduced-motion
             layout and the narrow-screen layout show the saved theme's poster with no src swap

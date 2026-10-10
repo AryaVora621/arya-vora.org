@@ -63,6 +63,13 @@ const DOCK_POSES = [
   { yaw: BASE_YAW, at: 0, turn: 0.75 },
   { yaw: 0.47, at: 1, turn: 0.3 },
 ] as const;
+/**
+ * A section with one dock (a project page's spec rows, or a short highlight) has nothing to
+ * scroll between, so its progress is how far its track's centre sits from the viewport's
+ * centre, in viewport heights (0 when centred, clamped to one either way). The robot turns
+ * gently either side of the three-quarter view as the track passes.
+ */
+const SINGLE_DOCK_POSE = { yaw: 0.47, at: 0, turn: 0.35 } as const;
 /** Docks within this margin keep the scene alive; past it for TEARDOWN_MS, it is released. */
 const KEEP_MARGIN = "200% 0px";
 const TEARDOWN_MS = 6000;
@@ -260,7 +267,12 @@ export function useReaperStage(
       };
       const last = docks[docks.length - 1];
       const lastTrack = last.closest("[data-reaper-track]") ?? last;
+      const single = docks.length === 1;
       const scrollProgress = () => {
+        if (single) {
+          const vh = window.innerHeight || 1;
+          return Math.min(1, Math.max(-1, (vh / 2 - centre(lastTrack)) / vh));
+        }
         const y0 = centre(docks[0]);
         const y1 = centre(lastTrack);
         if (Math.abs(y1 - y0) < 1) return 0;
@@ -268,7 +280,8 @@ export function useReaperStage(
         return Math.min(1.6, Math.max(-0.5, p));
       };
 
-      const pose = () => DOCK_POSES[Math.min(dockIndex, DOCK_POSES.length - 1)];
+      const pose = () =>
+        single ? SINGLE_DOCK_POSE : DOCK_POSES[Math.min(dockIndex, DOCK_POSES.length - 1)];
       const targets = () => {
         const focus = focusRef.current;
         const weights: Weights = {};

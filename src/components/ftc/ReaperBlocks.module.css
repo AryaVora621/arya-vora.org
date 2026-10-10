@@ -1,0 +1,173 @@
+/*
+  The Reaper blocks of /projects/reaper (ReaperBlocks.tsx). ftc.css styles their insides through
+  the shared .ftc-section class; this file takes back what that class does at the top of the
+  home page's long section, sets the block heading, and lays out the two pieces only these
+  blocks have: the robot strip in Iterations and the spec sheet. Colors are the tokens in
+  portfolio.css.
+*/
+
+/* Two blocks in a row add their paddings, so each takes half a section gap at each end. */
+.block:global(.ftc-section) {
+  padding-block: calc(var(--section-gap) / 2);
+  background: transparent;
+}
+
+/* The block that opens the page with the page header in it (ReaperModelBlock with `header`):
+   the header brings its own space above the title. */
+.block.lead:global(.ftc-section) {
+  padding-top: 0;
+}
+
+/* A renderer that already wraps the block in a .site-shell keeps its width; the inner shell
+   does not take the gutters off a second time. */
+:global(.site-shell) .shell {
+  width: 100%;
+}
+
+/* The block heading matches the headings of the other blocks on a project page (projects.css,
+   .pb-heading), so a page reads as one run of sections. */
+.block .title {
+  font-size: var(--text-h3);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* Subsection heads are h3 here (h4 in the home page's section, where the section is the h2).
+   Their columns are set in ftc.css (.ftc-sub-head), on the page's 12-column text measure. */
+.block:global(.ftc-section) :global(.ftc-sub-head) h3 {
+  font-size: var(--text-lead);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.block :global(.ftc-roles) {
+  margin-top: 36px;
+}
+.block :global(.ftc-results) .title + :global(.ftc-table) {
+  margin-top: 32px;
+}
+.block :global(.ftc-iterations-copy) p {
+  max-width: 52ch;
+}
+
+/* Iterations: three robots, each photo over its note. The photos stand on one line at the
+   bottom of a frame of equal height, and the notes start together under them. */
+.block .robots {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  margin-top: 40px;
+}
+.block .robots :global(.ftc-real-photo) {
+  height: clamp(200px, 22vw, 300px);
+}
+/* Each photo is the frame's height and as wide as its own shape, drawn whole at the frame's
+   bottom. Sized from the frame, a lazy photo holds its place before it loads, where a photo sized
+   only by max-height took no room at all and pushed the notes down as it came in. */
+.block .robots :global(.ftc-real-photo) img {
+  height: 100%;
+  max-height: none;
+  object-position: 50% 100%;
+}
+.block .robots figcaption {
+  margin-top: 20px;
+  max-width: 34ch;
+  font-size: var(--text-body);
+  line-height: 1.55;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+/* Specs: the heading in a rail on the left and the rows from column 5, the measure the page's
+   own text and spec blocks use (projects.css), with each label over its value, two to a row. */
+.rail {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(20px, 2.4vw, 32px);
+  align-items: start;
+}
+.rail > .title {
+  grid-column: 1 / 5;
+}
+.railBody {
+  grid-column: 5 / -1;
+  min-width: 0;
+}
+.sheet {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(20px, 2.4vw, 32px);
+  margin: 0;
+}
+.sheetRow {
+  padding-block: 18px 22px;
+  border-top: 1px solid var(--line);
+}
+.sheetRow dt {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  color: var(--muted);
+}
+.sheetRow dd {
+  margin: 8px 0 0;
+  font-size: var(--text-lead);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+.railBody :global(.ftc-sources) {
+  margin-top: 20px;
+}
+
+@media (max-width: 1100px) {
+  .block .robots {
+    column-gap: 24px;
+  }
+  .rail > .title {
+    grid-column: 1 / 4;
+  }
+  .railBody {
+    grid-column: 4 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .block:global(.ftc-section) :global(.ftc-sub-head) h3 {
+    font-size: var(--text-lead);
+  }
+  .block :global(.ftc-roles) {
+    margin-top: 28px;
+  }
+  /* One robot per row, the photo beside its note, like the version rows below. */
+  .block .robots {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 32px;
+    margin-top: 28px;
+  }
+  .block .robots figure {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    column-gap: 16px;
+    align-items: start;
+  }
+  .block .robots :global(.ftc-real-photo) {
+    height: 168px;
+  }
+  .block .robots figcaption {
+    margin-top: 0;
+    font-size: var(--text-caption);
+  }
+  .block .robots :global(.ftc-step-label) {
+    font-size: var(--text-body);
+  }
+  .rail {
+    display: block;
+  }
+  .railBody {
+    margin-top: 20px;
+  }
+  .sheet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

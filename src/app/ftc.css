@@ -1,9 +1,9 @@
 /*
-  FTC 23786 MakEMinds (src/components/portfolio/FtcSection.tsx).
+  Reaper, FTC 23786 MakEMinds: the blocks of /projects/reaper (src/components/ftc/
+  ReaperBlocks.tsx) and the 3D dock the home page's highlight shares with them.
   Colors come only from the tokens in portfolio.css. Rules separate real data rows
   (roles by year, results); nothing else is ruled or boxed. The robot is a live 3D model
-  (src/components/ftc/ReaperStage.tsx) that moves between two docks, the opener and the sticky
-  one beside the spec rows; each dock shows a still until the canvas is in it.
+  (src/components/ftc/ReaperStage.tsx) in a dock that shows a still until the canvas is in it.
 */
 .ftc-section {
   /* The Reaper heading carries its own leading and the film below opens with deep padding of
@@ -30,12 +30,6 @@
   width: 100%;
   height: auto;
 }
-.ftc-block {
-  margin-top: clamp(80px, 8vw, 120px);
-}
-.ftc-opener + .ftc-block {
-  margin-top: clamp(64px, 6vw, 96px);
-}
 .ftc-visually-hidden {
   position: absolute;
   width: 1px;
@@ -43,49 +37,6 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-/* Opener: the robot overlaps its own name. */
-.ftc-opener {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: 24px;
-  align-items: start;
-}
-.ftc-name {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  min-width: 0;
-}
-.ftc-name h2 {
-  /* line-height leaves room for the heading's line mask; margins pull it back in. */
-  font-size: clamp(112px, 19.5vw, 300px);
-  font-weight: 800;
-  line-height: 1.14;
-  letter-spacing: -0.03em;
-  margin-block: -0.16em -0.24em;
-  margin-left: -0.055em;
-  white-space: nowrap;
-}
-.ftc-hero {
-  grid-column: 6 / -1;
-  grid-row: 1 / span 2;
-  /* The model's canvas has open space above the hood, so the dock starts high enough for the
-     hood to rise past the bottom of the name, and low enough that the hood's corner clears the
-     last letter by more than 32px at every desktop width, also while the parallax runs. */
-  margin-top: clamp(88px, calc(6vw + 40px), 136px);
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-}
-.ftc-hero-robot {
-  width: min(100%, 640px);
-  margin-left: auto;
-}
-.ftc-hero .reaper-hint {
-  width: min(100%, 640px);
-  margin: 4px 0 0 auto;
-  text-align: right;
 }
 
 /* A dock for the 3D robot: the theme's still, and the live canvas over it once it arrives. */
@@ -145,25 +96,6 @@ html[data-theme="violet"] .reaper-dock[data-still] .reaper-still {
 .ftc-section:not([data-reaper-live]) .reaper-hint {
   display: none;
 }
-.ftc-intro {
-  grid-column: 1 / 6;
-  grid-row: 2;
-  margin-top: 64px;
-  max-width: 31em;
-}
-.ftc-intro p {
-  font-size: var(--text-body);
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-.ftc-intro .ftc-lede {
-  font-size: var(--text-lead);
-  line-height: 1.45;
-}
-.ftc-intro p + p {
-  margin-top: 20px;
-}
-
 /* Mechanisms: spec rows beside the sticky 3D robot. A row lights up its part of the model while
    it is hovered or focused, and stays lit when pressed; the other rows' text steps back. */
 .ftc-mechanisms {
@@ -252,6 +184,16 @@ button.ftc-spec-key {
     transition: none;
   }
 }
+/* Where a finger does the pressing, the whole row (its term and its text) is the key's target,
+   not only the word: the button's ::after is stretched over the row, which is the positioned
+   box. The row still holds one control, with the same name. */
+@media (max-width: 760px), (pointer: coarse) {
+  button.ftc-spec-key::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+}
 /* The phone layout's one-line hint above the rows (see the 760px block). */
 .ftc-spec-cue {
   display: none;
@@ -272,6 +214,48 @@ button.ftc-spec-key {
 .ftc-model figcaption {
   margin-top: 4px;
   max-width: 30em;
+}
+
+/* On /projects/reaper the block also holds the page header (ReaperModelBlock's `header`): the
+   title, summary and meta take the left columns above the Mechanisms heading and its rows, and
+   the model stands beside the title, so it fills the right of the first screen and then rides
+   beside the rows as they are read. Its meta pairs up in two columns, with the links on a line
+   of their own. The model is the page's first picture, so its still shows from the start
+   instead of waiting for a script to ask for it (ReaperDock's data-still). */
+.ftc-mechanisms.has-head {
+  grid-template-rows: auto auto 1fr;
+}
+.ftc-mechanisms.has-head > .pdetail-head {
+  grid-column: 1 / 7;
+  grid-row: 1;
+  min-width: 0;
+}
+.ftc-mechanisms.has-head .ftc-mechanisms-title {
+  grid-row: 2;
+  margin-top: var(--pb-gap, 96px);
+}
+.ftc-mechanisms.has-head .ftc-specs {
+  grid-row: 3;
+}
+.ftc-mechanisms.has-head .ftc-model {
+  grid-row: 1 / -1;
+  margin-top: clamp(12px, 1.6vw, 24px);
+}
+.ftc-mechanisms.has-head .pdetail-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ftc-mechanisms.has-head .pdetail-meta > .is-links {
+  grid-column: 1 / -1;
+}
+.ftc-mechanisms.has-head .pdetail-meta .is-stack dd {
+  max-width: none;
+}
+.ftc-mechanisms.has-head .reaper-still {
+  background-image: url("/ftc/reaper-model-mono.webp");
+}
+html[data-theme="violet"] .ftc-mechanisms.has-head .reaper-still {
+  background-image: url("/ftc/reaper-model-violet.webp");
 }
 
 /* The real robot: the team's photos, smaller, in one row. They are cut-outs, so they sit on
@@ -304,9 +288,6 @@ button.ftc-spec-key {
 }
 .ftc-real-strip figcaption {
   margin-top: 14px;
-}
-.ftc-real > .ftc-credit {
-  margin-top: 28px;
 }
 
 /* My part: the heading sits over the roles, and the four roles run across the page in order, one
@@ -362,21 +343,26 @@ button.ftc-spec-key {
 .ftc-sub {
   margin-top: clamp(56px, 6vw, 88px);
 }
+/* A subsection's heading sits in the left rail and its intro starts at column 5, on the same
+   12-column measure (and gap) as the page's text and spec blocks (projects.css, .pb-text), so
+   the intros line up with the paragraphs above and below them. */
 .ftc-sub-head {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: 24px;
+  column-gap: clamp(20px, 2.4vw, 32px);
   align-items: start;
 }
-.ftc-sub-head h4 {
+.ftc-sub-head > :is(h3, h4) {
   grid-column: 1 / 5;
+}
+.ftc-sub-head h4 {
   font-size: var(--text-lead);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
 .ftc-sub-head p {
-  grid-column: 6 / -1;
+  grid-column: 5 / -1;
   max-width: 65ch;
   font-size: var(--text-body);
   line-height: 1.6;
@@ -497,7 +483,10 @@ button.ftc-spec-key {
   font-size: var(--text-lead);
   font-weight: 700;
 }
-.ftc-table caption span {
+.ftc-table caption .ftc-season-title {
+  white-space: nowrap;
+}
+.ftc-table caption .ftc-season-note {
   margin-left: 0.4em;
   font-weight: 400;
   color: var(--muted);
@@ -548,13 +537,6 @@ button.ftc-spec-key {
 }
 
 @media (max-width: 1100px) {
-  .ftc-hero {
-    grid-column: 6 / -1;
-  }
-  .ftc-intro {
-    grid-column: 1 / 6;
-    margin-top: 48px;
-  }
   .ftc-mechanisms-title,
   .ftc-specs {
     grid-column: 1 / 8;
@@ -563,6 +545,12 @@ button.ftc-spec-key {
     grid-column: 8 / -1;
     margin-top: 48px;
   }
+  .ftc-mechanisms.has-head > .pdetail-head {
+    grid-column: 1 / 8;
+  }
+  .ftc-mechanisms.has-head .ftc-model {
+    margin-top: 12px;
+  }
   .ftc-specs > div {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 4px;
@@ -570,6 +558,13 @@ button.ftc-spec-key {
   .ftc-roles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     row-gap: 40px;
+  }
+  /* The text measure's rail narrows to three columns here (projects.css), and the intros follow. */
+  .ftc-sub-head > :is(h3, h4) {
+    grid-column: 1 / 4;
+  }
+  .ftc-sub-head p {
+    grid-column: 4 / -1;
   }
   .ftc-versions {
     column-gap: 32px;
@@ -581,23 +576,6 @@ button.ftc-spec-key {
 }
 
 @media (max-width: 760px) {
-  .ftc-block {
-    margin-top: 72px;
-  }
-  .ftc-opener,
-  .ftc-mechanisms {
-    display: block;
-  }
-  .ftc-name h2 {
-    font-size: clamp(76px, 25vw, 160px);
-  }
-  .ftc-hero {
-    margin-top: -0.4em;
-    font-size: clamp(76px, 25vw, 160px);
-  }
-  .ftc-intro {
-    margin-top: 32px;
-  }
   /* The robot rides at the top of the screen while the spec rows scroll up under it. Only the
      model rides: the figure steps aside (display: contents) so its caption can follow the rows,
      the panel is held to about a third of the screen, and the rows slide under a short fade at
@@ -660,6 +638,46 @@ button.ftc-spec-key {
     grid-column: 1;
     grid-row: 5;
     margin-top: 24px;
+  }
+  /* With the page header in the block, the header steps aside too (display: contents) and the
+     panel comes in right after the summary, ahead of the meta, so the robot is on a phone's
+     first screen. From there it rides at the top as before, while the meta, the heading and the
+     rows scroll up under it. The meta clears the panel's fade. */
+  .ftc-mechanisms.has-head {
+    grid-template-rows: auto auto calc(var(--ftc-panel) + 20px) auto auto auto auto auto;
+    padding-top: 20px;
+  }
+  .ftc-mechanisms.has-head > .pdetail-head {
+    display: contents;
+  }
+  .ftc-mechanisms.has-head > .pdetail-head > * {
+    grid-column: 1;
+  }
+  .ftc-mechanisms.has-head > .pdetail-head > h1 {
+    grid-row: 1;
+  }
+  .ftc-mechanisms.has-head .pdetail-summary {
+    grid-row: 2;
+  }
+  .ftc-mechanisms.has-head .ftc-model-dock {
+    grid-row: 3 / 8;
+  }
+  .ftc-mechanisms.has-head .pdetail-meta {
+    grid-row: 4;
+    margin-top: 32px;
+  }
+  .ftc-mechanisms.has-head .ftc-mechanisms-title {
+    grid-row: 5;
+    margin-top: 56px;
+  }
+  .ftc-mechanisms.has-head .ftc-spec-cue {
+    grid-row: 6;
+  }
+  .ftc-mechanisms.has-head .ftc-specs {
+    grid-row: 7;
+  }
+  .ftc-mechanisms.has-head .ftc-model figcaption {
+    grid-row: 8;
   }
   .ftc-hint-rows {
     display: none;

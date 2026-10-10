@@ -116,8 +116,8 @@ export function StatLineGame() {
       <p className="statline-meta micro">
         {showMeta ? (
           <>
-            {line.season} · {line.team}
-            {line.note ? ` · ${line.note}` : ""}
+            {line.season}, {line.team}
+            {line.note ? `, ${line.note}` : ""}
           </>
         ) : (
           <button className="text-link" onClick={() => setHint(true)}>

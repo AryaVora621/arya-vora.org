@@ -39,24 +39,3 @@ export const frcTeam = {
   name: "Warhawks",
   url: "https://www.thebluealliance.com/team/2554",
 } as const;
-
-// The About timeline, oldest first. Sources per row:
-// roboPet frame: the roboPet README progress log, Day 8 (8-servo MVP chassis designed in Onshape,
-// printed on a Bambu A1 Mini, partly assembled 2026-07-10 to 11: some servos, the MPU6050 and the
-// Pico mounted).
-// The row leaves out "printed": the film outro in the roboPet section states once that the
-// frame is printed and partly assembled, and this row adds only what was mounted and when.
-// Drone flight: drone repo DEVLOG.md, session 5, 2026-07-18 ("several minutes of controlled
-// flight. Ended when the pilot oversteered and flipped the frame, breaking 2 propellers").
-export const milestones = [
-  {
-    when: "Jul 2026",
-    dateTime: "2026-07-10",
-    text: "Mounted the IMU, the Pico and some of the servos on roboPet’s 8-servo frame.",
-  },
-  {
-    when: "Jul 2026",
-    dateTime: "2026-07-18",
-    text: "First flight of my ESP32 quadcopter. It flew for several minutes, then an oversteer flipped it and broke two props.",
-  },
-] as const;

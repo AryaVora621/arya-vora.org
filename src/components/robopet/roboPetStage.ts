@@ -47,7 +47,9 @@ export function mountRoboPetStage(host: HTMLElement, params: RoboPetStageParams 
   renderer.toneMappingExposure = 1.0;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // three 0.185 retired PCFSoftShadowMap and draws PCFShadowMap in its place, with a console
+  // warning; shadow.radius below still sets the softness.
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();

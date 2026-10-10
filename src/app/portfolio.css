@@ -326,24 +326,33 @@ body {
   }
 }
 
-/* Hero */
+/* Hero. The 3D roboPet is the picture the page opens on: its column is the wider one and
+   runs on into the page margin (--hero-bleed), and the hero fills the first screen under the
+   nav, so the next section starts below the fold. The name stacks one word a line beside it,
+   which lets it stay the largest type on the screen in the narrower column. */
 .portfolio-hero {
-  padding-top: 32px;
+  /* The page margin the art may grow into: the shell's own margin, or more on a wide screen,
+     up to 160px. 100vw counts a classic scrollbar too; .portfolio clips the few pixels over. */
+  --hero-bleed: max(56px, min((100vw - 1320px) / 2, 160px));
 }
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  column-gap: clamp(16px, 2.2vw, 32px);
   align-items: center;
-  padding-block: 24px 56px;
+  /* The nav above is 84px tall. */
+  min-height: max(560px, calc(100svh - 84px));
+  padding-block: 8px 40px;
 }
 .hero-copy {
   min-width: 0;
 }
 .hero-copy h1 {
-  font-size: clamp(76px, 9.4vw, 148px);
+  /* min-content puts each word on its own line: "Arya" over "Vora". */
+  width: min-content;
+  font-size: clamp(76px, 11.2vw, 176px);
   font-weight: 800;
-  line-height: 0.9;
+  line-height: 0.88;
   letter-spacing: -0.03em;
   margin-left: -0.04em;
 }
@@ -380,6 +389,7 @@ body {
 .hero-art {
   position: relative;
   min-width: 0;
+  margin-inline-end: calc(-1 * var(--hero-bleed));
 }
 
 /* Section headings */
@@ -400,170 +410,6 @@ body {
   margin-top: 20px;
   text-wrap: pretty;
 }
-.heading-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 40px;
-}
-.heading-row > p {
-  font-size: var(--text-body);
-  padding-bottom: 6px;
-}
-
-/* Path lab: breadth-first search on a 7 x 7 grid. It is a small block that continues the
-   Software section above it, so it takes no full-width heading and no box of its own.
-   Copy and legend sit on the left, the grid on the right, the controls under the copy. */
-.playground-section {
-  background: var(--surface);
-  /* About opens with its own section padding, so this block adds none below. */
-  padding-block: 0;
-}
-.lab-card {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  grid-template-areas:
-    "copy grid"
-    "controls grid";
-  grid-template-rows: auto 1fr;
-  column-gap: clamp(32px, 6vw, 96px);
-  row-gap: 32px;
-  align-items: start;
-  min-width: 0;
-}
-.lab-copy {
-  grid-area: copy;
-}
-.lab-copy h2 {
-  font-size: var(--text-h3);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-.lab-copy > p {
-  margin-top: 16px;
-  max-width: 34em;
-  font-size: var(--text-body);
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-.path-grid {
-  grid-area: grid;
-  justify-self: end;
-  width: min(100%, 440px);
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-}
-.path-cell {
-  position: relative;
-  aspect-ratio: 1;
-  min-height: 32px;
-  display: grid;
-  place-items: center;
-  background: var(--surface);
-  border: 1px solid var(--muted);
-  color: var(--text);
-  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
-  border-radius: 2px;
-  font-size: var(--text-body);
-  transition: background-color 0.15s;
-}
-.path-cell:hover {
-  border-color: var(--accent);
-}
-/* Explored cells are a flat dark grey: the legend says what it means, and the white route
-   dot reads on it. */
-.path-cell.visited {
-  background: var(--line);
-}
-.path-cell.wall {
-  background: var(--text);
-  color: var(--surface);
-  border-color: var(--text);
-}
-.path-cell.endpoint {
-  background: var(--surface);
-  border: 2px solid var(--text);
-  font-weight: 700;
-}
-.path-cell.route:not(.endpoint)::after {
-  content: "";
-  width: 40%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.lab-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  margin: 24px 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--text-body);
-  color: var(--muted);
-}
-.lab-legend > li {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-/* Legend swatches repeat the cell styles above. They are drawn without the .path-cell
-   classes, so anything that counts grid cells by class sees only the 49 real buttons. */
-.lab-swatch {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex: none;
-  box-sizing: border-box;
-  background: var(--surface);
-  border: 1px solid var(--muted);
-  border-radius: 2px;
-  color: var(--text);
-  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
-  font-size: var(--text-caption);
-  line-height: 1;
-}
-.lab-swatch--start,
-.lab-swatch--goal {
-  border: 2px solid var(--text);
-  font-weight: 700;
-}
-.lab-swatch--wall {
-  background: var(--text);
-  border-color: var(--text);
-}
-.lab-swatch--explored {
-  background: var(--line);
-}
-.lab-swatch-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.lab-actions {
-  grid-area: controls;
-}
-.lab-controls {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.lab-controls .primary-button,
-.lab-controls .secondary-button {
-  min-height: 46px;
-  padding-inline: 16px;
-}
-.lab-actions .lab-status {
-  min-height: 40px;
-  margin-top: 16px;
-  font-size: var(--text-body);
-  color: var(--text);
-}
-
 /* About. It closes with less space because Contact opens with its own. */
 .about-section {
   padding-bottom: calc(var(--section-gap) * 0.6);
@@ -685,12 +531,58 @@ body {
   .site-shell {
     width: calc(100% - 64px);
   }
+  .portfolio-hero {
+    --hero-bleed: 32px;
+  }
   .hero-copy h1 {
-    font-size: clamp(68px, 9.6vw, 108px);
+    font-size: clamp(68px, 11vw, 120px);
   }
   .about-grid,
   .contact-bottom {
     gap: 48px;
+  }
+}
+/* On a phone, and on a tablet held upright, the robot comes between the name and the text, so
+   the first screen has the name and the robot on it. .hero-copy steps out of the box tree
+   (display: contents), its children become the grid's rows, and the art is ordered in after the
+   title. It runs to the right edge of the page (to both edges on a phone) and is at most 720px
+   wide. A landscape tablet keeps the two columns, which suit a short screen better. */
+@media (max-width: 760px), (max-width: 1100px) and (max-aspect-ratio: 1/1) {
+  /* A tall tablet still gets a whole first screen (the nav is two rows here, about 120px); a
+     phone's hero is taller than its screen anyway. */
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    min-height: calc(100svh - 120px);
+    padding-block: 16px 64px;
+  }
+  .hero-copy {
+    display: contents;
+  }
+  /* Still one word a line, as wide as the column allows, so the name stays the largest type
+     on the page here too (the Reaper heading below it is 112px on a phone). */
+  .hero-copy h1 {
+    font-size: clamp(76px, 30vw, 150px);
+    margin-left: -0.03em;
+  }
+  .hero-art {
+    --art-width: min(100% + 2 * var(--hero-bleed), 720px);
+    order: 1;
+    justify-self: end;
+    width: var(--art-width);
+    /* The stage's top and bottom bands are empty floor; the negative margins, shares of the
+       stage's width, tuck them under the title and the text. */
+    margin-block: calc(var(--art-width) * -0.04) calc(var(--art-width) * -0.1);
+  }
+  .hero-description,
+  .hero-actions {
+    order: 2;
+    /* Above the art: its drift on scroll slides the robot under the text, never over it. */
+    position: relative;
+    z-index: 1;
+  }
+  .hero-description {
+    margin-top: 0;
   }
 }
 /* Where the wordmark, the switch and the links no longer share one row, the switch stays up
@@ -716,49 +608,12 @@ body {
     column-gap: 18px;
   }
   .portfolio-hero {
-    padding-top: 16px;
-  }
-  .hero-grid {
-    grid-template-columns: minmax(0, 1fr);
-    padding-block: 24px 64px;
-    gap: 32px;
-  }
-  .hero-copy h1 {
-    font-size: clamp(60px, 17vw, 104px);
-    margin-left: -0.03em;
-  }
-  .hero-description {
-    margin-top: 24px;
+    --hero-bleed: 20px;
+    padding-top: 8px;
   }
   .hero-actions {
     gap: 4px 22px;
     margin-top: 20px;
-  }
-  .hero-art {
-    width: min(100%, 490px);
-    margin-inline: auto;
-  }
-  .heading-row {
-    display: block;
-  }
-  .heading-row > p {
-    margin-top: 20px;
-  }
-  .lab-card {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "copy"
-      "grid"
-      "controls";
-    grid-template-rows: none;
-    row-gap: 28px;
-  }
-  .path-grid {
-    justify-self: center;
-    width: min(100%, 392px);
-  }
-  .path-cell {
-    min-height: 28px;
   }
   .about-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -790,73 +645,45 @@ body {
   }
 }
 @media (max-width: 560px) {
-  /* Seven links (with Games) no longer fit one row on the narrowest phones, so they wrap. */
-  .nav-links {
+  /* The six links take a row of their own under the wordmark. The space between two words
+     shrinks with the screen (16px down to 8px) so they stay on one row down to 340px, and it
+     is padding on the links rather than a gap: each link's hit area reaches halfway to its
+     neighbours, so even "Home" is 44px wide or more and no two areas overlap. The negative
+     margins keep the first and last words flush with the page edges. */
+  .nav-inner .nav-links {
+    --nav-gap: clamp(8px, 20vw - 62px, 16px);
     flex: 1 1 100%;
     flex-wrap: wrap;
     justify-content: flex-start;
-    column-gap: 16px;
+    column-gap: 0;
+    margin-inline: calc(var(--nav-gap) / -2);
   }
   .nav-links a {
     font-size: var(--text-caption);
+    padding-inline: calc(var(--nav-gap) / 2);
+  }
+}
+/* Below 340px one row would need the words closer than 8px, so the links take two rows of
+   three in columns, rather than leaving "Games" alone on a second row. */
+@media (max-width: 339px) {
+  /* Three rows of 44px targets already make the nav 132px tall here, so it keeps no space of its
+     own between them or below them: 140px in all, not 152px. */
+  .nav-inner {
+    padding-block: 8px 0;
+    row-gap: 0;
+  }
+  .nav-inner .nav-links {
+    --nav-gap: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
   }
 }
 @media (max-width: 380px) {
   .site-shell {
     width: calc(100% - 32px);
   }
-  .lab-controls {
-    gap: 8px;
-  }
-  .lab-controls .primary-button,
-  .lab-controls .secondary-button {
-    padding-inline: 12px;
-  }
-  .path-grid {
-    gap: 3px;
-  }
-}
-/* Windows High Contrast. System colors replace every author color, so state that was only a
-   background tint disappears. Walls, explored cells, the route and the selected part are
-   redrawn here from system colors, keeping the hatch and the dot as shape cues too. */
-@media (forced-colors: active) {
-  .path-cell,
-  .lab-swatch {
-    forced-color-adjust: none;
-    background: Canvas;
-    color: CanvasText;
-    border-color: ButtonBorder;
-  }
-  .path-cell:hover {
-    border-color: Highlight;
-  }
-  /* A flat grey fill is not drawn in this mode, so explored cells take a dashed border as
-     their shape cue. */
-  .path-cell.visited,
-  .lab-swatch--explored {
-    background: Canvas;
-    border: 2px dashed CanvasText;
-  }
-  .path-cell.wall,
-  .lab-swatch--wall {
-    background: CanvasText;
-    color: Canvas;
-    border-color: CanvasText;
-  }
-  .path-cell.endpoint,
-  .lab-swatch--start,
-  .lab-swatch--goal {
-    border: 3px solid CanvasText;
-  }
-  .path-cell.route:not(.endpoint)::after,
-  .lab-swatch-dot {
-    forced-color-adjust: none;
-    background: Highlight;
-    border: 2px solid Canvas;
-    box-sizing: border-box;
-  }
-  .path-cell.route:not(.endpoint)::after {
-    width: 48%;
+  .portfolio-hero {
+    --hero-bleed: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -872,11 +699,7 @@ body {
    hover or a selected state, which is right in mono; in violet the same few states take the
    accent, as the ones above do. Text at rest stays near-white. */
 html[data-theme="violet"] .film-link:hover,
-html[data-theme="violet"] .work-feature h3 a:hover,
-html[data-theme="violet"] .work-row h3 a:hover,
-html[data-theme="violet"] .work-all a:hover,
-html[data-theme="violet"] .ftc-all > summary:hover,
-html[data-theme="violet"] .work-more > summary:hover {
+html[data-theme="violet"] .ftc-all > summary:hover {
   color: var(--accent);
 }
 html[data-theme="violet"] .exploded-parts button:hover {
@@ -887,10 +710,6 @@ html[data-theme="violet"] .exploded-parts button[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
 }
-html[data-theme="violet"] .work-code:focus-visible {
-  outline-color: var(--accent);
-}
-
 /* The theme switch cross-fades through a view transition (PortfolioNav.tsx). */
 ::view-transition-old(root),
 ::view-transition-new(root) {

@@ -1,172 +1,53 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import {
-  CELL_STATES,
-  DEFAULT_OBSTACLES,
-  findPath,
-  GOAL,
-  moveCell,
-} from "../src/lib/playground";
 import { FILM_FRAMES } from "../src/components/robopet/filmFrames";
+import { teaserFor } from "../src/components/home/teasers";
+import { PROJECTS } from "../src/data/projects";
+import {
+  AXE_TAGS,
+  THEME_KEY,
+  ambiguousLinks,
+  arriveWithTheme,
+  collectErrors,
+  controlsOffScreen,
+  drawsLive,
+  huedColors,
+  noHorizontalOverflow,
+  scrollIsStill,
+  scrollThrough,
+  sectionPosition,
+  tabKey,
+  themeColorTags,
+  whenSwitchIsLive,
+} from "./helpers";
 
-// Page order from the v8 contract, top to bottom.
-const SECTION_ORDER = [
-  "top",
-  "ftc",
-  "robopet",
-  "exploded",
-  "cad",
-  "projects",
-  "playground",
-  "about",
-  "contact",
-];
+// The home page: the highlights. Reaper, the roboPet film and parts, a preview of every other
+// project, then About and Contact. The depth is on /projects (projects.spec.ts), and the theme
+// switch, which every page shares, is tested here on the home page.
 
-// On an empty 7 x 7 grid the shortest route has 13 cells. Start and goal keep their own
-// look, so 11 cells show the route marker.
-const ROUTE_CELLS = 11;
+// Page order from the v9 contract, top to bottom.
+const SECTION_ORDER = ["top", "ftc", "robopet", "exploded", "projects", "about", "contact"];
 
+// Reaper and roboPet have sections of their own on the home page, so the preview grid holds
+// every other project.
+const FEATURED = new Set(["reaper", "robopet"]);
+const PREVIEWED = PROJECTS.filter((project) => !FEATURED.has(project.slug));
+
+// The header links on the home page. About and Contact are places on this page; the rest are
+// routes.
 const NAV = [
-  ["FTC", "#ftc"],
-  ["roboPet", "#robopet"],
-  ["CAD", "#cad"],
-  ["Software", "#projects"],
+  ["Home", "#top"],
+  ["Projects", "/projects"],
+  ["roboPet", "/projects/robopet"],
   ["About", "#about"],
   ["Contact", "#contact"],
-];
-
-// Returns every computed color on the page whose channels differ by more than `tolerance`.
-// The site is black and white, so any hue at all is a regression.
-async function huedColors(page: Page, tolerance = 2) {
-  return page.evaluate((tolerance) => {
-    const props = [
-      "color",
-      "backgroundColor",
-      "borderTopColor",
-      "borderRightColor",
-      "borderBottomColor",
-      "borderLeftColor",
-      "outlineColor",
-      "textDecorationColor",
-      "fill",
-      "stroke",
-      "boxShadow",
-      "backgroundImage",
-    ] as const;
-    const found: string[] = [];
-    for (const element of document.querySelectorAll("body *")) {
-      if (element.closest("nextjs-portal, script, style")) continue;
-      const style = getComputedStyle(element);
-      for (const prop of props) {
-        for (const color of String(style[prop]).match(/rgba?\([^)]+\)/g) ?? []) {
-          const [r, g, b, a = 1] = color
-            .slice(color.indexOf("(") + 1, -1)
-            .split(/[\s,/]+/)
-            .filter(Boolean)
-            .map(Number);
-          if (a > 0 && Math.max(r, g, b) - Math.min(r, g, b) > tolerance) {
-            found.push(`${element.tagName.toLowerCase()} ${prop} ${color}`);
-          }
-        }
-      }
-    }
-    return found;
-  }, tolerance);
-}
-
-async function noHorizontalOverflow(page: Page) {
-  return page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
-}
-
-// The two color themes. "mono" (B&W) is the default; the choice is kept in localStorage.
-const THEME_KEY = "av-theme";
-const THEMES = [
-  ["mono", "B&W"],
-  ["violet", "Violet"],
+  ["Games", "https://games.arya-vora.org"],
 ] as const;
-type ThemeName = (typeof THEMES)[number][0];
-
-// Starts every page load in this test on `theme`, the way a returning visitor would arrive.
-async function arriveWithTheme(page: Page, theme: ThemeName) {
-  await page.addInitScript(
-    ([key, value]) => {
-      try {
-        localStorage.setItem(key, value);
-      } catch {
-        // Storage blocked: the page stays on its default.
-      }
-    },
-    [THEME_KEY, theme] as const,
-  );
-}
-
-// Safari on macOS only tabs to form controls unless Option is held, so WebKit on a Mac needs
-// Alt+Tab to reach a link or a button. That is a setting of the browser, not of the page.
-function tabKey(browserName: string) {
-  return browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
-}
-
-test("path planner handles shortest paths, detours, walls, and a one-cell field", () => {
-  const empty = findPath(new Set());
-  expect(empty.path).toHaveLength(13);
-  expect(empty.path[0]).toBe(0);
-  expect(empty.path.at(-1)).toBe(GOAL);
-  const walls = new Set(DEFAULT_OBSTACLES);
-  const result = findPath(walls);
-  expect(result.path.length).toBeGreaterThan(0);
-  for (let i = 1; i < result.path.length; i++) {
-    const from = result.path[i - 1];
-    const to = result.path[i];
-    expect(
-      Math.abs((from % 7) - (to % 7)) +
-        Math.abs(Math.floor(from / 7) - Math.floor(to / 7)),
-    ).toBe(1);
-    expect(walls.has(to)).toBe(false);
-  }
-  expect(findPath(new Set([1, 7])).path).toEqual([]);
-  expect(findPath(new Set([0])).path).toEqual([]);
-  expect(findPath(new Set(), 0, 0, 1).path).toEqual([0]);
-  expect(findPath(new Set(), 0, 1, 0).path).toEqual([]);
-});
-
-test("grid keys stop at the edges instead of wrapping to the next row", () => {
-  expect(moveCell(6, "ArrowRight")).toBe(6);
-  expect(moveCell(7, "ArrowLeft")).toBe(7);
-  expect(moveCell(3, "ArrowUp")).toBe(3);
-  expect(moveCell(45, "ArrowDown")).toBe(45);
-  expect(moveCell(10, "Home")).toBe(7);
-  expect(moveCell(10, "End")).toBe(13);
-});
-
-test("legend labels are exactly the cell state labels", async ({ page }) => {
-  await page.goto("/");
-  const legend = page.getByRole("list", { name: "Legend" });
-  // The swatches are aria-hidden (the start and goal swatches show S and G), so read only
-  // the text a screen reader gets.
-  const labels = await legend.getByRole("listitem").evaluateAll((items) =>
-    items.map((item) => {
-      const copy = item.cloneNode(true) as HTMLElement;
-      copy.querySelectorAll("[aria-hidden='true']").forEach((node) => node.remove());
-      return copy.textContent?.trim();
-    }),
-  );
-  expect(labels).toEqual(CELL_STATES.map((state) => state.label));
-  // Labels name a state, never a color.
-  for (const state of CELL_STATES) {
-    expect(state.label).not.toMatch(
-      /\b(green|red|blue|violet|purple|yellow|orange|teal|pink|white|black|grey|gray)\b/i,
-    );
-  }
-});
 
 test("home renders in contract order without errors, duplicate IDs, or overflow", async ({
   page,
 }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
-  });
+  const errors = collectErrors(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Arya Vora");
 
@@ -190,8 +71,14 @@ test("home renders in contract order without errors, duplicate IDs, or overflow"
       href,
     );
   }
+  // Home is the page you are on; a section of it never is.
+  await expect(nav.locator("[aria-current]")).toHaveCount(1);
+  await expect(nav.getByRole("link", { name: "Home", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
 
-  for (const id of ["ftc", "cad", "projects", "playground", "about", "contact"]) {
+  for (const id of ["ftc", "projects", "about", "contact"]) {
     await page.locator(`#${id}`).scrollIntoViewIfNeeded();
     await expect(page.locator(`#${id} h2`).first()).toBeVisible();
   }
@@ -205,25 +92,132 @@ test("home renders in contract order without errors, duplicate IDs, or overflow"
   expect(errors).toEqual([]);
 });
 
-test("the page has no hue anywhere: every computed color is a grey", async ({ page }) => {
+test("the home page features Reaper and roboPet, each with a way to its full page", async ({
+  page,
+}) => {
   await page.goto("/");
-  // Scroll through once so lazy sections mount and scroll-driven states apply.
-  const height = await page.evaluate(() => document.documentElement.scrollHeight);
-  for (let y = 0; y < height; y += 800) {
-    await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), y);
+  const ftc = page.locator("#ftc");
+  await expect(ftc.getByRole("heading", { level: 2, name: "Reaper" })).toBeVisible();
+  // Three headline results, each dated, from the 2025-26 ledger.
+  const results = ftc.getByRole("list", { name: "Results with Reaper" }).getByRole("listitem");
+  await expect(results).toHaveCount(3);
+  await expect(results.first()).toContainText("FIRST Championship");
+  await expect(results.first()).toContainText("5-5");
+  for (const row of await results.all()) {
+    await expect(row.locator("time")).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}$/);
   }
-  expect(await huedColors(page)).toEqual([]);
+  await expect(ftc.getByRole("link", { name: "The full Reaper page" })).toHaveAttribute(
+    "href",
+    "/projects/reaper",
+  );
+  // The long section moved to its page: no ledger, no spec rows on the home page.
+  await expect(page.locator("table")).toHaveCount(0);
+  await expect(page.locator("dl.ftc-specs")).toHaveCount(0);
+
+  // The roboPet film and its parts, then the link on.
+  await expect(page.locator("#robopet .film-beat")).toHaveCount(4);
+  await expect(page.getByRole("list", { name: "roboPet parts" })).toBeAttached();
+  const more = page.getByRole("link", { name: "The full roboPet page" });
+  await expect(more).toHaveAttribute("href", "/projects/robopet");
+  const [film, exploded, link] = await Promise.all(
+    ["#robopet", "#exploded"].map((id) =>
+      page.locator(id).evaluate((el) => el.getBoundingClientRect().top + scrollY),
+    ).concat(more.evaluate((el) => el.getBoundingClientRect().top + scrollY)),
+  );
+  expect(film).toBeLessThan(exploded);
+  expect(exploded).toBeLessThan(link);
+});
+
+test("the project previews show every other project as a picture, a title and a line", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const section = page.locator("#projects");
+  await expect(section.getByRole("heading", { level: 2, name: "Projects" })).toBeVisible();
+  const cards = section.locator(".home-card");
+  await expect(cards).toHaveCount(PREVIEWED.length);
+  for (const [i, project] of PREVIEWED.entries()) {
+    const card = cards.nth(i);
+    // One link per card, named by the title, to the project's own page.
+    const links = card.getByRole("link");
+    await expect(links).toHaveCount(1);
+    await expect(links).toHaveAccessibleName(project.title);
+    await expect(links).toHaveAttribute("href", `/projects/${project.slug}`);
+    await expect(card.locator(".home-card-title")).toHaveText(project.title);
+    await expect(card.locator(".home-card-teaser")).toHaveText(teaserFor(project));
+    // The picture is a preview: it loads, and it takes the violet duotone like every other
+    // showcase image. The title says what it is, so it carries no alt text of its own.
+    const image = card.locator("img").first();
+    await image.scrollIntoViewIfNeeded();
+    await expect(image).toHaveAttribute("src", project.cover.src);
+    await expect(image).toHaveClass(/theme-tint/);
+    await expect(image).toHaveAttribute("alt", "");
+    await expect
+      .poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
+  }
+  await expect(
+    section.getByRole("link", { name: `All ${PROJECTS.length} projects` }),
+  ).toHaveAttribute("href", "/projects");
+});
+
+test("every link out of the home page opens a page that exists", async ({ page, request }) => {
+  await page.goto("/");
+  const hrefs = await page
+    .locator('main a[href^="/"], header a[href^="/"], footer a[href^="/"]')
+    .evaluateAll((links) => [...new Set(links.map((link) => link.getAttribute("href")!))]);
+  expect(hrefs).toEqual(expect.arrayContaining(PREVIEWED.map((p) => `/projects/${p.slug}`)));
+  for (const href of hrefs) {
+    const response = await request.get(href.split("#")[0]);
+    expect(response.status(), href).toBe(200);
+  }
+  // Each project page is the project the card named.
+  for (const project of PREVIEWED) {
+    const html = await (await request.get(`/projects/${project.slug}`)).text();
+    expect(html, project.slug).toContain(`<title>${project.title} | Arya Vora</title>`);
+  }
+});
+
+test("a preview card opens its page in place, and Back returns to a working home page", async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  const first = PREVIEWED[0];
+  const card = page.locator("#projects").getByRole("link", { name: first.title, exact: true });
+  await card.scrollIntoViewIfNeeded();
+  await scrollIsStill(page);
+  await card.click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${first.slug}$`));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(first.title);
+  await expect(
+    page.getByRole("navigation", { name: "Projects", exact: true }).locator('[aria-current="page"]'),
+  ).toHaveText(first.tab);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Arya Vora");
+  await expect(page.locator("#robopet")).toHaveAttribute("data-mode", /scrub|static/);
+  expect(errors).toEqual([]);
+});
+
+test("the page has no hue anywhere: every computed color is a grey", async ({ page }) => {
+  for (const path of ["/", "/projects", "/projects/reaper"]) {
+    await page.goto(path);
+    await scrollThrough(page);
+    expect(await huedColors(page), path).toEqual([]);
+  }
 
   // Spot-check the elements a palette regression would hit first, so a failure names them.
+  await page.goto("/");
   const key = await page.evaluate(() =>
     [
       "body",
       "h1",
       ".nav-links a",
       "#ftc h2",
-      ".ftc-record",
-      ".primary-button",
-      ".path-cell.endpoint",
+      ".home-reaper-results time",
+      ".home-card-title",
+      ".secondary-button",
       ".email-address",
     ].map((selector) => {
       const element = document.querySelector(selector);
@@ -241,167 +235,11 @@ test("the page has no hue anywhere: every computed color is a grey", async ({ pa
   }
 });
 
-test("FTC section shows Reaper, its photos and the dated results", async ({ page }) => {
-  await page.goto("/");
-  const ftc = page.locator("#ftc");
-  await expect(ftc.getByRole("heading", { level: 2, name: "Reaper" })).toBeVisible();
-  const images = ftc.locator("img");
-  expect(await images.count()).toBeGreaterThanOrEqual(5);
-  for (const image of await images.all()) {
-    await image.scrollIntoViewIfNeeded();
-    await expect(image).toHaveAttribute("alt", /\S/);
-    await expect
-      .poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
-      .toBeGreaterThan(0);
-  }
-  await expect(ftc.locator("table.ftc-ledger")).toHaveCount(3);
-  await expect(ftc.getByRole("row", { name: /FIRST Championship, Ross Division/ })).toContainText(
-    "5-5",
-  );
-  await expect(ftc.getByText(/The model is incomplete/)).toBeVisible();
-});
-
-test("CAD section renders every Onshape image", async ({ page }) => {
-  await page.goto("/");
-  const cad = page.locator("#cad");
-  await expect(cad.getByRole("heading", { level: 2, name: "CAD" })).toBeVisible();
-  const images = cad.locator("img");
-  // The gallery holds the eight models Arya drew. The Sesame robot (someone else's design),
-  // Totebot (authorship unconfirmed), the unfinished claw and two weaker frames are left out
-  // on purpose, and WorldsRobo is in the FTC section.
-  expect(await images.count()).toBeGreaterThanOrEqual(8);
-  for (const image of await images.all()) {
-    await image.scrollIntoViewIfNeeded();
-    await expect(image).toHaveAttribute("alt", /\S/);
-    await expect
-      .poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
-      .toBeGreaterThan(0);
-  }
-});
-
-test("software section lists features and the index with repository links", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const projects = page.locator("#projects");
-  await expect(projects.getByRole("heading", { level: 2 })).toHaveText("Software");
-  // Two feature rows and four indexed rows. Jarvis-Bee is left off because its agents only
-  // echo messages back.
-  await expect(projects.locator(".project-card")).toHaveCount(6);
-  for (const name of ["notchTerm", "OpenUltraCode", "SmartInvest", "Tally", "TeamStat Insights"]) {
-    await expect(projects.getByRole("heading", { level: 3, name })).toBeVisible();
-  }
-  await expect(projects.getByRole("link", { name: "notchTerm" })).toHaveAttribute(
-    "href",
-    "https://github.com/AryaVora621/notchTerm",
-  );
-});
-
-test("pathfinding demo runs, handles a blocked start, and resets", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Clear walls" }).click();
-  await page.getByRole("button", { name: "Find path", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: /Goal reached/ })).toContainText(
-    /12 moves and \d+ cells explored/,
-  );
-  await expect(page.locator(".path-cell.route")).toHaveCount(ROUTE_CELLS);
-  const upper = page.getByRole("button", { name: "Row 1, column 2", exact: true });
-  const lower = page.getByRole("button", { name: "Row 2, column 1", exact: true });
-  await expect(upper).toHaveAttribute("aria-pressed", "false");
-  await upper.click();
-  await lower.click();
-  // The name stays the same; the pressed state is what changes.
-  await expect(upper).toHaveAttribute("aria-pressed", "true");
-  await expect(lower).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Find path", exact: true }).click();
-  await expect(
-    page.getByText("No route available. Remove a wall and try again."),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Clear walls" }).click();
-  await expect(page.locator(".path-cell.wall")).toHaveCount(0);
-  const cell = page.getByRole("button", { name: "Row 1, column 6", exact: true });
-  await cell.focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(
-    page.getByRole("button", { name: "Row 1, column 7", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("ArrowRight");
-  await expect(
-    page.getByRole("button", { name: "Row 1, column 7", exact: true }),
-  ).toBeFocused();
-});
-
-test("path lab cells are named by position; wall or open is the pressed state", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const grid = page.getByRole("group", { name: "Breadth-first search grid" });
-  const cells = grid.getByRole("button");
-  await expect(cells).toHaveCount(49);
-  // A screen reader says "Row 2, column 2, toggle button, pressed", so the name carries the
-  // position only. Saying "open" or "wall" in the name too would state it twice, and a toggle's
-  // name should not change when it is pressed.
-  const names = await cells.evaluateAll((buttons) =>
-    buttons.map((button) => button.getAttribute("aria-label")),
-  );
-  expect(names.filter((name) => /\b(open|wall|pressed|fixed)\b/i.test(name ?? ""))).toEqual([]);
-  expect(new Set(names).size).toBe(49);
-  await expect(grid.getByRole("button", { name: "Row 1, column 1, start", exact: true })).toBeVisible();
-  await expect(grid.getByRole("button", { name: "Row 7, column 7, goal", exact: true })).toBeVisible();
-  // The two fixed cells are not toggles.
-  await expect(cells.first()).not.toHaveAttribute("aria-pressed");
-  await expect(cells.last()).not.toHaveAttribute("aria-pressed");
-  // The group says what "pressed" means, since the name no longer does.
-  await expect(grid).toHaveAccessibleDescription(/pressed cell is a wall/i);
-
-  // The walls the lab starts with are the pressed cells, and no others.
-  const wallNames = DEFAULT_OBSTACLES.map(
-    (cell) => `Row ${Math.floor(cell / 7) + 1}, column ${(cell % 7) + 1}`,
-  );
-  await expect(grid.getByRole("button", { pressed: true })).toHaveCount(DEFAULT_OBSTACLES.length);
-  for (const name of wallNames) {
-    await expect(grid.getByRole("button", { name, exact: true, pressed: true })).toHaveCount(1);
-  }
-  // Pressing a pressed cell opens it again, and its name is the same before and after.
-  const first = grid.getByRole("button", { name: wallNames[0], exact: true });
-  await first.click();
-  await expect(first).toHaveAttribute("aria-pressed", "false");
-  await expect(first).toHaveAccessibleName(wallNames[0]);
-});
-
-// Links that read the same but go to different places leave a screen reader user, who often
-// lists the links of a page, guessing. Each name has to mean one destination.
 test("links with the same accessible name go to the same place", async ({ page }) => {
   await page.goto("/");
-  const snapshot = await page.locator("body").ariaSnapshot();
-  const destinations = new Map<string, Set<string>>();
-  for (const [, name, href] of snapshot.matchAll(
-    /- link "((?:[^"\\]|\\.)*)"[^\n]*\n\s*- \/url: "?([^"\n]+)"?/g,
-  )) {
-    destinations.set(name, (destinations.get(name) ?? new Set()).add(href));
-  }
-  expect(destinations.size).toBeGreaterThan(30);
-  const ambiguous = [...destinations]
-    .filter(([, hrefs]) => hrefs.size > 1)
-    .map(([name, hrefs]) => `"${name}" goes to ${[...hrefs].join(" and ")}`);
+  const { count, ambiguous } = await ambiguousLinks(page);
+  expect(count).toBeGreaterThan(25);
   expect(ambiguous).toEqual([]);
-});
-
-// An empty table cell is read as "blank", or skipped, so a screen reader user cannot tell a
-// missing value from a broken table. Every cell has to hold text or carry a name.
-test("no table cell is empty", async ({ page }) => {
-  await page.goto("/");
-  const empty = await page.locator("table td, table th").evaluateAll((cells) =>
-    cells
-      .filter((cell) => !cell.textContent?.trim() && !cell.getAttribute("aria-label"))
-      .map((cell) => {
-        const row = cell.closest("tr");
-        return `${row?.querySelector("th")?.textContent ?? row?.textContent}: column ${
-          [...(row?.children ?? [])].indexOf(cell) + 1
-        }`;
-      }),
-  );
-  expect(empty).toEqual([]);
 });
 
 test("contact copies the address and explains a blocked copy", async ({
@@ -445,16 +283,13 @@ test("contact copies the address and explains a blocked copy", async ({
   await expect(contact.getByRole("link", { name: /Hugging Face/ })).toHaveCount(0);
 });
 
-test("reduced motion runs no animations and shows a finished route at once", async ({
+test("reduced motion runs no animations and puts the scenes in their static layouts", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator(".hero-art .hero-robot-stage")).toBeVisible();
-  const height = await page.evaluate(() => document.documentElement.scrollHeight);
-  for (let y = 0; y < height; y += 900) {
-    await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), y);
-  }
+  await scrollThrough(page, 900);
   expect(
     await page.evaluate(
       () => document.getAnimations().filter((a) => a.playState === "running").length,
@@ -466,28 +301,10 @@ test("reduced motion runs no animations and shows a finished route at once", asy
   expect(
     await page.locator(".hero-art").evaluate((element) => getComputedStyle(element).transform),
   ).toBe("none");
-  await page.getByRole("button", { name: "Clear walls" }).click();
-  await page.getByRole("button", { name: "Find path", exact: true }).click();
-  await expect(page.locator(".path-cell.route")).toHaveCount(ROUTE_CELLS);
-  await expect(page.getByText(/Goal reached/)).toBeVisible();
-});
-
-test("an active route completes immediately when reduced motion turns on", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Clear walls" }).click();
-  // Use the browser clock to hold an active route instead of racing its timer.
-  await page.clock.install({ time: new Date("2026-10-08T12:00:00Z") });
-  await page.clock.pauseAt(new Date("2026-10-08T12:00:01Z"));
-  await page.getByRole("button", { name: "Find path", exact: true }).click();
-  await expect(page.getByText("Searching for the shortest route.")).toBeVisible();
-  expect(await page.locator(".path-cell.route").count()).toBeLessThan(ROUTE_CELLS);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(page.getByText(/12 moves and \d+ cells explored/)).toBeVisible();
-  await expect(page.locator(".path-cell.route")).toHaveCount(ROUTE_CELLS);
-  await page.getByRole("button", { name: "Clear walls" }).click();
-  await expect(page.locator(".path-cell.route")).toHaveCount(0);
+  // The preview cards hold still too.
+  for (const item of await page.locator("#projects .home-projects-item").all()) {
+    expect(await item.evaluate((element) => getComputedStyle(element).transform)).toBe("none");
+  }
 });
 
 test("hero art drifts on scroll and stops under reduced motion", async ({ page }) => {
@@ -508,23 +325,9 @@ test("at 320px wide nothing scrolls sideways and every control stays on screen",
 }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto("/");
-  const height = await page.evaluate(() => document.documentElement.scrollHeight);
-  for (let y = 0; y < height; y += 700) {
-    await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), y);
-  }
+  await scrollThrough(page, 700);
   expect(await noHorizontalOverflow(page)).toBe(true);
-  const offScreen = () =>
-    page
-      .locator("header a, header button, main a, main button, footer a")
-      .evaluateAll((elements) =>
-        elements
-          .filter((el) => {
-            const r = el.getBoundingClientRect();
-            return r.width > 0 && (r.left < -1 || r.right > innerWidth + 1);
-          })
-          .map((el) => el.textContent),
-      );
-  expect(await offScreen()).toEqual([]);
+  expect(await controlsOffScreen(page)).toEqual([]);
   // The theme switch shares the first row with the wordmark, and switching it moves nothing.
   const theme = page.getByRole("navigation", { name: "Main navigation" }).getByRole("group", {
     name: "Theme",
@@ -534,7 +337,7 @@ test("at 320px wide nothing scrolls sideways and every control stays on screen",
   await theme.getByRole("button", { name: "Violet", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "violet");
   expect(await noHorizontalOverflow(page)).toBe(true);
-  expect(await offScreen()).toEqual([]);
+  expect(await controlsOffScreen(page)).toEqual([]);
   await page
     .getByRole("navigation", { name: "Main navigation" })
     .getByRole("link", { name: "Contact", exact: true })
@@ -557,8 +360,8 @@ for (const width of [1280, 881, 880, 600, 390, 320]) {
     const nav = page.getByRole("navigation", { name: "Main navigation" });
     const controls = nav.locator("a, button");
     const count = await controls.count();
-    // Wordmark, B&W, Violet, six section links and Games.
-    expect(count).toBe(10);
+    // Wordmark, B&W, Violet, and the six links.
+    expect(count).toBe(3 + NAV.length);
 
     await nav.locator(".wordmark").focus();
     const walked: { name: string; x: number; y: number }[] = [];
@@ -586,51 +389,105 @@ for (const width of [1280, 881, 880, 600, 390, 320]) {
   });
 }
 
-test("nav links scroll to their sections, past the pinned film and exploded view", async ({
+// On a phone the six header links share one row from 340px up (below that, two rows of three,
+// never "Games" alone), each is a 44px touch target whose area meets its neighbours' without
+// overlapping, and the footer's short "Top" is 44px wide too.
+for (const width of [320, 340, 375, 390]) {
+  test(`header links at ${width}px: one row from 340px, and 44px touch targets`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+    const links = page.getByRole("navigation", { name: "Main navigation" }).locator(".nav-links a");
+    await expect(links).toHaveCount(NAV.length);
+    const boxes = await links.evaluateAll((elements) =>
+      elements.map((element) => {
+        const box = element.getBoundingClientRect();
+        return { top: Math.round(box.top), left: box.left, right: box.right, width: box.width, height: box.height };
+      }),
+    );
+    // The rule is about the width the page has, not the window's: desktop WebKit keeps a 10px
+    // classic scrollbar inside the window, so a 340px window gives the page 330px, the media query
+    // sees 330px, and six 44px targets could not share a row there anyway.
+    const available = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(new Set(boxes.map((box) => box.top)).size).toBe(available < 340 ? 2 : 1);
+    for (const [i, box] of boxes.entries()) {
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      const next = boxes[i + 1];
+      if (next && next.top === box.top) expect(next.left).toBeGreaterThanOrEqual(box.right - 0.5);
+    }
+    const top = page
+      .getByRole("navigation", { name: "Footer navigation" })
+      .getByRole("link", { name: "Top", exact: true });
+    expect((await top.boundingBox())!.width).toBeGreaterThanOrEqual(44);
+  });
+}
+
+test("no preview card title breaks inside a word on the narrowest phones", async ({ page }) => {
+  for (const width of [320, 340, 360]) {
+    await page.setViewportSize({ width, height: 740 });
+    await page.goto("/");
+    // A title whose neighbouring letters land on different lines has broken mid-word.
+    const broken = await page.locator("#projects .home-card-link").evaluateAll((links) =>
+      links
+        .filter((link) => {
+          const text = link.firstChild;
+          if (!text || text.nodeType !== Node.TEXT_NODE) return false;
+          const tops: number[] = [];
+          for (let i = 0; i < (text as Text).length; i++) {
+            const range = document.createRange();
+            range.setStart(text, i);
+            range.setEnd(text, i + 1);
+            tops.push(Math.round(range.getBoundingClientRect().top));
+          }
+          const chars = (text as Text).data;
+          return [...chars].some((c, i) => i > 0 && /\S/.test(c) && /\S/.test(chars[i - 1]) && tops[i] !== tops[i - 1]);
+        })
+        .map((link) => link.textContent),
+    );
+    expect(broken, `at ${width}px`).toEqual([]);
+  }
+});
+
+test("links in About to other sites open in a new tab", async ({ page }) => {
+  await page.goto("/");
+  const external = page.locator('#about a[href^="http"]');
+  expect(await external.count()).toBeGreaterThan(0);
+  for (const link of await external.all()) {
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", /noopener/);
+  }
+});
+
+test("About and Contact in the nav scroll to their sections, past the pinned film and exploded view", async ({
   page,
 }) => {
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main navigation" });
-  for (const [label, href] of NAV.filter(([, href]) => href !== "#contact")) {
+  for (const [label, id] of [
+    ["About", "about"],
+    ["Contact", "contact"],
+  ] as const) {
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await nav.getByRole("link", { name: label, exact: true }).click();
-    await expect
-      .poll(
-        () =>
-          page.evaluate(
-            (id) => Math.round(document.getElementById(id)!.getBoundingClientRect().top),
-            href.slice(1),
-          ),
-        { timeout: 20000 },
-      )
-      .toBeLessThanOrEqual(40);
-    expect(
-      await page.evaluate(
-        (id) => document.getElementById(id)!.getBoundingClientRect().top,
-        href.slice(1),
-      ),
-    ).toBeGreaterThanOrEqual(-2);
+    // Contact is the last section, so the page can end before it reaches the top.
+    const landed = async () => {
+      const { top, atEnd, viewport } = await sectionPosition(page, id);
+      return top >= -2 && (atEnd ? top < viewport : top <= 40);
+    };
+    await expect.poll(landed, { timeout: 20000 }).toBe(true);
   }
 });
 
 // The server HTML has the short static layout, so the browser scrolls a fragment link there.
 // After hydration the film (480vh) and the exploded view (260vh) switch to their scroll-driven
 // heights and the page grows by thousands of pixels. The target has to follow.
-async function deepLinkPosition(page: Page, id: string) {
-  return page.evaluate((id) => {
-    const top = document.getElementById(id)!.getBoundingClientRect().top;
-    const atEnd = scrollY + innerHeight >= document.documentElement.scrollHeight - 2;
-    return { top, atEnd, viewport: innerHeight };
-  }, id);
-}
-
-for (const id of ["ftc", "robopet", "cad", "projects", "playground", "about", "contact"]) {
+for (const id of ["ftc", "robopet", "projects", "about", "contact"]) {
   test(`opening /#${id} lands on that section once the page has hydrated`, async ({ page }) => {
     await page.goto(`/#${id}`);
     // Without this the test would pass on the short layout it is meant to catch.
     await expect(page.locator("#robopet")).toHaveAttribute("data-mode", "scrub");
     await page.waitForTimeout(3000);
-    const { top, atEnd, viewport } = await deepLinkPosition(page, id);
+    const { top, atEnd, viewport } = await sectionPosition(page, id);
     expect(top).toBeGreaterThanOrEqual(-2);
     // The last section cannot reach the top when the page ends first.
     if (atEnd) expect(top).toBeLessThan(viewport);
@@ -642,10 +499,10 @@ test("a deep link still lands with reduced motion, where the layout does not cha
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/#cad");
+  await page.goto("/#projects");
   await expect(page.locator("#robopet")).toHaveAttribute("data-mode", "static");
   await page.waitForTimeout(1500);
-  const { top } = await deepLinkPosition(page, "cad");
+  const { top } = await sectionPosition(page, "projects");
   expect(top).toBeGreaterThanOrEqual(-2);
   expect(top).toBeLessThan(100);
 });
@@ -671,10 +528,10 @@ test("scrolling right after a deep link opens is not pulled back to the target",
   await page.waitForTimeout(3000);
   expect(Math.abs((await page.evaluate(() => scrollY)) - settled)).toBeLessThanOrEqual(2);
   // The wheel moved the page up from the target, so the target sits below its anchored spot.
-  expect((await deepLinkPosition(page, "about")).top).toBeGreaterThan(400);
+  expect((await sectionPosition(page, "about")).top).toBeGreaterThan(400);
 });
 
-test("metadata, social card, icons, and internal link targets resolve", async ({
+test("metadata, social card, icons, sitemap, and internal link targets resolve", async ({
   page,
   request,
 }) => {
@@ -683,6 +540,10 @@ test("metadata, social card, icons, and internal link targets resolve", async ({
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
     /class of 2028/,
+  );
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://www.arya-vora.org",
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
@@ -706,22 +567,34 @@ test("metadata, social card, icons, and internal link targets resolve", async ({
         .filter((hash) => !document.getElementById(hash.slice(1))),
     );
   expect(brokenAnchors).toEqual([]);
+
+  // The sitemap lists the home page, the projects index and every project page, and nothing
+  // that is not a page.
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  const listed = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  expect(listed).toEqual([
+    "https://www.arya-vora.org/",
+    "https://www.arya-vora.org/projects",
+    ...PROJECTS.map((project) => `https://www.arya-vora.org/projects/${project.slug}`),
+  ]);
+  const robots = await (await request.get("/robots.txt")).text();
+  expect(robots).toContain("Sitemap: https://www.arya-vora.org/sitemap.xml");
 });
 
-for (const [theme, label] of THEMES) {
-  test(`axe finds no accessibility violations in the ${label} theme`, async ({ page }) => {
+for (const [theme, label] of [
+  ["mono", "B&W"],
+  ["violet", "Violet"],
+] as const) {
+  test(`axe finds no accessibility violations on the home page in the ${label} theme`, async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await arriveWithTheme(page, theme);
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-    const height = await page.evaluate(() => document.documentElement.scrollHeight);
-    for (let y = 0; y < height; y += 900) {
-      await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), y);
-    }
+    await scrollThrough(page, 900);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
-      .analyze();
+    const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(
       results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`),
     ).toEqual([]);
@@ -775,12 +648,10 @@ test("the theme starts in B&W, switches to Violet in place, and a reload keeps i
   // images, which take the violet duotone.
   await expect.poll(surface).toBe("rgb(7, 7, 12)");
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#07070c");
-  for (const id of ["ftc", "cad", "projects"]) {
-    const image = page.locator(`#${id} img.theme-tint`).first();
-    expect(await image.evaluate((img) => getComputedStyle(img).filter), id).toContain(
-      "av-duotone-violet",
-    );
-  }
+  const preview = page.locator("#projects img.theme-tint").first();
+  expect(await preview.evaluate((img) => getComputedStyle(img).filter)).toContain(
+    "av-duotone-violet",
+  );
 
   await page.reload();
   expect(await firstTheme()).toBe("violet");
@@ -805,12 +676,12 @@ test("the theme starts in B&W, switches to Violet in place, and a reload keeps i
 test("every showcase image takes the theme tint", async ({ page }) => {
   await page.goto("/");
   const untinted = await page
-    .locator("#ftc img, #cad img, #projects img, .film-photo img")
+    .locator("#projects img, .film-photo img")
     .evaluateAll((images) =>
       images.filter((img) => !img.classList.contains("theme-tint")).map((img) => img.getAttribute("src")),
     );
   expect(untinted).toEqual([]);
-  expect(await page.locator("img.theme-tint").count()).toBeGreaterThanOrEqual(20);
+  expect(await page.locator("img.theme-tint").count()).toBeGreaterThanOrEqual(PREVIEWED.length);
 });
 
 // ---------------------------------------------------------------------------------------
@@ -830,10 +701,11 @@ const themeButtons = (page: Page) => {
   };
 };
 
-// The meta element browsers read the toolbar color from: the first theme-color in tree order.
-// A visitor who arrives on Violet can end up with a second, stale one after hydration (React
-// does not recognise the server's meta once the inline script has recolored it, and adds its
-// own), which no browser reads while the first is right.
+// The meta element browsers read the toolbar color from. There is exactly one theme-color tag, at
+// every moment after the page loads. (React cannot hydrate the server's tag once the inline script
+// has recolored it, so it adds its own; syncThemeColorMeta in src/lib/theme.ts takes the server's
+// out and recolors React's the moment it lands. A browser that read the last tag, or the first
+// after a change of head order, would otherwise show a black toolbar in Violet.)
 const toolbarColor = (page: Page) => page.locator('meta[name="theme-color"]').first();
 
 // React puts __reactProps$ on a DOM node when it hydrates it, so this is true once the nav is
@@ -931,7 +803,7 @@ test("the theme switch works, and reports the right state, before the page hydra
 
 test("a returning Violet visitor keeps the toolbar color in step with the switch after hydration", async ({
   page,
-}, testInfo) => {
+}) => {
   await arriveWithTheme(page, "violet");
   await page.goto("/");
   await whenHydrated(page);
@@ -945,21 +817,51 @@ test("a returning Violet visitor keeps the toolbar color in step with the switch
   await violet.click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "violet");
   await expect(toolbarColor(page)).toHaveAttribute("content", "#07070c");
-  // Known gap, kept visible without failing the run: a second theme-color meta is left behind.
-  const colors = await page
-    .locator('meta[name="theme-color"]')
-    .evaluateAll((metas) => metas.map((meta) => meta.getAttribute("content")));
-  if (colors.length > 1) {
-    testInfo.annotations.push({
-      type: "duplicate theme-color meta",
-      description: `After hydration a Violet arrival has ${colors.join(" and ")}; browsers read the first.`,
-    });
-  }
+  // One tag, not two: a Violet arrival used to keep the server's tag (recolored) and React's
+  // (#000000) side by side.
+  await expect(page.locator('meta[name="theme-color"]')).toHaveCount(1);
+  expect(await themeColorTags(page)).toEqual(["#07070c"]);
 });
 
-test("the theme still switches, before and after hydration, when storage is blocked", async ({ page }) => {
+// The same on the other routes a visitor can arrive on (the projects index and a project page share
+// a layout with the home page but not its tree; /games has its own header), on a hard load, once
+// the page is hydrated and again a moment later, and as the switch is used.
+for (const path of ["/", "/projects", "/projects/tally", "/games"]) {
+  test(`a hard load of ${path} in Violet has one theme-color tag, #07070c, that follows the switch`, async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await arriveWithTheme(page, "violet");
+    await page.goto(path);
+    await whenSwitchIsLive(page);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "violet");
+    await expect.poll(() => themeColorTags(page)).toEqual(["#07070c"]);
+    // It stays one: a second tag that arrives late (a streamed boundary, a slow chunk) is caught too.
+    await page.waitForTimeout(1500);
+    expect(await themeColorTags(page)).toEqual(["#07070c"]);
+
+    const group = page.getByRole("group", { name: "Theme" }).first();
+    await group.getByRole("button", { name: "B&W", exact: true }).click();
+    await expect.poll(() => themeColorTags(page)).toEqual(["#000000"]);
+    await group.getByRole("button", { name: "Violet", exact: true }).click();
+    await expect.poll(() => themeColorTags(page)).toEqual(["#07070c"]);
+    expect(errors).toEqual([]);
+  });
+}
+
+test("the theme still switches, before and after hydration, when storage is blocked", async ({
+  page,
+  browserName,
+}) => {
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => {
+    // The film sits right under the Reaper highlight, so its first pack (or a frame decoded from
+    // a blob URL) is often still loading when this test reloads. WebKit reports a same-origin
+    // request that a reload cancels as an access-control failure. The page catches the
+    // rejection; the reload ended the request, not the page.
+    if (browserName === "webkit" && /due to access control checks\.$/.test(error.message)) return;
+    errors.push(error.message);
+  });
   // The way a private window or a "block all cookies" setting looks to a page: merely reading
   // window.localStorage throws.
   await page.addInitScript(() => {
@@ -1121,98 +1023,49 @@ test("a theme chosen in one tab reaches the other tabs", async ({ context }) => 
   await expect(b.mono).toHaveAttribute("aria-pressed", "true");
 });
 
-// Reaper is a 3D model where the browser has a hardware GPU, and a still rendered from the
-// same model everywhere else. Either way each dock shows the robot. The spec rows are buttons
-// that choose a part of the model only where the model draws; elsewhere they are plain terms,
-// since a control that changes nothing would only mislead. The live turn to a part is covered
-// in reaper-live.spec.ts, on a software GPU the page is told to use.
-
-// The probe the page makes before it builds the model (src/components/robopet/gpu.ts): no WebGL
-// or a software rasteriser keeps the stills, so the spec rows stay plain.
-async function drawsReaperLive(page: Page) {
-  return page.evaluate(() => {
-    try {
-      const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
-      if (!gl) return false;
-      const info = gl.getExtension("WEBGL_debug_renderer_info");
-      const name = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? "");
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
-      return !/swiftshader|llvmpipe|software|basic render/i.test(name);
-    } catch {
-      return false;
-    }
-  });
-}
-
-test("the Reaper model shows in #ftc, live or as its still, and a spec row selects a part", async ({
-  page,
-  request,
-}) => {
+// Reaper on the home page is one 3D dock: the model where the browser has a hardware GPU, and a
+// still rendered from the same model everywhere else. The spec rows that pick a part of it are
+// on /projects/reaper (projects.spec.ts), and the live turn is in reaper-live.spec.ts.
+test("the Reaper model shows in #ftc, live or as its still", async ({ page, request }) => {
   await page.goto("/");
   const ftc = page.locator("#ftc");
-  const docks = ftc.locator("[data-reaper-dock]");
-  await expect(docks).toHaveCount(2);
-  await docks.first().scrollIntoViewIfNeeded();
-  for (const dock of await docks.all()) {
-    await dock.scrollIntoViewIfNeeded();
-    await expect(dock).toHaveAttribute("role", "img");
-    await expect(dock).toHaveAttribute("aria-label", /Reaper/);
-    const box = await dock.boundingBox();
-    expect(box!.width).toBeGreaterThan(150);
-    expect(box!.height).toBeGreaterThan(150);
-    const shows = await dock.evaluate((element) => {
-      const still = element.querySelector<HTMLElement>(".reaper-still")!;
-      const style = getComputedStyle(still);
-      return {
-        canvas: !!element.querySelector("canvas.reaper-canvas") && element.hasAttribute("data-live"),
-        still: style.backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1] ?? "",
-        opacity: Number(style.opacity),
-      };
-    });
-    // The still is always the theme's own, so it can stand in the moment the canvas leaves.
-    expect(shows.still).toMatch(/\/ftc\/reaper-model-mono\.webp$/);
-    if (!shows.canvas) expect(shows.opacity).toBe(1);
+  const dock = ftc.locator("[data-reaper-dock]");
+  await expect(dock).toHaveCount(1);
+  await dock.scrollIntoViewIfNeeded();
+  await expect(dock).toHaveAttribute("role", "img");
+  await expect(dock).toHaveAttribute("aria-label", /Reaper/);
+  const box = await dock.boundingBox();
+  expect(box!.width).toBeGreaterThan(150);
+  expect(box!.height).toBeGreaterThan(150);
+  // The still is always the theme's own, so it can stand in the moment the canvas leaves.
+  await expect
+    .poll(() =>
+      dock.evaluate((element) => {
+        const style = getComputedStyle(element.querySelector<HTMLElement>(".reaper-still")!);
+        return style.backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1] ?? "";
+      }),
+    )
+    .toMatch(/\/ftc\/reaper-model-mono\.webp$/);
+  const live = await dock.evaluate(
+    (element) => !!element.querySelector("canvas.reaper-canvas") && element.hasAttribute("data-live"),
+  );
+  if (!live) {
+    expect(
+      await dock.evaluate((element) =>
+        Number(getComputedStyle(element.querySelector(".reaper-still")!).opacity),
+      ),
+    ).toBe(1);
+  }
+  if (!(await drawsLive(page))) {
+    // Stills only: nothing claims the robot can be turned.
+    await expect(ftc).not.toHaveAttribute("data-reaper-live");
+    await expect(ftc.locator(".reaper-hint")).toBeHidden();
   }
   const still = await request.get("/ftc/reaper-model-mono.webp");
   expect(still.status()).toBe(200);
   expect(still.headers()["content-type"]).toContain("image/webp");
   expect((await request.get("/ftc/reaper-model-violet.webp")).status()).toBe(200);
-
-  const specs = ftc.locator("dl.ftc-specs");
-  const terms = ["Shooter", "Aiming", "Intake", "Protection", "Code"];
-  await expect(specs.locator(".ftc-spec-key")).toHaveText(terms);
-  if (!(await drawsReaperLive(page))) {
-    // Stills only: the terms are plain text, nothing claims to show a part, nothing lights up.
-    await expect(specs.getByRole("button")).toHaveCount(0);
-    await expect(specs.locator("[aria-pressed]")).toHaveCount(0);
-    await expect(specs.locator("[data-active]")).toHaveCount(0);
-    await expect(ftc).not.toHaveAttribute("data-reaper-live");
-    await expect(ftc.locator("canvas.reaper-canvas")).toHaveCount(0);
-    return;
-  }
-  const row = (name: string) => specs.getByRole("button", { name, exact: true });
-  // The rows become buttons once the first build succeeds, which loads three.js and the model.
-  await expect(specs.getByRole("button")).toHaveCount(5, { timeout: 45000 });
-  await expect(specs.locator("button[aria-pressed='true']")).toHaveCount(0);
-  await row("Shooter").click();
-  await expect(row("Shooter")).toHaveAttribute("aria-pressed", "true");
-  await expect(specs).toHaveAttribute("data-active", "shooter");
-  // One part at a time.
-  await row("Aiming").click();
-  await expect(row("Aiming")).toHaveAttribute("aria-pressed", "true");
-  await expect(row("Shooter")).toHaveAttribute("aria-pressed", "false");
-  await expect(specs.locator("button[aria-pressed='true']")).toHaveCount(1);
-  await expect(specs).toHaveAttribute("data-active", "aiming");
-  // A second press clears it, and with the pointer and focus gone nothing stays lit.
-  await row("Aiming").click();
-  await expect(row("Aiming")).toHaveAttribute("aria-pressed", "false");
-  await page.mouse.move(0, 0);
-  await row("Aiming").blur();
-  await expect(specs).not.toHaveAttribute("data-active");
 });
-
-const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"];
 
 // Document y of a point `fraction` of the way through a section's own scroll length.
 async function insideSection(page: Page, id: string, fraction: number) {
@@ -1313,30 +1166,6 @@ test("axe finds no violations in Violet with motion on, and after the cross-fade
   expect(await violations(), "B&W after the switch, exploded at 0.4").toEqual([]);
 });
 
-// Resolves once the page has not scrolled for twenty frames. The page scrolls smoothly, so a
-// control focused or scrolled to from far away is still being carried there for a moment. A
-// smooth scroll also stalls while the main thread is busy (the exploded view builds its scene as
-// it comes near), and Playwright can find a button steady in that pause and click where it was.
-async function scrollIsStill(page: Page) {
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        let y = scrollY;
-        let still = 0;
-        const tick = () => {
-          if (scrollY === y) still += 1;
-          else {
-            y = scrollY;
-            still = 0;
-          }
-          if (still >= 20) resolve();
-          else requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }),
-  );
-}
-
 test("keyboard focus reaches the film link and then the part buttons, on screen and uncovered", async ({
   page,
   browserName,
@@ -1399,29 +1228,6 @@ test("exploded part buttons set aria-pressed and fill the live detail panel", as
   await page.keyboard.press("Space");
   await expect(keyed).toHaveAttribute("aria-pressed", "false");
   await expect(detail.getByRole("heading", { level: 3 })).toHaveCount(0);
-});
-
-test("the season ledger opens from the keyboard and lists every event", async ({ page }) => {
-  await page.goto("/");
-  const all = page.locator("#ftc details.ftc-all");
-  const summary = all.locator("summary");
-  // Closed on load: the short list of highlights leads, and the tables are not in the way.
-  await expect(all).not.toHaveAttribute("open", "");
-  await expect(all.locator("table.ftc-ledger").first()).toBeHidden();
-
-  const announced = Number(((await summary.textContent()) ?? "").match(/\d+/)?.[0]);
-  expect(announced).toBeGreaterThanOrEqual(21);
-
-  await summary.focus();
-  await page.keyboard.press("Enter");
-  await expect(all).toHaveAttribute("open", "");
-  await expect(all.locator("table.ftc-ledger")).toHaveCount(3);
-  // The heading promises a count; the tables have to deliver exactly that many rows.
-  await expect(all.locator("table.ftc-ledger tbody tr")).toHaveCount(announced);
-  await expect(all.locator("table.ftc-ledger tbody tr").last()).toBeVisible();
-
-  await page.keyboard.press("Space");
-  await expect(all).not.toHaveAttribute("open", "");
 });
 
 test("turning on reduced motion after load puts the film and exploded view into their static layouts", async ({
@@ -1493,15 +1299,20 @@ test("the hero title is painted once and never split or hidden by a script", asy
   await expect(page.locator(".split-line").first()).toBeAttached();
 });
 
-test("the footer repeats the section links and a way back to the top", async ({ page }) => {
+test("the footer repeats the header links and a way back to the top", async ({ page }) => {
   await page.goto("/");
   const footer = page.getByRole("navigation", { name: "Footer navigation" });
-  await expect(footer.getByRole("link")).toHaveCount(NAV.length + 1);
-  for (const [label, href] of [...NAV, ["Top", "#top"]]) {
+  // On the home page, Home and Top would be the same place, so Home is left out.
+  const links = [...NAV.filter(([label]) => label !== "Home"), ["Top", "#top"]] as const;
+  await expect(footer.getByRole("link")).toHaveCount(links.length);
+  for (const [label, href] of links) {
     await expect(footer.getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href);
   }
   // From the end of the page, a footer link lands on its section like the header does.
-  for (const [label, id] of [["CAD", "cad"], ["Top", "top"]]) {
+  for (const [label, id] of [
+    ["About", "about"],
+    ["Top", "top"],
+  ]) {
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
     await footer.getByRole("link", { name: label, exact: true }).click();
     // Scrolling up from the end passes through the section, so wait for the page to stop on it.
@@ -1516,44 +1327,6 @@ test("the footer repeats the section links and a way back to the top", async ({ 
   }
 });
 
-test("the path lab is inert until the page is live, and shows no dead controls without JavaScript", async ({
-  page,
-  browser,
-  baseURL,
-}) => {
-  await page.goto("/");
-  // Hydrated: the grid and the controls take part in the page again.
-  await expect(page.locator("#playground .path-grid")).not.toHaveAttribute("inert");
-  await expect(page.locator("#playground .lab-controls")).not.toHaveAttribute("inert");
-
-  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
-  const bare = await context.newPage();
-  await bare.goto("/");
-  const lab = bare.locator("#playground");
-  // The explanation and the source stay. The 49 buttons, the two controls and the status line
-  // that told a visitor to select cells would do nothing, so none of them is shown.
-  await expect(lab.getByRole("heading", { level: 2, name: "Breadth-first search" })).toBeVisible();
-  await expect(lab.locator(".lab-nojs")).toBeVisible();
-  await expect(lab.locator(".lab-nojs")).toContainText("JavaScript");
-  await expect(lab.getByRole("link", { name: "Source on GitHub" })).toBeVisible();
-  await expect(lab.getByRole("button")).toHaveCount(0);
-  await expect(lab.locator(".path-cell:visible")).toHaveCount(0);
-  // Every dead control is also inert in the markup, for browsers that ignore the media query.
-  await expect(lab.locator(".path-grid")).toHaveAttribute("inert", "");
-  await expect(lab.locator(".lab-controls")).toHaveAttribute("inert", "");
-
-  // The Copy address button writes to the clipboard from a script, so without one it would
-  // be a button that does nothing. The mailto link above it is the way to write in.
-  const contact = bare.locator("#contact");
-  await expect(contact.getByRole("link", { name: "aryavora621@gmail.com" })).toBeVisible();
-  await expect(contact.getByRole("button")).toHaveCount(0);
-  await expect(contact.locator(".email-actions")).toBeHidden();
-  await expect(contact.locator(".copy-feedback")).toBeHidden();
-  // No control on the whole page is a button, since every button here needs a script.
-  await expect(bare.locator("main button:visible")).toHaveCount(0);
-  await context.close();
-});
-
 test("with JavaScript on, the Copy address button is shown", async ({ page }) => {
   await page.goto("/");
   await expect(
@@ -1561,7 +1334,37 @@ test("with JavaScript on, the Copy address button is shown", async ({ page }) =>
   ).toBeVisible();
 });
 
-test("film packs and images are cached for repeat visits, and the roboPet stills stay short", async ({
+test("core content and links remain visible without JavaScript, with no dead controls", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Arya Vora");
+  await expect(page.locator("#ftc").getByRole("heading", { level: 2, name: "Reaper" })).toBeVisible();
+  await expect(page.locator("#robopet .film-beat")).toHaveCount(4);
+  await expect(page.locator("#projects .home-card")).toHaveCount(PREVIEWED.length);
+  await expect(page.locator("#projects .home-card img").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "The full Reaper page" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "The full roboPet page" })).toBeVisible();
+
+  // The Copy address button writes to the clipboard from a script, so without one it would
+  // be a button that does nothing. The mailto link above it is the way to write in.
+  const contact = page.locator("#contact");
+  await expect(contact.getByRole("link", { name: "aryavora621@gmail.com" })).toHaveAttribute(
+    "href",
+    /^mailto:/,
+  );
+  await expect(contact.getByRole("button")).toHaveCount(0);
+  await expect(contact.locator(".email-actions")).toBeHidden();
+  await expect(contact.locator(".copy-feedback")).toBeHidden();
+  // No control on the whole page is a button, since every button here needs a script.
+  await expect(page.locator("main button:visible")).toHaveCount(0);
+  await context.close();
+});
+
+test("film packs and images are cached for repeat visits, and the pages and roboPet stills stay short", async ({
   request,
 }) => {
   const cache = async (path: string) => (await request.get(path)).headers()["cache-control"] ?? "";
@@ -1570,7 +1373,10 @@ test("film packs and images are cached for repeat visits, and the roboPet stills
   const pack = await request.get(`${FILM_FRAMES.base}/lg-0.bin`);
   expect(pack.status()).toBe(200);
   expect(pack.headers()["cache-control"]).toMatch(/max-age=31536000.*immutable/);
-  for (const path of ["/cad/ender5corexy-topsystem.webp", "/ftc/reaper.webp", "/projects/smartinvest.webp"]) {
+  const covers = PROJECTS.map((project) => project.cover.src).filter((src) =>
+    /^\/(cad|ftc|projects)\//.test(src),
+  );
+  for (const path of ["/cad/ender5corexy-topsystem.webp", "/ftc/reaper.webp", ...covers]) {
     const header = await cache(path);
     const maxAge = Number(header.match(/max-age=(\d+)/)?.[1]);
     expect(maxAge, `${path}: ${header}`).toBeGreaterThanOrEqual(86400);
@@ -1584,21 +1390,10 @@ test("film packs and images are cached for repeat visits, and the roboPet stills
     expect(maxAge, `${path}: ${header}`).toBeLessThanOrEqual(86400);
     expect(header).not.toContain("immutable");
   }
-});
-
-test("core content and links remain visible without JavaScript", async ({
-  browser,
-  baseURL,
-}) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
-  const page = await context.newPage();
-  await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Arya Vora");
-  await expect(page.locator(".project-card")).toHaveCount(6);
-  await expect(page.locator("#ftc table.ftc-ledger")).toHaveCount(3);
-  await expect(page.locator("#robopet .film-beat")).toHaveCount(4);
-  await expect(
-    page.locator("#contact").getByRole("link", { name: "aryavora621@gmail.com" }),
-  ).toHaveAttribute("href", /^mailto:/);
-  await context.close();
+  // /projects is a page as well as a folder of images: its HTML must not be kept by the browser
+  // for a day, or a deploy would not show up on the next visit.
+  for (const path of ["/", "/projects", "/projects/reaper"]) {
+    const header = await cache(path);
+    expect(header, path).not.toMatch(/(^|[ ,])max-age=[1-9]/);
+  }
 });

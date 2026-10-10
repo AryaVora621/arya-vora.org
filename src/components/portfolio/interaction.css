@@ -1,7 +1,7 @@
 /*
   Small pieces that belong to the interaction layer rather than to a section: the hero
-  title's entrance, the footer's way back to a section, and the path lab and the Copy address
-  button without JavaScript.
+  title's entrance, the footer's way back to a section, and the Copy address button without
+  JavaScript.
   Colors come from the tokens in portfolio.css; nothing here sets a color of its own.
 */
 
@@ -20,7 +20,7 @@
   }
 }
 
-/* Footer: the six section links and a way back to the top. The links take the look of
+/* Footer: the header links and a way back to the top. The links take the look of
    .footer-bottom a from portfolio.css. */
 .footer-nav ul {
   display: flex;
@@ -35,30 +35,12 @@
     column-gap: 20px;
   }
 }
-
-/* Path lab. The grid and its buttons are inert until the page is live (see Playground.tsx).
-   With scripting off they would never wake up, so they are taken out of the layout and
-   the lab keeps its explanation and the link to the source. */
-.lab-nojs {
-  margin-top: 16px;
-  max-width: 34em;
-  font-size: 17px;
-  line-height: 1.6;
-}
-@media (scripting: none) {
-  .playground-section .lab-card {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "copy"
-      "controls";
-    grid-template-rows: auto;
-  }
-  .lab-card .lab-legend,
-  .lab-card .path-grid,
-  .lab-card .lab-controls,
-  .lab-card .lab-status {
-    display: none;
-  }
+/* "Top" is the shortest word here, about 22px. Its hit area reaches 12px past each side of the
+   word, into the gaps beside it (20px or more, so it never meets a neighbour's), which makes it
+   at least 44px wide; the negative margins keep the word where it was. */
+.footer-nav .footer-top {
+  padding-inline: 12px;
+  margin-inline: -12px;
 }
 
 /* Contact. The copy button and its status line need a script: with scripting off the button

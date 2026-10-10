@@ -34,7 +34,7 @@ for (const [name, viewport] of [
     await scrollTo(page, film.top + span * p + 1);
     await page.screenshot({ path: `${out}/${name}-film-${String(Math.round(p * 100)).padStart(2, "0")}.png` });
   }
-  for (const id of ["projects", "playground", "about", "contact"]) {
+  for (const id of ["ftc", "projects", "about", "contact"]) {
     const top = await page.evaluate((i) => document.getElementById(i)?.offsetTop ?? 0, id);
     await scrollTo(page, top - 40);
     await page.screenshot({ path: `${out}/${name}-${id}.png` });

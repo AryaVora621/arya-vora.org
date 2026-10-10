@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "playwright test",
-    "data:github": "node scripts/fetch-github.mjs"
+    "test": "playwright test"
   },
   "dependencies": {
     "@types/three": "^0.185.4",

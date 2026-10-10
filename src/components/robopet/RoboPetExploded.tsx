@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { onThemeChange, themeColor } from "@/lib/theme";
@@ -14,11 +14,21 @@ import { useScrubStage } from "./useScrubStage";
 // part ids; the four legs are one entry. Each line is checked against the roboPet README and
 // build log (devlogs/DEVLOG.md, Days 1 to 8). The film beside this section already covers
 // what each subsystem does, and its outro says once how far the build has got, so a part
-// panel adds something the film does not: why the part is there, a size or rating, or what
-// went wrong with it. The lede says once that the model is the planned design, so the panels
-// do not repeat it. `backticks` mark part numbers, code and dates, which render in the mono
-// face. Measurements keep a no-break space before the unit because the mono face gives a
-// decimal point a full cell.
+// panel adds something the film does not: why the part is there, a size or rating, or, on the
+// home page, what went wrong with it. The home page has no build log, so `detail` carries those
+// incidents there. /projects/robopet has the build log a little further down, which tells each
+// of them with its date, so that page passes `brief` and a part with a `brief` line shows that
+// instead: its role or a rating, and no incident. The lede says once that the model is the
+// planned design, so the panels do not repeat it. `backticks` mark part numbers, code and
+// dates, which render in the mono face. Measurements keep a no-break space before the unit
+// because the mono face gives a decimal point a full cell.
+type Part = {
+  key: string;
+  label: string;
+  ids: readonly string[];
+  detail: string;
+  brief?: string;
+};
 const PARTS = [
   {
     key: "shell",
@@ -34,9 +44,11 @@ const PARTS = [
     label: "OLED face",
     ids: ["face"],
     // Day 5: second I2C bus (I2C0, GP8 and GP9) for the SSD1306, the IMU on I2C1; a 1,024-byte
-    // frame timed out until it was written in 256-byte chunks; "128x64".
+    // frame timed out until it was written in 256-byte chunks; "128x64". The chunk story is
+    // the build log's 2026-07-06 entry.
     detail:
       "A 128 by 64 `SSD1306` on its own I2C bus, apart from the IMU. A full frame timed out on the breadboard until I wrote it in 256-byte chunks.",
+    brief: "A 128 by 64 `SSD1306` on its own I2C bus, apart from the IMU.",
   },
   {
     key: "camera",
@@ -46,15 +58,21 @@ const PARTS = [
     // processes": camera, web server, Bluetooth daemon.
     detail:
       "Camera for the Zero 2W, which runs full Linux on four cores. The camera, the web dashboard and the Bluetooth controller link are meant to run there together. The Pico keeps the servo loop to itself.",
+    // The film's Controllers beat already gives the Pico the real-time loop.
+    brief:
+      "Camera for the Zero 2W, which runs full Linux on four cores. The camera, the web dashboard and the Bluetooth controller link are meant to run there together.",
   },
   {
     key: "electronics",
     label: "Pico and Zero 2W",
     ids: ["electronics"],
     // Day 4: Zero GPIO 14 and 15 to Pico GP1 and GP0; TX was first wired to TX; core_freq=250
-    // added to the Zero's config to stop the mini UART baud rate drifting.
+    // added to the Zero's config to stop the mini UART baud rate drifting. The crossed wires are
+    // the build log's 2026-07-04 entry.
     detail:
       "Zero GPIO 14 and 15 wire to Pico GP1 and GP0. Wired straight through, the link did not work until TX and RX were crossed. The Zero also needed `core_freq=250` to stop its UART baud rate drifting.",
+    brief:
+      "Zero GPIO 14 and 15 wire to Pico GP1 and GP0. The Zero needed `core_freq=250` to stop its UART baud rate drifting.",
   },
   {
     key: "power",
@@ -72,9 +90,12 @@ const PARTS = [
     // Day 7 (DEVLOG): esp32_servo_tester, a web page with 0, 45, 90, 135 and 180 degree buttons,
     // run at 5 to 6 V, built to check each MG996R before it is mounted. It worked on the first
     // servo. Connecting the second, Arya swapped its VCC and GND while it was powered from the
-    // ESP32, and the ESP32 died. (The servo rating story is in the film's Power beat.)
+    // ESP32, and the ESP32 died. (The servo rating story is in the film's Power beat.) The
+    // tester and the swapped wires are the build log's 2026-07-09 entry. The brief line: the
+    // README's hardware table (PLA chassis and legs) and the Day 8 MVP chassis, 2 DOF a leg.
     detail:
-      "Printed PLA legs. I built an ESP32 bench tester, a web page with buttons for 0, 45, 90, 135 and 180 degrees, to check each servo at 5 to 6\u00a0V before mounting it. It worked on the first servo. Then I swapped the power and ground wires on the second one and killed the ESP32.",
+      "PLA legs. I built an ESP32 bench tester, a web page with buttons for 0, 45, 90, 135 and 180 degrees, to check each servo at 5 to 6\u00a0V before mounting it. It worked on the first servo. Then I swapped the power and ground wires on the second one and killed the ESP32.",
+    brief: "PLA legs, two `MG996R` servos each on the MVP frame.",
   },
   {
     key: "lower",
@@ -83,10 +104,13 @@ const PARTS = [
     // The model's shell-bottom is the concept render's lower half-tube. It is not the printed
     // chassis (README Day 8, 2026-07-10 and 11). The film outro states once that the chassis is
     // printed and partly assembled, so this panel neither repeats nor cross-refers it.
-    detail: "The lower half of the shell, where the boards and the battery sit.",
+    detail: "The lower half-tube of the concept shell, as the reference render draws it.",
   },
-] as const;
+] as const satisfies readonly Part[];
 type PartKey = (typeof PARTS)[number]["key"];
+
+// The panel's text for a part: its `brief` line on the project page, where there is one.
+const textOf = (part: Part, brief: boolean) => (brief && part.brief) || part.detail;
 
 const EXPLODE_END = 0.55;
 
@@ -101,7 +125,33 @@ const FOCUS_FILL = 0.55;
 const FOCUS_MIN_DIST = 0.42;
 const GHOST_OPACITY = 0.07;
 
-export function RoboPetExploded() {
+// On a phone the panel rises from the buttons over the lower half of the stage (robopet.css),
+// and on a short phone a long panel reaches up into the model. While a part is selected there,
+// the camera raises it (and moves back, if it is too tall for the room) so that it ends PANEL_GAP
+// above the panel's top line and, while the heading is still on screen, below the heading. Same
+// breakpoint as the phone layout in robopet.css.
+const PHONE = "(max-width: 760px)";
+const PANEL_GAP = 16;
+
+/** The detail panel's top line in canvas pixels, or null while no part is selected. */
+function panelTopOf(section: HTMLElement | null, mount: HTMLElement | null) {
+  const body = section?.querySelector(".exploded-detail-body");
+  if (!body || !mount) return null;
+  return body.getBoundingClientRect().top - mount.getBoundingClientRect().top;
+}
+
+/** The heading's bottom line in canvas pixels, or null while it is hidden (robopet.css). */
+function headingBottomOf(section: HTMLElement | null, mount: HTMLElement | null) {
+  const heading = section?.querySelector(".exploded-copy h2");
+  if (!heading || !mount || getComputedStyle(heading).visibility === "hidden") return null;
+  return heading.getBoundingClientRect().bottom - mount.getBoundingClientRect().top;
+}
+
+// `brief` is set by /projects/robopet (its block's props in src/data/projects/robopet.ts).
+// ProjectBlocks also passes every custom block the project's `slug`, which this does not need.
+type RoboPetExplodedProps = { brief?: boolean; slug?: string };
+
+export function RoboPetExploded({ brief = false }: RoboPetExplodedProps = {}) {
   // Scroll-driven when motion is allowed and the viewport is tall enough to pin.
   const scrubStage = useScrubStage();
   const sectionRef = useRef<HTMLElement>(null);
@@ -119,6 +169,20 @@ export function RoboPetExploded() {
   const hydrated = useSyncExternalStore(subscribeNever, () => true, () => false);
   const highlightRef = useRef<(key: PartKey | null) => void>(() => {});
   const userPicked = useRef(false);
+  // Top of the detail panel, in canvas pixels, kept from the last part while the camera eases
+  // back out after a part is cleared. The scene reads it to keep a selected part above the
+  // panel on a phone, and is told to draw again whenever it moves.
+  const panelTopRef = useRef<number | null>(null);
+  const headingBottomRef = useRef<number | null>(null);
+  const redrawRef = useRef<() => void>(() => {});
+
+  // The panel is a new element for each part, so measure it once React has placed it and before
+  // the browser paints, so the first frame with the panel already has the model clear of it.
+  useLayoutEffect(() => {
+    panelTopRef.current = panelTopOf(sectionRef.current, mountRef.current) ?? panelTopRef.current;
+    headingBottomRef.current = headingBottomOf(sectionRef.current, mountRef.current);
+    redrawRef.current();
+  }, [active]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -248,6 +312,13 @@ export function RoboPetExploded() {
         partRadius.set(part.key, box.getBoundingSphere(new THREE.Sphere()).radius);
       });
       setRoboPetExplode(model, 0);
+      // Each part's meshes, for the phone's fit (below).
+      const partMeshes = new Map<PartKey, import("three").Mesh[]>();
+      meshParts.forEach((key, mesh) => {
+        if (!key) return;
+        if (!partMeshes.has(key)) partMeshes.set(key, []);
+        partMeshes.get(key)!.push(mesh);
+      });
       let focusTween: gsap.core.Tween | null = null;
       let highlighted: PartKey | null = null;
       const applyHighlight = (key: PartKey | null) => {
@@ -274,6 +345,9 @@ export function RoboPetExploded() {
       };
       highlightRef.current = applyHighlight;
 
+      // The stage's size and the shift that moves the model off the copy: right of the heading on
+      // a wide screen, up above the buttons on a narrow one. render() applies it.
+      const view = { w: 1, h: 1, x: 0, y: 0 };
       const resize = () => {
         const { clientWidth: w, clientHeight: h } = mount;
         if (!w || !h) return;
@@ -295,9 +369,42 @@ export function RoboPetExploded() {
           fits.exploded,
           assembledSphere.radius / Math.sin(Math.min(vFov * 0.5, hFov * usable * 0.7) / 2),
         );
-        camera.setViewOffset(w, h, portrait ? 0 : -w * 0.17, portrait ? h * 0.17 : 0, w, h);
+        Object.assign(view, { w, h, x: portrait ? 0 : -w * 0.17, y: portrait ? h * 0.17 : 0 });
+        // The buttons, and so the panel above them, sit at a fixed distance from the stage's
+        // bottom, so a new stage height moves the panel's top line too.
+        panelTopRef.current = panelTopOf(section, mount) ?? panelTopRef.current;
+        headingBottomRef.current = headingBottomOf(section, mount);
         render();
       };
+
+      // How far up and down the stage the part's meshes reach in the current shot, in pixels from
+      // the top, through each mesh's own box (tighter than one box around the whole part).
+      const corner = new THREE.Vector3();
+      const span = { top: 0, bottom: 0 };
+      const measureSpan = (key: PartKey) => {
+        pivot.updateWorldMatrix(true, true);
+        camera.updateMatrixWorld();
+        span.top = Infinity;
+        span.bottom = -Infinity;
+        for (const mesh of partMeshes.get(key) ?? []) {
+          const geometry = mesh.geometry;
+          if (!geometry.boundingBox) geometry.computeBoundingBox();
+          const { min, max } = geometry.boundingBox!;
+          for (let i = 0; i < 8; i++) {
+            corner
+              .set(i & 1 ? max.x : min.x, i & 2 ? max.y : min.y, i & 4 ? max.z : min.z)
+              .applyMatrix4(mesh.matrixWorld)
+              .project(camera);
+            const y = ((1 - corner.y) / 2) * view.h;
+            span.top = Math.min(span.top, y);
+            span.bottom = Math.max(span.bottom, y);
+          }
+        }
+        return span;
+      };
+      const phone = matchMedia(PHONE);
+      // The phone timeline fades the heading out with an inline opacity as the teardown starts.
+      const copy = section.querySelector<HTMLElement>(".exploded-copy");
 
       const lookAt = new THREE.Vector3();
       function render() {
@@ -325,11 +432,42 @@ export function RoboPetExploded() {
           const closest = Math.max(near, dist * FOCUS_MIN_DIST);
           dist = THREE.MathUtils.lerp(dist, Math.min(dist, closest), state.focus);
         }
-        camera.position.set(lookAt.x, lookAt.y + dist * 0.26, lookAt.z + dist);
-        camera.lookAt(lookAt);
-        camera.updateProjectionMatrix();
+        const place = () => {
+          camera.position.set(lookAt.x, lookAt.y + dist * 0.26, lookAt.z + dist);
+          camera.lookAt(lookAt);
+        };
+        place();
+        camera.setViewOffset(view.w, view.h, view.x, view.y, view.w, view.h);
+        // A phone with a part selected: keep the part clear of the panel that rises over the
+        // stage. Room is the band from the heading (while it shows; a short phone hides it, see
+        // robopet.css) or the stage's top to just above the panel. A part taller than that is
+        // first drawn smaller by moving the camera back (the drawn height goes as one over the
+        // distance), then the shot is raised until the part's lowest point clears the panel.
+        // Both scale with the focus ease, so the part glides up as the panel appears and
+        // settles back when it is cleared. Nothing moves for a part that already clears it.
+        const panelTop = panelTopRef.current;
+        if (motion && view.h > view.w && phone.matches && panelTop !== null && state.focus > 0 && focusKey) {
+          const headingBottom = headingBottomRef.current;
+          const shown = headingBottom === null ? 0 : Number(copy?.style.opacity || 1);
+          const top = PANEL_GAP + (headingBottom ?? 0) * shown;
+          const bottom = panelTop - PANEL_GAP;
+          let { top: partTop, bottom: partBottom } = measureSpan(focusKey);
+          // Twice, because the drawn height only roughly goes as one over the distance.
+          for (let pass = 0; pass < 2; pass++) {
+            const tall = (partBottom - partTop) / Math.max(bottom - top, 1);
+            if (tall <= 1) break;
+            dist *= 1 + (tall - 1) * state.focus;
+            place();
+            ({ top: partTop, bottom: partBottom } = measureSpan(focusKey));
+          }
+          const raise = Math.min(Math.max(0, partBottom - bottom), Math.max(0, partTop - top));
+          if (raise > 0) {
+            camera.setViewOffset(view.w, view.h, view.x, view.y + raise * state.focus, view.w, view.h);
+          }
+        }
         renderer.render(scene, camera);
       }
+      redrawRef.current = render;
 
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
@@ -417,6 +555,7 @@ export function RoboPetExploded() {
       }
 
       cleanup = () => {
+        redrawRef.current = () => {};
         mm?.revert();
         offTheme();
         resizeObserver.disconnect();
@@ -470,6 +609,7 @@ export function RoboPetExploded() {
       id="exploded"
       className="exploded"
       data-mode={live ? "scrub" : "static"}
+      data-part={active ?? undefined}
       aria-labelledby="exploded-title"
     >
       <div className="exploded-stage">
@@ -494,7 +634,7 @@ export function RoboPetExploded() {
             <div key={activePart.key}>
               <p className="exploded-tour-title">{activePart.label}</p>
               <p>
-                <PartText text={activePart.detail} />
+                <PartText text={textOf(activePart, brief)} />
               </p>
             </div>
           )}
@@ -534,7 +674,7 @@ export function RoboPetExploded() {
               <div key={part.key}>
                 <dt>{part.label}</dt>
                 <dd>
-                  <PartText text={part.detail} />
+                  <PartText text={textOf(part, brief)} />
                 </dd>
               </div>
             ))}
@@ -567,7 +707,7 @@ export function RoboPetExploded() {
               <div key={activePart.key} className="exploded-detail-body">
                 <h3>{activePart.label}</h3>
                 <p>
-                  <PartText text={activePart.detail} />
+                  <PartText text={textOf(activePart, brief)} />
                 </p>
               </div>
             )}

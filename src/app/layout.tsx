@@ -5,7 +5,12 @@ import "./portfolio.css";
 import "./robopet.css";
 import "./projects.css";
 import "./ftc.css";
-import "./cad.css";
+// The hero title's entrance, the footer nav and the contact buttons (see the file). It sits in
+// the root layout and not beside PortfolioNav, which imported it: a stylesheet imported by a
+// component belongs to every route that could render the component, and the root not-found
+// page renders PortfolioNav, so /games, which never shows it, announced the file as a preload it
+// did not use and Chrome warned. Here it is an ordinary stylesheet on every page.
+import "@/components/portfolio/interaction.css";
 import { DEFAULT_THEME, THEME_INIT_SCRIPT } from "@/lib/theme";
 
 const metadataBase = new URL("https://www.arya-vora.org");
@@ -31,8 +36,9 @@ const mono = Atkinson_Hyperlegible_Mono({
   fallback: ["Atkinson Mono Fallback", "ui-monospace", "monospace"],
 });
 
+// 155 characters or fewer: a search result and a link preview cut a description near there.
 const description =
-  "Arya Vora is in the class of 2028 at John P. Stevens High School in Edison, NJ. He captains FTC team 23786 MakEMinds and is building roboPet, a four-legged robot.";
+  "Arya Vora, class of 2028 at John P. Stevens High School in Edison, NJ. He captains FTC team 23786 MakEMinds and is building roboPet, a four-legged robot.";
 
 export const metadata: Metadata = {
   title: {
@@ -57,7 +63,7 @@ export const metadata: Metadata = {
         url: "/portfolio-og.png",
         width: 1200,
         height: 630,
-        alt: "Arya Vora, captain of FTC team 23786, MakEMinds, next to a photo of Reaper, the team's 2025-26 robot.",
+        alt: "Arya Vora, captain of FTC team 23786, MakEMinds, next to a 3D model of Reaper, the team's 2025-26 robot.",
       },
     ],
   },
@@ -84,10 +90,15 @@ export default function RootLayout({
 }>) {
   // The inline script puts the saved theme on <html> before the first paint, so the server's
   // default attribute is expected to differ from the DOM React hydrates against.
+  // globals.css smooth-scrolls in-page links (#about, Top). data-scroll-behavior="smooth" tells
+  // Next 16 to set scroll-behavior: auto for the length of a route change, so a new page, or a
+  // Back and Forward to an old one, lands where it belongs in one frame instead of gliding
+  // there from the position of the page before.
   return (
     <html
       lang="en"
       data-theme={DEFAULT_THEME}
+      data-scroll-behavior="smooth"
       className={`${sans.variable} ${mono.variable}`}
       suppressHydrationWarning
     >

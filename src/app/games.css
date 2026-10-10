@@ -1,13 +1,26 @@
+/*
+  The games section, in the main site's language: the theme tokens and type scale from
+  portfolio.css, its nav (layout.tsx reuses .portfolio-nav), heavy headings, square corners and
+  1px rules. Nothing here sets a color of its own. A right answer is drawn in the text color
+  (the accent in violet) and a wrong one in the muted color, struck through or dashed, so the
+  games keep to the page's two-tone palette and never rely on hue alone.
+*/
 .games {
-  font-family: var(--font-sans), sans-serif;
-  color: var(--text);
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  font-family: var(--font-sans), "Atkinson Fallback", system-ui, sans-serif;
+  font-size: var(--text-body);
+  color: var(--text);
+  background: var(--surface);
+  overflow-x: clip;
 }
 .games button {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* A game is tapped quickly and in the same place (Shoot, an answer), and a second tap within
+     the double-tap window would zoom the page and swallow the tap. */
+  touch-action: manipulation;
 }
 .games button:disabled {
   cursor: default;
@@ -16,145 +29,317 @@
   outline: 2px solid var(--accent);
   outline-offset: 4px;
 }
-.games-shell {
-  width: min(1080px, calc(100% - 32px));
-  margin-inline: auto;
+.games #main-content:focus {
+  outline: none;
 }
-.games-nav {
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+.games .tabular {
+  font-variant-numeric: tabular-nums;
 }
-.games-nav-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0 20px;
-  min-height: 64px;
-}
-/* The theme switch (components/portfolio/ThemeToggle.tsx) sits between the wordmark and the
-   link home. Its auto margin pushes it and the link to the right; its own 8px of padding and
-   the -8px on its last word are already in portfolio.css. */
-.games-nav-inner .theme-toggle {
-  font-family: var(--font-mono), monospace;
-  font-size: 13px;
-}
-.games-nav-label {
-  font-family: var(--font-mono), monospace;
-  font-size: 13px;
-  letter-spacing: 0.08em;
+.games .micro {
+  font-size: var(--text-caption);
   color: var(--muted);
-  margin-left: 10px;
 }
-.games-home {
-  font-family: var(--font-mono), monospace;
-  font-size: 13px;
-  min-height: 44px;
-  /* On the narrowest phones the nav wraps and the link drops to a row of its own; it is never
-     split across lines. */
-  white-space: nowrap;
+
+/* Header: the main nav. Only the word after the wordmark is the games' own. The wordmark is a
+   flex box, which drops the space before this word, so the margin stands in for it. */
+.games-nav-label {
+  margin-left: 0.28em;
+  font-weight: 400;
+  color: var(--muted);
 }
+
 .games-main {
   flex: 1;
-  padding-block: 64px 96px;
+  padding-block: clamp(40px, 5vw, 72px) clamp(64px, 7vw, 112px);
 }
 .games-footer {
-  color: var(--muted);
   border-top: 1px solid var(--line);
-  padding-block: 24px;
+  padding-block: 24px 32px;
+  font-size: var(--text-caption);
+  color: var(--muted);
 }
+
+/* Headings and ledes, at the sizes of the /projects pages. */
 .games h1 {
-  font-family: var(--font-display), monospace;
-  font-size: clamp(40px, 8vw, 84px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-  margin-bottom: 20px;
+  font-size: clamp(56px, 7.6vw, 120px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  margin-left: -0.04em;
+  text-wrap: balance;
 }
 .games-lede {
-  color: var(--muted);
-  font-size: 17px;
-  line-height: 1.6;
-  max-width: 56ch;
-}
-.games-hero {
-  margin-bottom: 56px;
+  max-width: 34em;
+  font-size: var(--text-lead);
+  line-height: 1.5;
+  text-wrap: pretty;
 }
 
-/* Index cards */
+/* Index: the title on the left, the line beside it at its foot, as the home page's Projects
+   heading does; then the cards. */
+.games-head {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  align-items: end;
+  margin-bottom: clamp(32px, 4vw, 56px);
+}
+.games-head h1 {
+  grid-column: 1 / 7;
+}
+.games-head .games-lede {
+  grid-column: 7 / -1;
+  max-width: 24em;
+  padding-bottom: 0.4em;
+}
 .games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-.games-card {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  height: 100%;
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-raised);
-  transition:
-    border-color 0.2s,
-    transform 0.2s;
-}
-.games-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-3px);
-}
-.games-card .micro {
-  color: var(--muted);
-}
-.games-card h2 {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.games-card p {
-  color: var(--muted);
-  line-height: 1.55;
-  flex: 1;
-}
-.games-card-cta {
-  color: var(--accent);
-  font-weight: 550;
-  font-size: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 48px 24px;
 }
 
-/* Game page */
-.game-page > .text-link {
-  min-height: 44px;
-  margin-bottom: 28px;
-  color: var(--muted);
-}
-.game-page .eyebrow {
-  margin-bottom: 14px;
-}
-.game-stage {
-  margin-top: 40px;
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-raised);
+/* One card, built like .home-card in home.css: a picture, the title as the card's one link
+   stretched over the whole card, and a line. */
+.games-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  min-width: 0;
+}
+.games-card-media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--surface-raised);
+  container-type: inline-size;
+}
+.games-card-title {
+  margin-top: 16px;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.games-card-link {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.14em;
+  transition:
+    color 0.15s,
+    text-decoration-color 0.15s;
+}
+.games-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.games .games-card-link:focus-visible {
+  outline: none;
+}
+.games-card:has(.games-card-link:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+.games-card:hover .games-card-link {
+  text-decoration-color: currentColor;
+}
+html[data-theme="violet"] .games-card:hover .games-card-link {
+  color: var(--accent);
+}
+.games-card-blurb {
+  margin-top: 8px;
+  max-width: 34em;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* The drawings on the cards (GamePreview.tsx). Sizes are in cqi, shares of the card's width,
+   so a drawing is the same picture at every card size. The text is the exception: it never goes
+   below 12.5px (a card is 288px wide on a 320px phone, where 3.2cqi is 9px), so the small print of
+   a drawing stays readable and the pieces around it are laid out for that size. */
+.gp {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4cqi;
+  padding: 7cqi 7cqi;
+  font-size: max(12.5px, 3.6cqi);
+  line-height: 1.3;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .games-card:hover .gp {
+    transform: scale(1.04);
+  }
+}
+.gp-caption {
+  font-size: max(12.5px, 3.2cqi);
+  color: var(--muted);
+}
+.gp-ladder {
+  flex-direction: row;
+  align-items: center;
+  gap: 2.4cqi;
+  padding-inline: 5cqi;
+}
+.gp-ladder-card {
+  flex: 1;
+  align-self: stretch;
+  margin-block: 5cqi;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqi;
+  padding: 3.4cqi;
+  border: 1px solid var(--line);
+}
+.gp-ladder-card strong {
+  font-size: 5.4cqi;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.gp-points {
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 6.4cqi;
+  white-space: nowrap;
+  color: var(--accent);
+}
+.gp-points small {
+  font-size: max(12.5px, 3.2cqi);
+  color: var(--muted);
+}
+.gp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.4cqi;
+}
+.gp-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6cqi;
+  padding: 2.4cqi 3cqi;
+  border: 1px solid var(--line);
+}
+.gp-stats .gp-caption {
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  letter-spacing: 0.08em;
+}
+.gp-stat {
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 9cqi;
+  line-height: 1;
+}
+.gp-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2.4cqi;
+}
+.gp-options span {
+  padding: 2cqi 3cqi;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gp-scorebar {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 2.4cqi;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-size: max(12.5px, 3.2cqi);
+  color: var(--muted);
+}
+.gp-meter {
+  position: relative;
+  height: 13cqi;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.gp-zone {
+  position: absolute;
+  inset-block: 0;
+  left: 54%;
+  width: 15%;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-inline: 2px solid var(--accent);
+}
+.gp-needle {
+  position: absolute;
+  inset-block: -1.2cqi;
+  left: 60%;
+  width: 0.9cqi;
+  background: var(--text);
+}
+.gp-track {
+  display: flex;
+  gap: 1.8cqi;
+}
+.gp-track span {
+  width: 4.2cqi;
+  height: 4.2cqi;
+  border: 1px solid var(--line);
+}
+.gp-track span[data-state="make"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.gp-track span[data-state="miss"] {
+  border-color: var(--muted);
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.5px),
+    var(--muted) calc(50% - 0.5px) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+}
+
+/* A game's page */
+.game-page {
+  max-width: 880px;
+}
+.game-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+.game-back:hover {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+.game-page .games-lede {
+  margin-top: 24px;
+}
+.game-stage {
+  display: flex;
+  flex-direction: column;
   align-items: flex-start;
+  gap: 24px;
+  margin-top: clamp(32px, 4vw, 48px);
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
 }
 .game-intro p {
-  color: var(--color-paper-200);
+  max-width: 40em;
   line-height: 1.6;
-  max-width: 60ch;
+  text-wrap: pretty;
 }
 .game-best,
 .game-scorebar {
-  font-family: var(--font-mono), monospace;
-  font-size: 13px;
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 .game-scorebar {
@@ -171,20 +356,30 @@
   gap: 16px 24px;
 }
 .game-result p {
-  font-size: 17px;
+  font-size: var(--text-lead);
 }
 .game-result strong {
+  font-weight: 800;
   color: var(--accent);
 }
 
-/* Shared win/lose states */
-[data-state="win"] {
-  border-color: #4ade80 !important;
-  background: color-mix(in srgb, #4ade80 10%, var(--surface-soft)) !important;
+/* Right and wrong, shared by the three games. Right is filled in the text color (the accent in
+   violet), with the text knocked out of it; wrong is muted and its border dashed. */
+.games [data-state="win"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
 }
-[data-state="lose"] {
-  border-color: #f87171 !important;
-  background: color-mix(in srgb, #f87171 10%, var(--surface-soft)) !important;
+.games [data-state="win"] :is(.micro, .ladder-points, .ladder-points small) {
+  color: inherit;
+}
+.games [data-state="lose"] {
+  border-style: dashed;
+  border-color: var(--muted);
+  color: var(--muted);
+}
+.games [data-state="lose"] .ladder-points {
+  color: inherit;
 }
 
 /* Career Ladder */
@@ -201,76 +396,67 @@
   gap: 10px;
   padding: 24px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-soft);
+  background: transparent;
   color: var(--text);
   text-align: left;
-  transition:
-    border-color 0.2s,
-    transform 0.2s;
+  transition: border-color 0.15s;
 }
 .ladder-card:not(:disabled):hover {
   border-color: var(--accent);
-  transform: translateY(-2px);
-}
-.ladder-card .micro {
-  color: var(--muted);
 }
 .ladder-card strong {
-  font-size: clamp(20px, 3vw, 28px);
-  font-weight: 600;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 800;
+  line-height: 1.05;
   letter-spacing: -0.02em;
 }
 .ladder-points {
-  font-family: var(--font-mono), monospace;
-  font-size: clamp(24px, 4vw, 36px);
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-size: clamp(26px, 4vw, 40px);
   color: var(--accent);
 }
 .ladder-points small {
-  font-size: 13px;
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 .ladder-card[data-picked] {
   outline: 2px solid var(--text);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 /* Stat Line */
 .statline {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 .statline > div {
   padding: 20px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-soft);
 }
 .statline dt {
-  font-family: var(--font-mono), monospace;
-  font-size: 12px;
-  letter-spacing: 0.14em;
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
   color: var(--muted);
 }
 .statline dd {
-  font-family: var(--font-mono), monospace;
-  font-size: clamp(32px, 6vw, 56px);
-  color: var(--text);
   margin-top: 6px;
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-size: clamp(36px, 6vw, 64px);
+  line-height: 1;
 }
 .statline-meta {
-  color: var(--muted);
   min-height: 44px;
   display: flex;
   align-items: center;
 }
 .statline-meta .text-link {
   min-height: 44px;
-  font-size: 12px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--text);
 }
 .option-grid {
   width: 100%;
@@ -282,15 +468,17 @@
   min-height: 56px;
   padding: 12px 18px;
   border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface-soft);
+  background: transparent;
   color: var(--text);
-  font-size: 15px;
+  font: inherit;
   text-align: left;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s;
 }
 .option-button:not(:disabled):hover {
   border-color: var(--accent);
+}
+.option-button[data-state="lose"] {
+  text-decoration-line: line-through;
 }
 
 /* Free Throw */
@@ -299,16 +487,15 @@
   width: 100%;
   height: 56px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-soft);
+  background: var(--surface-raised);
   overflow: hidden;
 }
 .meter-zone {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: color-mix(in srgb, #4ade80 35%, transparent);
-  border-inline: 2px solid #4ade80;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-inline: 2px solid var(--accent);
 }
 .meter-needle {
   position: absolute;
@@ -318,50 +505,121 @@
   width: 4px;
   margin-left: -2px;
   background: var(--text);
-  box-shadow: 0 0 12px var(--accent);
 }
 .shot-track {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   list-style: none;
 }
 .shot-track li {
   width: 18px;
   height: 18px;
-  border-radius: 50%;
   border: 1px solid var(--line);
 }
 .shot-track li[data-state="make"] {
-  background: #4ade80;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 .shot-track li[data-state="miss"] {
-  background: #f87171;
+  border-color: var(--muted);
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.75px),
+    var(--muted) calc(50% - 0.75px) calc(50% + 0.75px),
+    transparent calc(50% + 0.75px)
+  );
 }
 .game-flash {
-  font-family: var(--font-mono), monospace;
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
   color: var(--muted);
   min-height: 1.5em;
 }
 .shoot-button kbd {
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  padding: 2px 6px;
-  border: 1px solid #0c0d1640;
-  border-radius: 4px;
+  font-family: var(--font-mono), "Atkinson Mono Fallback", monospace;
+  font-size: var(--text-caption);
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+}
+/* The Space hint means nothing without a keyboard. */
+@media (hover: none), (pointer: coarse) {
+  .shoot-button kbd {
+    display: none;
+  }
+}
+/* Free Throw is a timing game: the player watches the needle and the Shoot button has to be in
+   reach without a scroll. On a touch screen it is pinned a thumb's distance above the bottom of
+   the window (and above the home indicator) whenever its place in the page would be below the
+   fold; where there is room for it the pin does nothing and it sits in the flow. */
+@media (max-width: 640px), (pointer: coarse) {
+  .shoot-button {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
 }
 
-@media (max-width: 640px) {
-  .games-main {
-    padding-block: 40px 64px;
+@media (max-width: 1100px) {
+  .games-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .game-stage {
-    padding: 18px;
+  .games-head h1,
+  .games-head .games-lede {
+    grid-column: 1 / -1;
+  }
+  .games-head .games-lede {
+    margin-top: 20px;
+    padding-bottom: 0;
+  }
+}
+@media (max-width: 640px) {
+  .games-grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 40px;
   }
   .ladder-pair,
   .option-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ladder-card {
+    padding: 18px;
   }
   .statline > div {
-    padding: 14px;
+    padding: 12px;
+  }
+  /* A value of four mono characters (24.6) has to fit a third of a 320px screen. */
+  .statline dd {
+    font-size: clamp(22px, 7.4vw, 36px);
+  }
+
+  /* Free Throw on a phone: the page above the meter is tightened so that the whole window fits
+     on one screen down to 320 x 568 (the nav alone is 108px there), with the Shoot button at its
+     foot, wide enough to hit without looking. The other games keep their spacing. */
+  .games-main:has(> .game-page[data-game="free-throw"]) {
+    padding-top: 12px;
+  }
+  .game-page[data-game="free-throw"] .game-back {
+    margin-bottom: 4px;
+  }
+  .game-page[data-game="free-throw"] .games-lede {
+    margin-top: 12px;
+  }
+  .game-page[data-game="free-throw"] .game-stage {
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 14px;
+  }
+  .game-page[data-game="free-throw"] .game-scorebar {
+    padding-bottom: 10px;
+  }
+  .game-page[data-game="free-throw"] .meter {
+    height: 48px;
+  }
+  .game-page[data-game="free-throw"] .shoot-button {
+    align-self: stretch;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .games * {
+    transition: none !important;
   }
 }

@@ -98,7 +98,7 @@ export function FreeThrow() {
     return (
       <div className="game-stage game-intro">
         <p>
-          A needle sweeps across the meter. Stop it inside the green window to sink the shot. Each
+          A needle sweeps across the meter. Stop it inside the marked window to make the shot. Each
           make in a row narrows the window and speeds the needle up; a miss resets both.
         </p>
         <button className="primary-button" onClick={start}>
@@ -116,7 +116,7 @@ export function FreeThrow() {
           Shot {Math.min(shots.length + 1, SHOTS)} / {SHOTS}
         </span>
         <span>
-          Makes {makes} · Streak {streak}
+          Makes {makes}, streak {streak}
         </span>
       </div>
       <div className="meter" aria-hidden="true">

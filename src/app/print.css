@@ -37,14 +37,11 @@
   .hero-copy h1 {
     font-size: 64px !important;
   }
-  .ftc-name h2 {
+  .home-reaper-name h2 {
     font-size: 96px !important;
   }
   .film-intro h2 {
     font-size: 56px !important;
-  }
-  .work-feature h3 {
-    font-size: 30px !important;
   }
   .film-outro-line {
     font-size: 26px !important;
@@ -60,14 +57,14 @@
   /* Things that only work on a screen. */
   .skip-link,
   .portfolio-nav,
+  .ptabs,
   .portfolio button,
-  .playground-section,
-  .ftc-all,
   .film-canvas,
   .exploded-tour,
   .exploded-parts,
   .exploded-canvas canvas,
   .hero-robot-canvas,
+  .reaper-host,
   nextjs-portal {
     display: none !important;
   }
@@ -91,14 +88,48 @@
     visibility: visible !important;
   }
 
-  /* Hero: the still stands in for the live model. */
+  /* Hero: the still stands in for the live model. A sheet of paper is narrower than 760px, so the
+     phone layout applies, which tucks the art under the title and the text with negative margins
+     (portfolio.css); the robot's front foot printed over the first line of the intro. */
   .hero-robot-still {
     opacity: 1 !important;
   }
+  .hero-art {
+    margin-block: 0 !important;
+  }
 
-  /* The roboPet film becomes a static block: heading, still, the four beats, the outro. */
+  /* The Reaper model on /projects/reaper. The dock draws its still as a background that is set
+     only once a script marks the dock (ftc.css, [data-still]), and fades it out when the live
+     canvas arrives, so on paper the figure was an empty square. Paper gets the black and white
+     still whatever the theme is, drawn with its background graphics forced on (a background does
+     not print by default), and the live canvas, which would only be a bitmap of a frame, is
+     dropped above. */
+  .reaper-dock .reaper-still {
+    background-image: url("/ftc/reaper-model-mono.webp") !important;
+    opacity: 1 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* The season ledger ("All 21 events") is a closed <details>, and a closed one prints as its
+     summary alone. Its table is part of the page, so paper opens every disclosure: the content
+     slot of a closed <details> is held back with content-visibility, which this puts back. */
+  details:not([open])::details-content {
+    content-visibility: visible !important;
+    display: block !important;
+  }
+  .ftc-all > summary::before {
+    display: none !important;
+  }
+
+  /* The roboPet film becomes a static block: heading, still, the four beats, the outro. Its scroll
+     length goes twice: height for the pinned layout, and min-height, which robopet.css reserves
+     from the first paint (360vh, or 300vh on a phone held upright) for any screen with scripting
+     on and so for paper too. Left alone it printed two blank sheets. */
+  .film,
   .film[data-mode] {
     height: auto !important;
+    min-height: 0 !important;
   }
   .film[data-mode] .film-stage {
     position: static !important;
@@ -152,9 +183,13 @@
     text-align: left !important;
   }
 
-  /* The exploded view: its still image, drawn as a background that prints with the page. */
+  /* The exploded view: its still image, drawn as a background that prints with the page. On a
+     screen the section is pulled up 30vh over the end of the film so its heading arrives early;
+     on paper that would draw it over the film's closing line. */
   .exploded[data-mode] {
     height: auto !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
   }
   .exploded[data-mode] .exploded-stage {
     position: static !important;
@@ -169,6 +204,8 @@
     padding: 0 !important;
     opacity: 1 !important;
     transform: none !important;
+    break-inside: avoid;
+    break-after: avoid;
   }
   .exploded[data-mode] .exploded-canvas {
     position: relative !important;
@@ -178,53 +215,25 @@
     background: url("/robopet/exploded-still.webp") center / contain no-repeat;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    break-inside: avoid;
   }
   .exploded[data-mode] .exploded-still {
     display: none !important;
   }
 
   /* Layout that depends on the viewport or on scrolling. */
-  .ftc-cad,
   .about-intro {
     position: static !important;
   }
-  .cad-group--drones [data-piece] .cad-render,
-  .cad-piece.is-lead .cad-render {
-    margin-inline: 0 !important;
-  }
 
-  /* Less air between blocks, a smaller address and shorter renders, so a sheet holds more. */
-  .work-feature {
-    padding-block: 24px !important;
-  }
-  .work-row {
-    padding-block: 20px !important;
-  }
+  /* A smaller address, so a sheet holds more. */
   .email-address {
     font-size: var(--text-lead) !important;
   }
-  .cad-render img {
-    width: auto !important;
-    max-width: 100%;
-    max-height: 3.2in;
-  }
-  .cad-spread {
-    gap: 24px !important;
-  }
-  .cad-group + .cad-group {
-    margin-top: 40px !important;
-  }
 
-  /* Software opens a sheet of its own; its first feature is a full page and would otherwise
-     leave the heading alone at the foot of the CAD sheet. */
-  .projects-section {
-    break-before: page;
-  }
-
-  /* Keep a figure, a row or a caption whole, and a heading with what follows it. */
+  /* Keep a figure, a card, a row or a caption whole, and a heading with what follows it. */
   figure,
-  .cad-piece,
-  .work-row,
+  .pcard,
   .ftc-roles > li,
   .ftc-specs > div,
   .ftc-table tr {
@@ -233,8 +242,7 @@
   h2,
   h3,
   h4,
-  .section-heading,
-  .cad-group-head {
+  .section-heading {
     break-after: avoid;
   }
   img {

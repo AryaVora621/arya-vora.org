@@ -41,7 +41,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start -- --hostname 127.0.0.1 --port 3100",
+    // No --hostname. With `--hostname 127.0.0.1` Next compares the origin of a rewrite from
+    // src/proxy.ts with http://127.0.0.1:3100, but the request it hands the proxy is always
+    // http://localhost:3100 (NextURL turns every loopback address into "localhost"). The rewrite
+    // to /projects/missing is then taken for an external one and proxied back to the server,
+    // which rewrites it again until the connection drops: every missing project answered 500.
+    // Left to its default the server uses "localhost" on both sides, and 127.0.0.1 still reaches it.
+    command: "npm run start -- --port 3100",
     url: "http://127.0.0.1:3100",
     reuseExistingServer: false,
     timeout: 30000,

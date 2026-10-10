@@ -1,0 +1,138 @@
+/*
+  roboPet's build log (RoboPetBuildLog.tsx). It follows the measure of a project page's own
+  blocks (projects.css): the heading in a rail on the left, the entries from column 5, each a
+  date beside its text like the page's timelines. On a phone the date sits over its text, as in
+  the page's timelines, so the text keeps the full width. Rules separate the dated entries,
+  which are real rows. Colors are the tokens in portfolio.css.
+*/
+
+/* Two section blocks in a row add their paddings, so each takes half a section gap at each end. */
+.block {
+  padding-block: calc(var(--section-gap) / 2);
+  color: var(--text);
+}
+
+/* A renderer that already wraps the block in a .site-shell keeps its width. */
+:global(.site-shell) .shell {
+  width: 100%;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(20px, 2.4vw, 32px);
+  align-items: start;
+}
+.head {
+  grid-column: 1 / 5;
+}
+.title {
+  font-size: var(--text-h3);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.head p {
+  margin-top: 14px;
+  max-width: 30ch;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.main {
+  grid-column: 5 / -1;
+  min-width: 0;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.entry {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 0 24px;
+  padding-block: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.date {
+  padding-top: 0.2em;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.body p {
+  max-width: 68ch;
+  font-size: var(--text-body);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+/* One date can carry two paragraphs (two things that happened the same day). */
+.body p + p {
+  margin-top: 10px;
+}
+/* A bench photo under the day it shows, kept to a snapshot's width beside the text. */
+.photo {
+  margin: 16px 0 0;
+  max-width: 440px;
+}
+.photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.photo figcaption {
+  margin-top: 8px;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.more {
+  margin-top: 20px;
+  font-size: var(--text-body);
+}
+/* A 44px touch target out of one line of text; the negative margin keeps the line where it was.
+   The focus ring follows the padded box. */
+.more a {
+  display: inline-block;
+  padding-block: 11px;
+  margin-block: -11px;
+}
+
+@media (max-width: 1100px) {
+  .head {
+    grid-column: 1 / 4;
+  }
+  .main {
+    grid-column: 4 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .layout {
+    display: block;
+  }
+  .main {
+    margin-top: 20px;
+  }
+  .entry {
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: 0 16px;
+  }
+}
+
+/* Beside a 6rem date the text ran 21 to 28 characters a line on a phone. The date moves over it
+   as a small caption, the breakpoint and the gap the same as the project timelines'. */
+@media (max-width: 560px) {
+  .entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px 0;
+  }
+  .date {
+    padding-top: 0;
+  }
+}

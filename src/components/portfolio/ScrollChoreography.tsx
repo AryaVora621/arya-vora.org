@@ -12,13 +12,22 @@ const VISIBLE_AT = 0.88;
 
 // Sections whose first h2 gets the line rise. The roboPet film and the exploded
 // view run their own scroll timelines, so their headings are left to them.
-const HEADING_SECTIONS = ["#ftc", "#cad", "#projects", "#playground", "#about", "#contact"];
+const HEADING_SECTIONS = ["#ftc", "#projects", "#about", "#contact"];
 const SKIP = "#robopet, #exploded";
 
 // Media frames whose first child (or [data-parallax-inner]) drifts slightly slower
 // than the page. Only frames that clip their overflow qualify, so the drift can
 // never spill over neighbouring text.
-const PARALLAX_FRAMES = ".project-visual, [data-parallax]";
+//
+// A frame can ask for something else through the custom property --parallax, which the
+// stylesheets set per breakpoint: "frame" drifts the whole frame instead of the layer inside it
+// (a software cover cropped to one feature on a phone, projects.css, whose crop edges were chosen
+// to miss every word and would move through the text if the picture moved inside the frame), and
+// "none" leaves the frame still (a cropped card on the /projects index, which never drifts on a
+// wide window either). The frames are set up again when the window crosses the phone breakpoint.
+const PARALLAX_FRAMES = "[data-parallax]";
+// How far a frame that drifts as a whole moves each way, in px.
+const FRAME_DRIFT = 8;
 
 // Page-level scroll choreography. Everything here is additive: the server HTML is
 // fully visible, and reverting the context restores it the moment motion is
@@ -69,34 +78,34 @@ export function ScrollChoreography() {
       headings.forEach((heading) => {
         if (!heading.closest(SKIP)) rise(heading);
       });
+    });
 
-      gsap.utils.toArray<HTMLElement>(PARALLAX_FRAMES).forEach((frame) => {
-        const { overflow, overflowY } = getComputedStyle(frame);
-        if (![overflow, overflowY].some((value) => value === "hidden" || value === "clip")) return;
-        const inner =
-          frame.querySelector<HTMLElement>("[data-parallax-inner]") ??
-          (frame.firstElementChild as HTMLElement | null);
-        if (!inner) return;
-        // An inner layer that is not taller than its frame is scaled up just
-        // enough to keep the drift inside the crop.
-        const room = (inner.offsetHeight - frame.clientHeight) / 2 / Math.max(inner.offsetHeight, 1);
-        const shift = Math.min(6, room > 0.01 ? room * 100 : 5);
-        if (room <= 0.01) gsap.set(inner, { scale: 1.12, transformOrigin: "50% 50%" });
-        gsap.fromTo(
-          inner,
-          { yPercent: shift },
-          {
-            yPercent: -shift,
-            ease: "none",
-            scrollTrigger: {
-              trigger: frame,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: true,
-            },
-          },
-        );
-      });
+    const drift = (frame: HTMLElement) => {
+      const style = getComputedStyle(frame);
+      const mode = style.getPropertyValue("--parallax").trim();
+      if (mode === "none") return;
+      const scrollTrigger = { trigger: frame, start: "top bottom", end: "bottom top", scrub: true };
+      if (mode === "frame") {
+        gsap.fromTo(frame, { y: FRAME_DRIFT }, { y: -FRAME_DRIFT, ease: "none", scrollTrigger });
+        return;
+      }
+      if (![style.overflow, style.overflowY].some((value) => value === "hidden" || value === "clip")) return;
+      const inner =
+        frame.querySelector<HTMLElement>("[data-parallax-inner]") ??
+        (frame.firstElementChild as HTMLElement | null);
+      if (!inner) return;
+      // An inner layer that is not taller than its frame is scaled up just
+      // enough to keep the drift inside the crop.
+      const room = (inner.offsetHeight - frame.clientHeight) / 2 / Math.max(inner.offsetHeight, 1);
+      const shift = Math.min(6, room > 0.01 ? room * 100 : 5);
+      if (room <= 0.01) gsap.set(inner, { scale: 1.12, transformOrigin: "50% 50%" });
+      gsap.fromTo(inner, { yPercent: shift }, { yPercent: -shift, ease: "none", scrollTrigger });
+    };
+    // matchMedia reverts what it made and runs again when the window crosses the breakpoint, so a
+    // frame whose --parallax changes there is set up for the side it is now on.
+    const media = gsap.matchMedia();
+    media.add({ narrow: "(max-width: 760.98px)", wide: "(min-width: 761px)" }, () => {
+      gsap.utils.toArray<HTMLElement>(PARALLAX_FRAMES).forEach(drift);
     });
 
     // Pinned sections below depend on final heading heights. The safe refresh waits for
@@ -104,6 +113,7 @@ export function ScrollChoreography() {
     document.fonts?.ready.then(() => ScrollTrigger.refresh(true));
 
     return () => {
+      media.revert();
       ctx.revert();
       splits.forEach((split) => split.revert());
     };

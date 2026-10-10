@@ -1,35 +1,38 @@
 export type GameMeta = {
   slug: string;
   title: string;
-  kicker: string;
+  /** The line under the title on the index card. */
   blurb: string;
+  /** The line under the title on the game's page. */
   howTo: string;
+  /** The page's meta and share description, 155 characters or fewer. */
+  description: string;
 };
 
 export const games: GameMeta[] = [
   {
     slug: "career-ladder",
     title: "Career Ladder",
-    kicker: "Higher / Lower",
-    blurb:
-      "Two retired legends, one question: who scored more regular-season points? Keep the streak alive.",
+    blurb: "Two retired NBA players. Pick the one who scored more regular-season points.",
     howTo: "Pick the player with more career points. One miss ends the run.",
+    description:
+      "A browser game by Arya Vora: two retired NBA players at a time, and you pick the one with more regular-season career points. One miss ends the run.",
   },
   {
     slug: "stat-line",
     title: "Stat Line",
-    kicker: "Name the season",
-    blurb:
-      "A famous box-score average, no name attached. Read the numbers and pick the player who put them up.",
+    blurb: "One famous season as points, rebounds and assists per game. Name the player.",
     howTo: "Ten rounds, four choices each. Reveal the season and team for a hint, at half credit.",
+    description:
+      "A browser game by Arya Vora: ten famous NBA seasons shown only as per-game averages. Name the player from four choices, with a hint at half credit.",
   },
   {
     slug: "free-throw",
     title: "Free Throw",
-    kicker: "Arcade",
-    blurb:
-      "Stop the meter in the green. Every make shrinks the window and speeds up the needle.",
+    blurb: "Stop the needle inside the window. Each make in a row narrows it and speeds it up.",
     howTo: "Press Space or tap Shoot to stop the needle. Ten shots per round.",
+    description:
+      "A browser game by Arya Vora: stop a sweeping needle inside the window to make the shot. Each make in a row narrows the window. Ten shots a round.",
   },
 ];
 

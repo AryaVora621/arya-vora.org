@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/portfolio/ThemeToggle";
+import { indexMetadata } from "./meta";
 import "../games.css";
 
 export const metadata: Metadata = {
@@ -8,38 +9,38 @@ export const metadata: Metadata = {
     default: "Games",
     template: "%s | Arya Vora Games",
   },
-  description:
-    "Small browser games by Arya Vora: NBA stat trivia, career-points higher/lower, and a free-throw timing arcade.",
-  alternates: { canonical: "https://games.arya-vora.org" },
-  openGraph: {
-    url: "https://games.arya-vora.org",
-    title: "Games | Arya Vora",
-    description: "NBA stat trivia and arcade mini-games you can play in the browser.",
-  },
+  ...indexMetadata,
 };
 
+// The header is the main site's nav (the portfolio-nav, nav-inner, wordmark and nav-links rules
+// in portfolio.css), so the two sites read as one: the same wordmark, the same theme switch in
+// the same place, and one link where the main site has its section links.
 export default function GamesLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="games">
-      <header className="games-nav">
-        <div className="games-shell games-nav-inner">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <header className="portfolio-nav">
+        <nav className="site-shell nav-inner" aria-label="Games navigation">
           <Link href="/games" className="wordmark">
-            av<span aria-hidden="true">*</span>
-            <span className="games-nav-label">games</span>
+            Arya Vora <span className="games-nav-label">Games</span>
           </Link>
           {/* The saved theme lives in localStorage, which is per origin. /games on the www site
               reads the choice made there; games.arya-vora.org is a different origin that
               rewrites to these same pages, so it starts in B&W and keeps its own choice. */}
           <ThemeToggle />
-          <a className="text-link games-home" href="https://www.arya-vora.org">
-            arya-vora.org ↗
-          </a>
-        </div>
+          <ul className="nav-links">
+            <li>
+              <a href="https://www.arya-vora.org">Back to arya-vora.org</a>
+            </li>
+          </ul>
+        </nav>
       </header>
-      <main id="main-content" className="games-shell games-main">
+      <main id="main-content" tabIndex={-1} className="site-shell games-main">
         {children}
       </main>
-      <footer className="games-shell games-footer micro">
+      <footer className="site-shell games-footer">
         Stats are regular-season figures. Scores stay in this browser only.
       </footer>
     </div>

@@ -1,8 +1,9 @@
 // Regenerate the raster social card from its editable SVG source.
 // The card is set in Atkinson Hyperlegible Next, the site's text face, loaded from Google
-// Fonts for the render, so this needs a network connection. It carries the cut-out photo of
-// Reaper (public/ftc/reaper.webp); the SVG points at it by a relative path, so the file still
-// opens on its own from public/, and this script swaps the path for the file's bytes.
+// Fonts for the render, so this needs a network connection. It carries the 3D model of Reaper,
+// the transparent render the Reaper page draws (public/ftc/reaper-model-mono.webp, the same
+// picture as /projects/reaper/card.png); the SVG points at it by a relative path, so the file
+// still opens on its own from public/, and this script swaps the path for the file's bytes.
 import { chromium } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -20,12 +21,12 @@ try {
     new URL("../public/portfolio-og.svg", import.meta.url),
     "utf8",
   );
-  const reaper = await readFile(new URL("../public/ftc/reaper.webp", import.meta.url));
+  const reaper = await readFile(new URL("../public/ftc/reaper-model-mono.webp", import.meta.url));
   const svg = source.replace(
-    'href="ftc/reaper.webp"',
+    'href="ftc/reaper-model-mono.webp"',
     `href="data:image/webp;base64,${reaper.toString("base64")}"`,
   );
-  if (svg === source) throw new Error("portfolio-og.svg no longer points at ftc/reaper.webp.");
+  if (svg === source) throw new Error("portfolio-og.svg no longer points at ftc/reaper-model-mono.webp.");
   await page.setContent(
     `<link rel="stylesheet" href="${FONT_CSS}"><style>body{margin:0;background:#000}svg{display:block}</style>${svg}`,
     { waitUntil: "networkidle" },

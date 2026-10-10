@@ -19,8 +19,9 @@
 //    FLOOR_GREY and the 99.8th to CEIL_GREY, then a gentle gamma. This gives every model the
 //    same tonal range, whether Onshape drew it near black (the pad case) or near white (the
 //    printer), and keeps the darkest parts visible on a black page.
-// 3b. Ghost pieces (GHOST_BALL): a solid body that hides the mechanism is found by its colour
-//    and drawn as clear glass, so the parts around it read first. See ghostBall() below.
+// 3b. Ball (BALL_*): a big solid sphere that would outshine the mechanism is found by its
+//    colour and given its own, darker grey range, so it reads as a solid ball and the parts
+//    around it read first. See findBall() below.
 // 4. Write R=G=B pixels with the original alpha, then check the decoded files: any visible
 //    pixel whose channels differ by more than MAX_SPREAD fails the run. The page tints these
 //    greys with a CSS filter in the violet theme, so they must stay neutral here.
@@ -66,12 +67,13 @@ const PICKS = {
   "ender5corexy-topsystem": { doc: "ender5corexy", element: "topsystem", azimuth: 325 },
   // Azimuth 215 was tried and is worse: the ball sits in front of the arm and hides the sprockets
   // and one gearmotor. At 325 the arm wraps the ball and the chain parts are in the clear, but
-  // the plain sphere is still the biggest and brightest thing in the section, so it is ghosted.
+  // the plain sphere is still the biggest and brightest thing in the render. "ball" shades it
+  // darker than the arm (see BALL_DARK and BALL_LIGHT).
   "frc-mech-task-2025-assembly-1": {
     doc: "frc-mech-task-2025",
     element: "assembly-1",
     azimuth: 325,
-    ghost: "green-ball",
+    ball: true,
   },
   "mediapad-assembly-1": { doc: "mediapad", element: "assembly-1", azimuth: 215 },
   "lovebox-assembly-1": { doc: "lovebox", element: "assembly-1", azimuth: 215 },
@@ -98,20 +100,18 @@ const CEIL_GREY = 252;
 const GAMMA = 0.9;
 const MAX_SPREAD = 2;
 
-// Ghost ball: the FRC task's ball is a bright green sphere in the Onshape render, which turns
-// into the brightest, largest grey disc on the page and covers the arm and wheels the caption
-// describes. Onshape gave one render per angle with the ball in place, so nothing behind it
-// exists in the source; the ball is therefore drawn as glass, not removed. Inside it is almost
-// clear (BALL_FILL), toward the edge it brightens (BALL_RIM over BALL_RIM_PX source pixels,
-// squared), and a thin line (BALL_LINE over BALL_LINE_PX) keeps the silhouette crisp.
+// Ball: the FRC task's ball is a bright green sphere in the Onshape render. Graded with the rest
+// of the model it becomes the brightest, largest grey disc in the picture and outshines the arm
+// and wheels around it. Onshape gave one render per angle with the ball in place, so nothing
+// behind it exists in the source and it cannot be removed. It keeps its own shading instead:
+// its shadow-to-highlight range (the same percentiles as the levels in step 3, taken over the
+// ball alone) maps onto BALL_DARK to BALL_LIGHT, a mid grey that stays below the arm's plates
+// (about 200 to 250), at the render's own opacity. An earlier pass drew it as near-clear glass
+// (about 11% opacity inside), which on the black page read as a black hole, not a ball.
 const BALL_GREEN_MIN = 35; // green minus red needed to count a pixel as ball
 const BALL_FRINGE_PX = 2; // pixels around the ball taken as anti-aliased edge
-const BALL_FILL = 0.11;
-const BALL_RIM = 0.5;
-const BALL_RIM_PX = 100;
-const BALL_LINE = 0.55;
-const BALL_LINE_PX = 3.5;
-const BALL_GREY = 205;
+const BALL_DARK = 60;
+const BALL_LIGHT = 164;
 
 function rawGrey(r, g, b) {
   const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -119,10 +119,8 @@ function rawGrey(r, g, b) {
   return LUMA_SHARE * luma + (1 - LUMA_SHARE) * peak;
 }
 
-// Returns { mask, edge } for the ball in an RGBA buffer: mask[i] is 1 for ball pixels and
-// edge[i] is the distance in pixels to the nearest empty (transparent) pixel, so the rim only
-// brightens where the ball meets the background and not where the arm sits in front of it.
-function ghostBall(data, width, height) {
+// Returns a mask for the ball in an RGBA buffer: mask[i] is 1 for ball pixels.
+function findBall(data, width, height) {
   const count = width * height;
   const seed = new Uint8Array(count);
   for (let i = 0; i < count; i++) {
@@ -156,7 +154,7 @@ function ghostBall(data, width, height) {
     }
     if (size > bestSize) { bestSize = size; best = next; }
   }
-  if (bestSize < count * 0.05) throw new Error("ghost ball: no large green body found");
+  if (bestSize < count * 0.05) throw new Error("ball: no large green body found");
 
   // Grow by the anti-aliased fringe: neighbours that are still green-leaning belong to the ball.
   let mask = new Uint8Array(count);
@@ -175,39 +173,7 @@ function ghostBall(data, width, height) {
     mask = grown;
   }
 
-  // Chamfer distance (3-4) to the nearest empty pixel, in pixels.
-  const INF = 1 << 28;
-  const dist = new Int32Array(count);
-  for (let i = 0; i < count; i++) dist[i] = data[i * 4 + 3] < ALPHA_EDGE ? 0 : INF;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = y * width + x;
-      let d = dist[i];
-      if (x > 0) d = Math.min(d, dist[i - 1] + 3);
-      if (y > 0) {
-        d = Math.min(d, dist[i - width] + 3);
-        if (x > 0) d = Math.min(d, dist[i - width - 1] + 4);
-        if (x < width - 1) d = Math.min(d, dist[i - width + 1] + 4);
-      }
-      dist[i] = d;
-    }
-  }
-  for (let y = height - 1; y >= 0; y--) {
-    for (let x = width - 1; x >= 0; x--) {
-      const i = y * width + x;
-      let d = dist[i];
-      if (x < width - 1) d = Math.min(d, dist[i + 1] + 3);
-      if (y < height - 1) {
-        d = Math.min(d, dist[i + width] + 3);
-        if (x < width - 1) d = Math.min(d, dist[i + width + 1] + 4);
-        if (x > 0) d = Math.min(d, dist[i + width - 1] + 4);
-      }
-      dist[i] = d;
-    }
-  }
-  const edge = new Float32Array(count);
-  for (let i = 0; i < count; i++) edge[i] = dist[i] / 3;
-  return { mask, edge };
+  return mask;
 }
 
 async function prepare(entry) {
@@ -217,7 +183,7 @@ async function prepare(entry) {
     .raw()
     .toBuffer({ resolveWithObject: true });
   const { width, height } = info;
-  const ghost = entry.ghost === "green-ball" ? ghostBall(data, width, height) : null;
+  const ball = entry.ball ? findBall(data, width, height) : null;
 
   let minX = width;
   let minY = height;
@@ -242,52 +208,54 @@ async function prepare(entry) {
   const outH = boxH + pad * 2;
 
   // Levels come from the solid pixels only, so soft edges and the black outline lines do not
-  // drag the percentiles around. A ghost ball is left out, so the parts it used to dominate
-  // get the whole tonal range.
+  // drag the percentiles around. The ball takes levels of its own, so the parts it would
+  // otherwise dominate get the whole tonal range.
   const histogram = new Uint32Array(256);
+  const ballHistogram = new Uint32Array(256);
   let solid = 0;
+  let ballSolid = 0;
   for (let y = 0; y < boxH; y++) {
     for (let x = 0; x < boxW; x++) {
       const si = ((minY + y) * width + (minX + x)) * 4;
       if (data[si + 3] < ALPHA_SOLID) continue;
-      if (ghost && ghost.mask[(minY + y) * width + (minX + x)]) continue;
-      histogram[Math.round(rawGrey(data[si], data[si + 1], data[si + 2]))]++;
-      solid++;
+      const v = Math.round(rawGrey(data[si], data[si + 1], data[si + 2]));
+      if (ball && ball[(minY + y) * width + (minX + x)]) {
+        ballHistogram[v]++;
+        ballSolid++;
+      } else {
+        histogram[v]++;
+        solid++;
+      }
     }
   }
-  const percentile = (share) => {
+  const percentile = (hist, total, share) => {
     let seen = 0;
     for (let v = 0; v < 256; v++) {
-      seen += histogram[v];
-      if (seen >= solid * share) return v;
+      seen += hist[v];
+      if (seen >= total * share) return v;
     }
     return 255;
   };
-  const lo = percentile(LOW_PERCENTILE);
-  const hi = Math.max(lo + 24, percentile(HIGH_PERCENTILE));
-  const toGrey = (r, g, b) => {
-    const t = Math.max(0, Math.min(1, (rawGrey(r, g, b) - lo) / (hi - lo)));
-    return Math.round(FLOOR_GREY + (CEIL_GREY - FLOOR_GREY) * Math.pow(t, GAMMA));
+  const ramp = (hist, total, floor, ceil) => {
+    const lo = percentile(hist, total, LOW_PERCENTILE);
+    const hi = Math.max(lo + 24, percentile(hist, total, HIGH_PERCENTILE));
+    return (r, g, b) => {
+      const t = Math.max(0, Math.min(1, (rawGrey(r, g, b) - lo) / (hi - lo)));
+      return Math.round(floor + (ceil - floor) * Math.pow(t, GAMMA));
+    };
   };
+  const toGrey = ramp(histogram, solid, FLOOR_GREY, CEIL_GREY);
+  const toBallGrey = ball ? ramp(ballHistogram, ballSolid, BALL_DARK, BALL_LIGHT) : toGrey;
 
   const grey = Buffer.alloc(outW * outH * 4);
   for (let y = 0; y < boxH; y++) {
     for (let x = 0; x < boxW; x++) {
       const si = ((minY + y) * width + (minX + x)) * 4;
       const di = ((pad + y) * outW + (pad + x)) * 4;
-      let a = data[si + 3];
+      const a = data[si + 3];
       if (a === 0) continue;
-      let v;
-      if (ghost && ghost.mask[(minY + y) * width + (minX + x)]) {
-        const d = ghost.edge[(minY + y) * width + (minX + x)];
-        const rim = Math.pow(Math.max(0, 1 - d / BALL_RIM_PX), 2);
-        const line = Math.max(0, 1 - d / BALL_LINE_PX);
-        const clear = Math.min(0.95, BALL_FILL + BALL_RIM * rim + BALL_LINE * line);
-        a = Math.round(a * clear);
-        v = BALL_GREY;
-      } else {
-        v = toGrey(data[si], data[si + 1], data[si + 2]);
-      }
+      const shade = ball && ball[(minY + y) * width + (minX + x)] ? toBallGrey : toGrey;
+      const v = shade(data[si], data[si + 1], data[si + 2]);
       grey[di] = v;
       grey[di + 1] = v;
       grey[di + 2] = v;
@@ -382,7 +350,7 @@ const entries = Object.entries(PICKS).map(([key, pick]) => {
       row.azimuth === azimuth,
   );
   if (!found) throw new Error(`${key}: no hero render at azimuth ${azimuth} in ${INDEX}`);
-  return { key, file: found.file, ghost: pick.ghost };
+  return { key, file: found.file, ball: pick.ball };
 });
 const only = argOf("only");
 const selected = only ? entries.filter((entry) => only.split(",").includes(entry.key)) : entries;

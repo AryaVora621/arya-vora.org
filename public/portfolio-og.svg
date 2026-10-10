@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#000000"/>
-  <image href="ftc/reaper.webp" x="696" y="45" width="471" height="540" preserveAspectRatio="xMidYMid meet"/>
+  <image href="ftc/reaper-model-mono.webp" x="650" y="38" width="520" height="520" preserveAspectRatio="xMidYMid meet"/>
   <g font-family="'Atkinson Hyperlegible Next', Arial, sans-serif">
     <text x="64" y="256" font-size="132" font-weight="800" fill="#ffffff" letter-spacing="-3.5">Arya Vora</text>
     <text x="70" y="338" font-size="32" font-weight="400" fill="#ffffff">Captain of FTC team 23786, MakEMinds.</text>

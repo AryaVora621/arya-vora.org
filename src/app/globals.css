@@ -99,8 +99,11 @@
     scrollbar-color: var(--muted) var(--surface);
   }
 
+  /* Smooth only for in-page links (#about, Top): AnchorSmoothScroll in PortfolioNav.tsx sets the
+     class for the length of one of those scrolls. Set on <html> itself, it would also glide route
+     changes and Chromium's restoration of the scroll position on Back and Forward. */
   @media (prefers-reduced-motion: no-preference) {
-    html {
+    html.is-anchor-scrolling {
       scroll-behavior: smooth;
     }
   }

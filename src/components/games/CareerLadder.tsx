@@ -62,7 +62,7 @@ export function CareerLadder() {
     return (
       <div className="game-stage game-intro">
         <p>
-          Forty retired NBA greats. Each round shows two of them. Pick who finished with more
+          Forty retired NBA players, two at a time. Pick who finished with more
           regular-season career points.
         </p>
         <button className="primary-button" onClick={start}>
@@ -95,7 +95,7 @@ export function CareerLadder() {
               disabled={revealed}
               aria-label={revealed ? `${p.name}, ${fmt.format(p.points)} points` : `Pick ${p.name}`}
             >
-              <span className="micro">{i === 0 ? "A" : "B"} · {p.years}</span>
+              <span className="micro">{i === 0 ? "A" : "B"}, {p.years}</span>
               <strong>{p.name}</strong>
               <span className="ladder-points tabular">
                 {revealed || i === 0 ? fmt.format(p.points) : "?"}

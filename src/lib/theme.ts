@@ -40,7 +40,7 @@ export function isTheme(value: unknown): value is Theme {
 */
 export const THEME_INIT_SCRIPT = `(function(){var d=document,h=d.documentElement,k=${JSON.stringify(
   THEME_STORAGE_KEY,
-)};function sync(){var t=h.getAttribute("data-theme"),bs=d.querySelectorAll("[data-theme-option]"),i,m,s;for(i=0;i<bs.length;i++)bs[i].setAttribute("aria-pressed",bs[i].getAttribute("data-theme-option")===t?"true":"false");m=d.querySelector('meta[name="theme-color"]');s=getComputedStyle(h).getPropertyValue("--surface").trim();if(/^#[0-9a-f]{3}$/i.test(s))s="#"+s.charAt(1)+s.charAt(1)+s.charAt(2)+s.charAt(2)+s.charAt(3)+s.charAt(3);if(m&&s)m.setAttribute("content",s)}function click(e){var b=e.target&&e.target.closest&&e.target.closest("[data-theme-option]"),t=b&&b.getAttribute("data-theme-option");if(t!=="mono"&&t!=="violet")return;try{localStorage.setItem(k,t)}catch(x){}h.setAttribute("data-theme",t);sync()}try{var t=localStorage.getItem(k);if(t==="mono"||t==="violet")h.setAttribute("data-theme",t)}catch(e){}d.addEventListener("DOMContentLoaded",sync);d.addEventListener("click",click);window.__avThemeBoot=function(){d.removeEventListener("click",click)}})()`;
+)};function sync(){var t=h.getAttribute("data-theme"),bs=d.querySelectorAll("[data-theme-option]"),i,m,s;for(i=0;i<bs.length;i++)bs[i].setAttribute("aria-pressed",bs[i].getAttribute("data-theme-option")===t?"true":"false");m=d.querySelectorAll('meta[name="theme-color"]');s=getComputedStyle(h).getPropertyValue("--surface").trim();if(/^#[0-9a-f]{3}$/i.test(s))s="#"+s.charAt(1)+s.charAt(1)+s.charAt(2)+s.charAt(2)+s.charAt(3)+s.charAt(3);if(s)for(i=0;i<m.length;i++)m[i].setAttribute("content",s)}function click(e){var b=e.target&&e.target.closest&&e.target.closest("[data-theme-option]"),t=b&&b.getAttribute("data-theme-option");if(t!=="mono"&&t!=="violet")return;try{localStorage.setItem(k,t)}catch(x){}h.setAttribute("data-theme",t);sync()}try{var t=localStorage.getItem(k);if(t==="mono"||t==="violet")h.setAttribute("data-theme",t)}catch(e){}d.addEventListener("DOMContentLoaded",sync);d.addEventListener("click",click);window.__avThemeBoot=function(){d.removeEventListener("click",click)}})()`;
 
 /**
  * Takes down the click handler THEME_INIT_SCRIPT installed, once React owns every switch.
@@ -92,12 +92,83 @@ function expandHex(value: string): string {
     .join("")}`.toLowerCase();
 }
 
-/** Points the browser's toolbar color (meta theme-color) at the current --surface. */
+// Marks the meta theme-color this file adds when Next's has been taken out and its replacement
+// has not landed yet. It is never the framework's tag and never outlives it.
+const STAND_IN_ATTRIBUTE = "data-theme-stand-in";
+
+// React puts __reactFiber$... and __reactMarker$... on every DOM node it owns, and a head tag it
+// hydrated or created is one of them. A tag without them is one React does not know about: the
+// one this file adds, or the server's own tag after THEME_INIT_SCRIPT recolored it (React hydrates
+// a meta by matching its content, so the recolored tag no longer matches, and React appends a
+// tag of its own). Nothing React owns may be removed behind its back: when the route changes it
+// calls parentNode.removeChild on the tag it made, and that throws if the tag is gone.
+function ownedByReact(node: Element): boolean {
+  return Object.keys(node).some((key) => key.startsWith("__react"));
+}
+
+/**
+ * Points the browser's toolbar color (meta theme-color) at the current --surface, keeps one
+ * theme-color tag where there could be two, and makes sure there is a tag to point.
+ *
+ * Before the page is hydrated the one tag is the server's, recolored by THEME_INIT_SCRIPT. React
+ * cannot hydrate that tag once it is recolored (its content no longer matches what React renders
+ * from the viewport export), so it adds its own at hydration, and a Violet arrival ended up with
+ * two tags: the server's in the right color and React's in #000000. As soon as React owns a tag
+ * the others go and React's is recolored, in the same step, so the head never has two and the
+ * toolbar color never has a frame in the wrong one. Until then (before hydration, or between two
+ * routes) a tag React does not own is the only tag, so it stays.
+ *
+ * Next also takes the old route's tag out and puts the new one in as two separate steps on some
+ * navigations (Home to a project, or back, in WebKit and Chromium alike), with 10 to 40 ms
+ * between them, long enough for the browser to draw a frame and drop the toolbar to its default
+ * color. For that time a stand-in tag holds the color; it goes the moment the framework's tag is
+ * back.
+ */
 export function syncThemeColorMeta(): void {
   if (typeof document === "undefined") return;
-  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   const surface = themeColor("--surface");
-  if (meta && surface && meta.content !== surface) meta.content = surface;
+  if (!surface) return;
+  const metas = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')];
+  const owned = metas.filter(ownedByReact);
+  const loose = metas.filter((meta) => !ownedByReact(meta));
+  const tags = owned.length ? owned : loose;
+  if (owned.length) {
+    for (const meta of loose) meta.remove();
+  } else if (!loose.length) {
+    const standIn = document.createElement("meta");
+    standIn.name = "theme-color";
+    standIn.setAttribute(STAND_IN_ATTRIBUTE, "");
+    document.head.append(standIn);
+    tags.push(standIn);
+  }
+  for (const meta of tags) if (meta.content !== surface) meta.content = surface;
+}
+
+/**
+ * Keeps meta theme-color on the current --surface for as long as it runs. Next replaces the
+ * page's head tags on a client-side navigation, and the new theme-color is the layout's #000000
+ * (the viewport export cannot know the theme), so without this the toolbar goes black again in
+ * violet after the first route change. Watching the head catches the new tag whenever it lands,
+ * and the tag that is missing between the old one going and the new one arriving; the callback
+ * runs as a microtask right after the change, before the browser can draw or a script can look.
+ * syncThemeColorMeta writes only when something differs, so its own writes do not set it off
+ * again. Returns the function that stops watching.
+ */
+export function watchThemeColorMeta(): () => void {
+  if (typeof document === "undefined") return () => {};
+  const observer = new MutationObserver(syncThemeColorMeta);
+  observer.observe(document.head, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["content"],
+  });
+  return () => {
+    observer.disconnect();
+    // Nothing is left to replace the stand-in once the watching stops, and a stale one ahead of
+    // the framework's next tag would be the one the browser reads.
+    document.querySelectorAll(`meta[${STAND_IN_ATTRIBUTE}]`).forEach((meta) => meta.remove());
+  };
 }
 
 /**

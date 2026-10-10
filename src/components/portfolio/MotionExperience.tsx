@@ -242,16 +242,21 @@ export function MotionExperience() {
     gsap.registerPlugin(ScrollTrigger);
     const media = gsap.matchMedia();
     media.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.to(".hero-art", {
-        y: 72,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".portfolio-hero",
-          start: "top top",
-          end: "bottom top",
-          scrub: 0.8,
-        },
-      });
+      // Only the home page has the hero; the /projects pages share this nav without it.
+      const heroArt = document.querySelector(".hero-art");
+      const hero = document.querySelector(".portfolio-hero");
+      if (heroArt && hero) {
+        gsap.to(heroArt, {
+          y: 72,
+          ease: "none",
+          scrollTrigger: {
+            trigger: hero,
+            start: "top top",
+            end: "bottom top",
+            scrub: 0.8,
+          },
+        });
+      }
 
       let refreshFrame = 0;
       let lastHeight = 0;

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// One public page, so everything is open to crawlers. The site address matches
+// Every page is public, so everything is open to crawlers. The site address matches
 // metadataBase in layout.tsx.
 export default function robots(): MetadataRoute.Robots {
   return {

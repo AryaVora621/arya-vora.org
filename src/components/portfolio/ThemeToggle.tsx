@@ -11,6 +11,7 @@ import {
   releaseThemeBoot,
   setTheme,
   syncThemeColorMeta,
+  watchThemeColorMeta,
   THEME_STORAGE_KEY,
   type Theme,
 } from "@/lib/theme";
@@ -70,9 +71,16 @@ export function ThemeToggle() {
       applyTheme(isTheme(event.newValue) ? event.newValue : DEFAULT_THEME);
     };
     window.addEventListener("storage", onStorage);
+    // A client-side navigation swaps the page's metadata, and the new meta theme-color holds the
+    // layout's #000000 whatever theme is on <html>. It lands a frame or more after the route
+    // commits, later than any effect keyed on the route, so the tag is watched instead. The watch
+    // also takes out the server's own theme-color tag once React's has landed (see
+    // syncThemeColorMeta), so a hard load leaves one tag and not two.
+    const unwatchMeta = watchThemeColorMeta();
     return () => {
       liveToggles -= 1;
       window.removeEventListener("storage", onStorage);
+      unwatchMeta();
     };
   }, []);
 
