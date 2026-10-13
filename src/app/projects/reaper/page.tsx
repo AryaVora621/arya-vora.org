@@ -8,6 +8,7 @@ import {
   ReaperRoleBlock,
   ReaperSpecsBlock,
 } from "@/components/ftc/ReaperBlocks";
+import { ReaperRebuild } from "@/components/ftc/ReaperRebuild";
 import type { CustomBlocks } from "@/components/projects/ProjectBlocks";
 import { ProjectView, projectPageMetadata } from "../_view/project-view";
 
@@ -21,6 +22,7 @@ import { ProjectView, projectPageMetadata } from "../_view/project-view";
 */
 const REAPER_BLOCKS: CustomBlocks = {
   "reaper-model": ReaperModelBlock,
+  "reaper-rebuild": ReaperRebuild,
   "reaper-specs": ReaperSpecsBlock,
   "reaper-iterations": ReaperIterationsBlock,
   "reaper-results": ReaperResultsBlock,
