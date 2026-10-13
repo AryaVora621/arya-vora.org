@@ -2,124 +2,145 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import styles from "./ReaperRebuild.module.css";
 import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
-import { prefersStill } from "@/components/robopet/gpu";
-import { onThemeChange } from "@/lib/theme";
+import { prefersStill, shouldUseStill } from "@/components/robopet/gpu";
+import { onThemeChange, themeColor } from "@/lib/theme";
+import {
+  createReaperModel,
+  setReaperColors,
+  setReaperFocus,
+  setReaperViewport,
+  type ReaperPartId,
+} from "./createReaperModel";
+import * as studio3d from "./reaperStudio";
 
 /*
   Interactive scroll-driven CAD reassembly of FTC 23786 MakEMinds' robot Reaper.
-  Loads the complete 197-part robot CAD model (/ftc/reaper.glb) and disperses components
-  into 3D space. As the visitor scrolls through the 560vh track, each of the 6 core
-  subsystems reassembles bottom-up in sequence:
+  Uses the authentic procedural 3D model (createReaperModel) matching the highlight
+  stage at the top of the page.
 
-  1. Drivetrain (38 parts)
-  2. Intake (65 parts)
-  3. Lift (30 parts)
-  4. Turret (38 parts)
-  5. Shooter (21 parts)
-  6. Electronics (5 parts)
-  Total: 197 parts
+  As the visitor scrolls through the 560vh track, each of the 7 authentic subsystems
+  converges from dispersed 3D coordinates into its exact docked position on the chassis:
 
-  Includes ghost silhouette target geometry, slerp quaternion / position interpolation,
-  drag-to-orbit pointer controls, live placed parts counter, responsive layout,
-  dual-theme support, and full prefers-reduced-motion accessibility fallbacks.
+  1. Drivetrain (34 parts) - goBILDA U-channel chassis, 4 mecanum wheels, gearmotors
+  2. Intake (28 parts) - Full-width lifting intake, compliant rollers, centering mecanums
+  3. Transfer (16 parts) - 1150 RPM gecko-wheel indexer and guide ramp
+  4. Shooter (26 parts) - Dual 6000 RPM motors, weighted flywheel, tilting hood
+  5. Limelight 3A (8 parts) - Optical AprilTag targeting sensor under the hood
+  6. Protection (18 parts) - CNC plywood side plates with #23786 & acrylic shields
+  7. Electronics (22 parts) - REV Control Hub, Expansion Hub, battery, and Pinpoint computer
+  Total: 152 parts
+
+  Features:
+  - Synchronous in-memory model generation (0 KB external download, instant load)
+  - Subtle translucent blueprint/ghost silhouette of the target robot geometry
+  - Active subsystem accent outline (inverted smoothed hull) & silhouette rim lighting
+  - Live placed parts counter (0 to 152) and responsive subsystem description card
+  - Drag-to-orbit pointer controls with smooth damping
+  - Seamless dual-theme support (monochrome neutral palette or violet accents)
+  - Full prefers-reduced-motion accessibility fallbacks
 */
 
 type SubsystemDef = {
-  key: string;
+  key: ReaperPartId;
   name: string;
-  match: string;
   partCount: number;
   start: number;
   end: number;
   title: string;
   body: string;
+  dispOffset: [number, number, number]; // millimeters in model space
+  dispRot: [number, number, number]; // radians
 };
 
 const SUBSYSTEMS: readonly SubsystemDef[] = [
   {
-    key: "drivetrain",
+    key: "drive",
     name: "Drivetrain",
-    match: "drivetrain",
-    partCount: 38,
+    partCount: 34,
     start: 0.0,
-    end: 0.16,
-    title: "8-Wheel Mecanum Base",
+    end: 0.15,
+    title: "goBILDA Mecanum Chassis",
     body: "Four NeveRest gearmotors drive 96mm mecanum wheels geared for high-speed cycle times across the DECODE field. Perforated goBILDA channel chassis provides rigid mounting for all superstructure uprights.",
+    dispOffset: [0, -220, 0],
+    dispRot: [0.08, 0, 0],
   },
   {
     key: "intake",
     name: "Intake",
-    match: "intake",
-    partCount: 65,
-    start: 0.16,
-    end: 0.33,
-    title: "Active Roller & Compliant Wheels",
-    body: "Dual compliant-wheel rollers driven via polycord belts sweep artifacts over the perimeter and center them into the transfer indexer in under 0.4 seconds.",
+    partCount: 28,
+    start: 0.15,
+    end: 0.3,
+    title: "Full-Width Lifting Intake",
+    body: "Dual compliant-wheel rollers and centering mecanum wheels sweep artifacts over the perimeter and center them into the transfer indexer in under 0.4 seconds.",
+    dispOffset: [0, 140, 340],
+    dispRot: [-0.42, 0, 0],
   },
   {
-    key: "lift",
-    name: "Lift",
-    match: "lift",
-    partCount: 30,
-    start: 0.33,
-    end: 0.5,
-    title: "Twin-Stage Telescoping Lift",
-    body: "Precision linear slide cascade powered by continuous synthetic cord rigging elevates the turret assembly to high-basket scoring elevations.",
-  },
-  {
-    key: "turret",
-    name: "Turret",
-    match: "turret",
-    partCount: 38,
-    start: 0.5,
-    end: 0.67,
-    title: "Continuous Azimuth Turret",
-    body: "High-precision lazy-susan ring bearing driven by an encoder-equipped planetary motor allows 360° targeting independent of chassis orientation.",
+    key: "transfer",
+    name: "Transfer",
+    partCount: 16,
+    start: 0.3,
+    end: 0.44,
+    title: "1150 RPM Gecko Indexer",
+    body: "High-grip gecko wheel powered by an 1150 RPM motor carries artifacts up a low-friction ramp directly to the shooter staging gate.",
+    dispOffset: [0, 260, 160],
+    dispRot: [0.25, 0.1, 0],
   },
   {
     key: "shooter",
     name: "Shooter",
-    match: "shooter",
-    partCount: 21,
-    start: 0.67,
-    end: 0.83,
-    title: "Dual Flywheel Launcher & Variable Hood",
-    body: "Counter-rotating high-inertia flywheels paired with an articulated curved hood launch artifacts into the alliance goal with vision-adjusted arc angles.",
+    partCount: 26,
+    start: 0.44,
+    end: 0.58,
+    title: "Twin 6000 RPM Flywheels & Hood",
+    body: "Dual high-inertia counter-rotating flywheels under a servo-articulated curved hood launch artifacts into the alliance goal with vision-adjusted arc angles.",
+    dispOffset: [0, 360, -80],
+    dispRot: [-0.15, 0, 0],
+  },
+  {
+    key: "aiming",
+    name: "Limelight 3A",
+    partCount: 8,
+    start: 0.58,
+    end: 0.72,
+    title: "AprilTag Optical Targeting",
+    body: "Vision sensor mounted under the hood reads field AprilTags at 60 fps to automate target distance and continuous hood elevation.",
+    dispOffset: [0, 180, 240],
+    dispRot: [0.1, 0.2, 0],
+  },
+  {
+    key: "protection",
+    name: "Protection",
+    partCount: 18,
+    start: 0.72,
+    end: 0.86,
+    title: "CNC Wooden Plates & Shields",
+    body: "CNC-routed birch plywood side plates etched with #23786, polycarbonate inner plates, and acrylic shields protect internal wiring from ball impacts.",
+    dispOffset: [0, 0, 0],
+    dispRot: [0, 0, 0],
   },
   {
     key: "electronics",
     name: "Electronics",
-    match: "electronics",
-    partCount: 5,
-    start: 0.83,
+    partCount: 22,
+    start: 0.86,
     end: 1.0,
-    title: "REV Hubs & Limelight 3A Vision",
-    body: "REV Control Hub and Expansion Hub handle closed-loop velocity control across all mechanisms, while a Limelight 3A tracks field AprilTags for automated aiming.",
+    title: "REV Hubs & Pinpoint Odometry",
+    body: "REV Control Hub and Expansion Hub handle closed-loop velocity control across all mechanisms, backed by a goBILDA Pinpoint computer for sub-millimeter localization.",
+    dispOffset: [0, 120, -320],
+    dispRot: [0.2, 0, 0],
   },
 ] as const;
 
-const TOTAL_PARTS = 197;
+const TOTAL_PARTS = 152;
 
-/** Seeded PRNG (mulberry32) for deterministic CAD dispersion */
-function createPrng(seed: number) {
-  let a = seed;
-  return function () {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-type PartRecord = {
+type PartAnimationRecord = {
   obj: THREE.Object3D;
-  restPos: THREE.Vector3;
-  restQuat: THREE.Quaternion;
+  basePos: THREE.Vector3;
   dispPos: THREE.Vector3;
+  baseQuat: THREE.Quaternion;
   dispQuat: THREE.Quaternion;
   start: number;
   end: number;
@@ -131,13 +152,12 @@ export function ReaperRebuild() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [isLive, setIsLive] = useState(false);
-  const [activeSubsystem, setActiveSubsystem] = useState<string>("drivetrain");
+  const [activeSubsystem, setActiveSubsystem] = useState<ReaperPartId>("drive");
   const [placedParts, setPlacedParts] = useState(TOTAL_PARTS);
   const [loaded, setLoaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Store mutable refs for animation loop
-  const partsRef = useRef<PartRecord[]>([]);
+  // Animation and interaction state
   const scrollProgressRef = useRef(0);
   const userYawRef = useRef(0);
   const userPitchRef = useRef(0);
@@ -145,7 +165,7 @@ export function ReaperRebuild() {
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const dragStartAnglesRef = useRef({ yaw: 0, pitch: 0 });
 
-  // Only activate live WebGL when the section enters the viewport and GPU is suitable
+  // Activate WebGL when section nears viewport and GPU is adequate
   useEffect(() => {
     const track = trackRef.current;
     if (!track || prefersStill()) return;
@@ -174,55 +194,186 @@ export function ReaperRebuild() {
     let disposed = false;
     let animId = 0;
 
-    // Set up WebGL renderer
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: true,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+    } catch {
+      return;
+    }
+
+    if (shouldUseStill(renderer.getContext())) {
+      renderer.dispose();
+      return;
+    }
+
+    const coarse = matchMedia("(pointer: coarse)").matches;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = !coarse;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 20);
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
 
-    // Pivot group to center the CAD model
-    const pivot = new THREE.Group();
-    scene.add(pivot);
+    // Studio lighting environment
+    const studio = studio3d.addReaperStudio(renderer, scene, {
+      shadows: !coarse,
+      floorColor: themeColor("--surface", "#111111"),
+      tint: themeColor("--accent", "#ffffff"),
+    });
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
-    scene.add(ambientLight);
+    const getColors = () => ({
+      accent: themeColor("--accent", "#ffffff"),
+      eye: themeColor("--eye", "#ffffff"),
+    });
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
-    keyLight.position.set(4, 6, 5);
-    scene.add(keyLight);
-
-    const fillLight = new THREE.DirectionalLight(0xddeeff, 1.2);
-    fillLight.position.set(-5, 3, -4);
-    scene.add(fillLight);
-
-    const rimLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    rimLight.position.set(0, -4, 4);
-    scene.add(rimLight);
-
-    // Theme adjustment
-    const updateThemeLights = () => {
-      const isViolet = document.documentElement.getAttribute("data-theme") === "violet";
-      if (isViolet) {
-        fillLight.color.setHex(0xb892ff);
-        fillLight.intensity = 1.6;
-      } else {
-        fillLight.color.setHex(0xddeeff);
-        fillLight.intensity = 1.2;
+    // 1. Ghost blueprint model (subtle translucent target silhouette)
+    const ghost = createReaperModel({ shadows: false });
+    ghost.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        mesh.material = new THREE.MeshBasicMaterial({
+          color: 0x888888,
+          transparent: true,
+          opacity: 0.045,
+          depthWrite: false,
+        });
       }
-    };
-    updateThemeLights();
-    const unbindTheme = onThemeChange(updateThemeLights);
+    });
+    scene.add(ghost);
 
-    // Resize handler
+    // 2. Active procedural Reaper model
+    const model = createReaperModel({
+      shadows: !coarse,
+      colors: getColors(),
+    });
+    scene.add(model);
+
+    // Theme synchronization
+    const syncTheme = () => {
+      const isViolet = document.documentElement.getAttribute("data-theme") === "violet";
+      studio.setFloorColor(themeColor("--surface", "#111111"));
+      studio.setLightTint(isViolet ? themeColor("--accent", "#b892ff") : null);
+      setReaperColors(model, {
+        accent: themeColor("--accent", isViolet ? "#b892ff" : "#ffffff"),
+        eye: themeColor("--eye", isViolet ? "#8ef9f3" : "#ffffff"),
+      });
+    };
+    syncTheme();
+    const unbindTheme = onThemeChange(syncTheme);
+
+    // Prepare animation trajectories for each subsystem
+    const animRecords: PartAnimationRecord[] = [];
+
+    SUBSYSTEMS.forEach((sub) => {
+      const group = model.getObjectByName(`reaper-${sub.key}`);
+      if (!group) return;
+
+      const basePos = group.position.clone();
+      const baseQuat = group.quaternion.clone();
+
+      if (sub.key === "protection") {
+        // Protection base group stays centered; side plates and rear shield slide in laterally
+        const leftPlate = model.getObjectByName("reaper-plate-left");
+        const rightPlate = model.getObjectByName("reaper-plate-right");
+        const shield = model.getObjectByName("reaper-shield");
+
+        if (leftPlate) {
+          const lBasePos = leftPlate.position.clone();
+          const lBaseQuat = leftPlate.quaternion.clone();
+          const lDispPos = lBasePos.clone().add(new THREE.Vector3(260, 0, 0));
+          const lDeltaQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -0.15));
+          animRecords.push({
+            obj: leftPlate,
+            basePos: lBasePos,
+            dispPos: lDispPos,
+            baseQuat: lBaseQuat,
+            dispQuat: lBaseQuat.clone().multiply(lDeltaQ),
+            start: sub.start,
+            end: sub.end,
+          });
+        }
+
+        if (rightPlate) {
+          const rBasePos = rightPlate.position.clone();
+          const rBaseQuat = rightPlate.quaternion.clone();
+          const rDispPos = rBasePos.clone().add(new THREE.Vector3(-260, 0, 0));
+          const rDeltaQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0.15));
+          animRecords.push({
+            obj: rightPlate,
+            basePos: rBasePos,
+            dispPos: rDispPos,
+            baseQuat: rBaseQuat,
+            dispQuat: rBaseQuat.clone().multiply(rDeltaQ),
+            start: sub.start,
+            end: sub.end,
+          });
+        }
+
+        if (shield) {
+          const sBasePos = shield.position.clone();
+          const sBaseQuat = shield.quaternion.clone();
+          const sDispPos = sBasePos.clone().add(new THREE.Vector3(0, 80, -240));
+          const sDeltaQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.2, 0, 0));
+          animRecords.push({
+            obj: shield,
+            basePos: sBasePos,
+            dispPos: sDispPos,
+            baseQuat: sBaseQuat,
+            dispQuat: sBaseQuat.clone().multiply(sDeltaQ),
+            start: sub.start,
+            end: sub.end,
+          });
+        }
+      } else {
+        const dispPos = basePos.clone().add(new THREE.Vector3(...sub.dispOffset));
+        const deltaQuat = new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(...sub.dispRot),
+        );
+        const dispQuat = baseQuat.clone().multiply(deltaQuat);
+
+        animRecords.push({
+          obj: group,
+          basePos,
+          dispPos,
+          baseQuat,
+          dispQuat,
+          start: sub.start,
+          end: sub.end,
+        });
+
+        // Additional sub-element motion for shooter hood
+        if (sub.key === "shooter") {
+          const hood = model.getObjectByName("reaper-hood");
+          if (hood) {
+            const hBasePos = hood.position.clone();
+            const hBaseQuat = hood.quaternion.clone();
+            const hDispPos = hBasePos.clone().add(new THREE.Vector3(0, 90, -20));
+            animRecords.push({
+              obj: hood,
+              basePos: hBasePos,
+              dispPos: hDispPos,
+              baseQuat: hBaseQuat,
+              dispQuat: hBaseQuat,
+              start: sub.start,
+              end: sub.end,
+            });
+          }
+        }
+      }
+    });
+
+    setLoaded(true);
+
+    // Responsive canvas handling
+    let currentAspect = 1;
     const handleResize = () => {
       if (!canvas || disposed) return;
       const rect = canvas.getBoundingClientRect();
@@ -230,136 +381,15 @@ export function ReaperRebuild() {
       const height = rect.height;
       if (width === 0 || height === 0) return;
 
-      camera.aspect = width / height;
+      currentAspect = width / height;
+      camera.aspect = currentAspect;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
+      setReaperViewport(model, width, height);
     };
     handleResize();
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(canvas);
-
-    // Load CAD model
-    const loader = new GLTFLoader();
-    loader.setMeshoptDecoder(MeshoptDecoder);
-
-    loader.load(
-      "/ftc/reaper.glb",
-      (gltf) => {
-        if (disposed) return;
-
-        const model = gltf.scene;
-
-        // Compute model bounds to center and scale
-        const box = new THREE.Box3().setFromObject(model);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-
-        // Center model within pivot
-        model.position.set(-center.x, -center.y, -center.z);
-        pivot.add(model);
-
-        // Create ghost silhouette model
-        const ghost = gltf.scene.clone(true);
-        ghost.position.set(-center.x, -center.y, -center.z);
-        ghost.traverse((obj) => {
-          if ((obj as THREE.Mesh).isMesh) {
-            const mesh = obj as THREE.Mesh;
-            mesh.material = new THREE.MeshBasicMaterial({
-              color: 0x888888,
-              transparent: true,
-              opacity: 0.045,
-              depthWrite: false,
-            });
-          }
-        });
-        pivot.add(ghost);
-
-        // Map the 6 subsystems and their 197 child components
-        const rng = createPrng(23786); // FTC Team 23786 seed
-        const partRecords: PartRecord[] = [];
-
-        SUBSYSTEMS.forEach((sub) => {
-          let subObj: THREE.Object3D | null = null;
-          model.traverse((o) => {
-            const nameLower = o.name.toLowerCase();
-            if (nameLower.includes("sys") && nameLower.includes(sub.match)) {
-              subObj = o;
-            }
-          });
-
-          if (!subObj) return;
-
-          // Collect parts in this subsystem
-          const children = [...(subObj as THREE.Object3D).children];
-
-          // Sort parts bottom-up along Y axis
-          children.sort((a, b) => {
-            const boxA = new THREE.Box3().setFromObject(a);
-            const boxB = new THREE.Box3().setFromObject(b);
-            const yA = boxA.isEmpty() ? a.position.y : (boxA.min.y + boxA.max.y) / 2;
-            const yB = boxB.isEmpty() ? b.position.y : (boxB.min.y + boxB.max.y) / 2;
-            return yA - yB;
-          });
-
-          const count = children.length;
-          children.forEach((child, idx) => {
-            const restPos = child.position.clone();
-            const restQuat = child.quaternion.clone();
-
-            // Dispersion vector
-            const r1 = rng();
-            const r2 = rng();
-            const r3 = rng();
-            const r4 = rng();
-            const r5 = rng();
-
-            const radial = new THREE.Vector3(child.position.x, 0, child.position.z);
-            if (radial.lengthSq() < 0.0001) {
-              const theta = r1 * Math.PI * 2;
-              radial.set(Math.cos(theta), 0, Math.sin(theta));
-            } else {
-              radial.normalize();
-            }
-
-            const dispOffset = radial
-              .multiplyScalar(0.42 + r2 * 0.58)
-              .add(new THREE.Vector3((r3 - 0.5) * 0.25, (r4 - 0.2) * 0.55, (r5 - 0.5) * 0.25));
-
-            const dispPos = restPos.clone().add(dispOffset);
-
-            // Random rotation delta
-            const randAxis = new THREE.Vector3(rng() - 0.5, rng() - 0.5, rng() - 0.5).normalize();
-            const randAngle = (rng() - 0.5) * Math.PI * 1.8;
-            const deltaQuat = new THREE.Quaternion().setFromAxisAngle(randAxis, randAngle);
-            const dispQuat = restQuat.clone().multiply(deltaQuat);
-
-            // Stagger parts within subsystem window
-            const windowSpan = sub.end - sub.start;
-            const partStart = sub.start + (idx / Math.max(1, count)) * windowSpan * 0.72;
-            const partEnd = Math.min(1.0, partStart + windowSpan * 0.38);
-
-            partRecords.push({
-              obj: child,
-              restPos,
-              restQuat,
-              dispPos,
-              dispQuat,
-              start: partStart,
-              end: partEnd,
-            });
-          });
-        });
-
-        partsRef.current = partRecords;
-        setLoaded(true);
-      },
-      undefined,
-      (err) => {
-        console.error("Failed to load /ftc/reaper.glb:", err);
-      },
-    );
 
     // Scroll listener
     const handleScroll = () => {
@@ -375,7 +405,7 @@ export function ReaperRebuild() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
 
-    // Pointer controls for interactive drag-to-orbit
+    // Pointer controls for drag-to-orbit
     const onPointerDown = (e: PointerEvent) => {
       isDraggingRef.current = true;
       setIsDragging(true);
@@ -388,10 +418,10 @@ export function ReaperRebuild() {
       if (!isDraggingRef.current) return;
       const dx = e.clientX - dragStartPosRef.current.x;
       const dy = e.clientY - dragStartPosRef.current.y;
-      userYawRef.current = dragStartAnglesRef.current.yaw + dx * 0.006;
+      userYawRef.current = dragStartAnglesRef.current.yaw + dx * 0.005;
       userPitchRef.current = Math.max(
-        -0.5,
-        Math.min(0.7, dragStartAnglesRef.current.pitch + dy * 0.006),
+        -0.45,
+        Math.min(0.65, dragStartAnglesRef.current.pitch + dy * 0.005),
       );
     };
 
@@ -410,64 +440,95 @@ export function ReaperRebuild() {
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointercancel", onPointerUp);
 
-    // Animation frame loop
+    // Main render loop
     let lastPlaced = -1;
-    let lastActiveSub = "";
+    let lastActiveSub: ReaperPartId | null = null;
+    let focusClearedAtEnd = false;
 
     const renderLoop = () => {
       if (disposed) return;
 
       const p = motionAllowed ? scrollProgressRef.current : 1.0;
 
-      // Update part positions and count placed
-      let placedCount = 0;
-      const parts = partsRef.current;
-      for (let i = 0; i < parts.length; i++) {
-        const item = parts[i];
+      // Animate subsystems along their trajectory
+      for (let i = 0; i < animRecords.length; i++) {
+        const item = animRecords[i];
         if (p <= item.start) {
           item.obj.position.copy(item.dispPos);
           item.obj.quaternion.copy(item.dispQuat);
         } else if (p >= item.end) {
-          item.obj.position.copy(item.restPos);
-          item.obj.quaternion.copy(item.restQuat);
-          placedCount++;
+          item.obj.position.copy(item.basePos);
+          item.obj.quaternion.copy(item.baseQuat);
         } else {
           const t = (p - item.start) / (item.end - item.start);
           const ease = t * t * (3 - 2 * t);
-          item.obj.position.lerpVectors(item.dispPos, item.restPos, ease);
-          item.obj.quaternion.slerpQuaternions(item.dispQuat, item.restQuat, ease);
+          item.obj.position.lerpVectors(item.dispPos, item.basePos, ease);
+          item.obj.quaternion.slerpQuaternions(item.dispQuat, item.baseQuat, ease);
         }
       }
 
-      // Determine active subsystem
-      let curSub = SUBSYSTEMS[0].key;
-      for (let i = 0; i < SUBSYSTEMS.length; i++) {
-        if (p >= SUBSYSTEMS[i].start) {
-          curSub = SUBSYSTEMS[i].key;
+      // Compute total placed parts across subsystems
+      let currentPlaced = 0;
+      let curSubKey: ReaperPartId = SUBSYSTEMS[0].key;
+
+      SUBSYSTEMS.forEach((sub) => {
+        if (p <= sub.start) {
+          // not started yet
+        } else if (p >= sub.end) {
+          currentPlaced += sub.partCount;
+        } else {
+          curSubKey = sub.key;
+          const subT = (p - sub.start) / (sub.end - sub.start);
+          currentPlaced += Math.round(subT * sub.partCount);
+        }
+      });
+
+      if (p >= 1.0) {
+        currentPlaced = TOTAL_PARTS;
+      }
+
+      // Check current active subsystem for focus highlighting
+      if (p < 0.99) {
+        for (let i = 0; i < SUBSYSTEMS.length; i++) {
+          if (p >= SUBSYSTEMS[i].start) {
+            curSubKey = SUBSYSTEMS[i].key;
+          }
         }
       }
 
-      if (placedCount !== lastPlaced) {
-        lastPlaced = placedCount;
-        setPlacedParts(placedCount);
-      }
-      if (curSub !== lastActiveSub) {
-        lastActiveSub = curSub;
-        setActiveSubsystem(curSub);
+      // Update state if changed
+      if (currentPlaced !== lastPlaced) {
+        lastPlaced = currentPlaced;
+        setPlacedParts(currentPlaced);
       }
 
-      // Camera orbit arc
-      const baseAngle = -0.75 + p * 1.6;
+      if (p >= 0.99) {
+        if (!focusClearedAtEnd) {
+          focusClearedAtEnd = true;
+          setReaperFocus(model, {}, 0.0);
+        }
+      } else {
+        focusClearedAtEnd = false;
+        if (curSubKey !== lastActiveSub) {
+          lastActiveSub = curSubKey;
+          setActiveSubsystem(curSubKey);
+          setReaperFocus(model, { [curSubKey]: 1.0 }, 0.28);
+        }
+      }
+
+      // Cinematic camera orbit arc
+      const baseAngle = -0.55 + p * 1.35;
       const totalYaw = baseAngle + userYawRef.current;
-      const totalPitch = 0.24 + userPitchRef.current;
-      const dist = 1.15;
+      const totalPitch = 0.22 + userPitchRef.current;
+      const baseDist = 3.1;
+      const dist = currentAspect <= 1 ? baseDist / Math.pow(currentAspect, 0.8) : baseDist;
 
-      const camX = Math.sin(totalYaw) * dist * Math.cos(totalPitch);
-      const camY = Math.sin(totalPitch) * dist + 0.08;
-      const camZ = Math.cos(totalYaw) * dist * Math.cos(totalPitch);
+      const camX = studio3d.REAPER_TARGET.x + Math.sin(totalYaw) * dist * Math.cos(totalPitch);
+      const camY = studio3d.REAPER_TARGET.y + Math.sin(totalPitch) * dist;
+      const camZ = studio3d.REAPER_TARGET.z + Math.cos(totalYaw) * dist * Math.cos(totalPitch);
 
       camera.position.set(camX, camY, camZ);
-      camera.lookAt(0, 0, 0);
+      camera.lookAt(studio3d.REAPER_TARGET);
 
       renderer.render(scene, camera);
       animId = requestAnimationFrame(renderLoop);
@@ -485,6 +546,7 @@ export function ReaperRebuild() {
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerUp);
+      studio.dispose();
       renderer.dispose();
     };
   }, [isLive, motionAllowed]);
@@ -502,7 +564,7 @@ export function ReaperRebuild() {
           </span>
           <h2 className={styles.title}>Rebuilding Reaper</h2>
           <p className={styles.lede}>
-            Scroll to reassemble Reaper from 197 raw CAD components across six primary subsystems.
+            Scroll to reassemble Reaper from 152 CAD components across seven primary subsystems.
           </p>
 
           <ol className={styles.systems}>
@@ -555,7 +617,7 @@ export function ReaperRebuild() {
           )}
           {isLive && (
             <div className={`${styles.load} ${loaded ? styles.loadDone : ""}`}>
-              Loading 197 CAD components…
+              Loading 152 CAD components…
             </div>
           )}
         </div>

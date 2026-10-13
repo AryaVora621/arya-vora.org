@@ -228,7 +228,10 @@
     height: 44svh;
     min-height: 240px;
   }
-  .title,
+  .title {
+    font-size: clamp(20px, 5.2vw, 26px);
+    margin-block: 4px 6px;
+  }
   .lede,
   .systems {
     display: none;

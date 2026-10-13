@@ -62,7 +62,7 @@ export const reaper: Project = {
       items: [
         {
           src: "/ftc/reaper-model-mono.webp",
-          alt: "An Onshape render of Reaper: the complete robot assembly with mecanum drivetrain, compliant-wheel intake, cascading lift, azimuth turret, and hooded flywheel shooter.",
+          alt: "An Onshape render of Reaper: the complete robot assembly with mecanum drivetrain, full-width lifting intake, gecko-wheel transfer, and hooded flywheel shooter.",
           width: 1200,
           height: 1200,
           caption: "WorldsRobo, the team’s Onshape assembly of Reaper.",
