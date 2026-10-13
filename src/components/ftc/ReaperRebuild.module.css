@@ -187,8 +187,12 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  background: url("/ftc/worldsrobo-cad.webp") center / contain no-repeat;
+  background: url("/ftc/reaper-model-mono.webp") center / contain no-repeat;
   pointer-events: none;
+}
+
+:global(html[data-theme="violet"]) .stillBg {
+  background-image: url("/ftc/reaper-model-violet.webp");
 }
 
 .load {

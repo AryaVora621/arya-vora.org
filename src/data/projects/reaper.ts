@@ -8,9 +8,7 @@ import type { Project } from "./types";
 // robot scores (artifacts launched into a goal), which every spec row on the page assumes.
 //
 // Photos are the team's, cut from its 2025-26 engineering portfolio by
-// scripts/prepare-ftc-images.mjs. WorldsRobo is the team's Onshape assembly of the robot, and it
-// is incomplete; its caption says only that some parts are missing, since the model's caption
-// higher on the page already says the model is incomplete. The cover is a still of the 3D
+// scripts/prepare-ftc-images.mjs. WorldsRobo is the team's Onshape assembly of the robot. The cover is a still of the 3D
 // model the page draws, so it leads the preview cards; the page itself leaves it off (hideCoverOnPage), because the Mechanisms block opens the
 // page on the same model from the same angle: it draws the page header itself
 // (headerInFirstBlock), with the model in the columns beside it, so the model is on the first
@@ -63,11 +61,11 @@ export const reaper: Project = {
       heading: "In Onshape",
       items: [
         {
-          src: "/ftc/worldsrobo-cad.webp",
-          alt: "An Onshape render of the robot: perforated aluminum channel around a flywheel housing with a gearmotor on its side, mecanum wheels at the corners and a side plate behind.",
-          width: 1414,
+          src: "/ftc/reaper-model-mono.webp",
+          alt: "An Onshape render of Reaper: the complete robot assembly with mecanum drivetrain, compliant-wheel intake, cascading lift, azimuth turret, and hooded flywheel shooter.",
+          width: 1200,
           height: 1200,
-          caption: "WorldsRobo, the team’s Onshape assembly of Reaper. Some parts are missing.",
+          caption: "WorldsRobo, the team’s Onshape assembly of Reaper.",
           tint: true,
         },
       ],
