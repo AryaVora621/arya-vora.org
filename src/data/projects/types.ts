@@ -14,6 +14,7 @@ export type ImageRef = {
 };
 
 export type CustomComponent =
+  | "reaper-rebuild"
   | "reaper-model"
   | "reaper-specs"
   | "reaper-iterations"

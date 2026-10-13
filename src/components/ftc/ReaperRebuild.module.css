@@ -1,0 +1,268 @@
+.rebuild {
+  position: relative;
+  height: 560vh;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(24px, 4vw, 64px);
+  align-items: center;
+  padding-block: 84px 32px;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-caption);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+:global(html[data-theme="violet"]) .dot {
+  background: var(--accent);
+}
+
+.title {
+  font-size: clamp(36px, 4.2vw, 64px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin-block: 14px 16px;
+  text-wrap: balance;
+}
+
+.lede {
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--text);
+  max-width: 40ch;
+}
+
+.systems {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: baseline;
+  gap: 12px;
+  padding-block: 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  transition: color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.item[data-state="done"] {
+  color: color-mix(in srgb, var(--text) 75%, var(--muted));
+}
+
+.item[data-state="active"] {
+  color: var(--text);
+}
+
+:global(html[data-theme="violet"]) .item[data-state="active"] .name {
+  color: var(--accent);
+}
+
+.num {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+.name {
+  font-size: 16.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.hiddenDesc {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.detail {
+  margin-top: 20px;
+  min-height: 112px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detailIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.detailTitle {
+  font-size: clamp(20px, 1.9vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+.detailBody {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 44ch;
+}
+
+.detailCount {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+.counter {
+  margin-top: 14px;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+.output {
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.canvasWrap {
+  position: relative;
+  height: min(78vh, 760px);
+  min-height: 320px;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.canvas[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.load {
+  position: absolute;
+  inset: auto 0 16px 0;
+  text-align: center;
+  font-size: var(--text-caption);
+  color: var(--muted);
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.loadDone {
+  opacity: 0;
+}
+
+@media (max-width: 1020px) {
+  .rebuild {
+    height: 620vh;
+  }
+  .stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    gap: 8px;
+    padding-top: 76px;
+  }
+  .copy {
+    order: 2;
+  }
+  .canvasWrap {
+    order: 1;
+    height: 44svh;
+    min-height: 240px;
+  }
+  .title,
+  .lede,
+  .systems {
+    display: none;
+  }
+  .eyebrow {
+    margin-top: 6px;
+  }
+  .detail {
+    margin-top: 4px;
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rebuild {
+    height: auto;
+  }
+  .stage {
+    position: relative;
+    height: auto;
+    padding-top: clamp(64px, 8vw, 120px);
+  }
+  .item {
+    color: var(--text);
+    grid-template-columns: 32px 1fr auto;
+  }
+  .hiddenDesc {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+    white-space: normal;
+    grid-column: 2 / 4;
+    color: var(--muted);
+    font-size: 14.5px;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .detail {
+    display: none;
+  }
+  .title,
+  .lede,
+  .eyebrow,
+  .systems {
+    display: revert;
+  }
+}

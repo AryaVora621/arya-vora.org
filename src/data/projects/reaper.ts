@@ -54,6 +54,7 @@ export const reaper: Project = {
         "In DECODE, robots score by launching balls, which the game calls artifacts, into their alliance’s goal.",
       ],
     },
+    { kind: "custom", component: "reaper-rebuild" },
     { kind: "custom", component: "reaper-specs" },
     { kind: "custom", component: "reaper-role" },
     { kind: "custom", component: "reaper-iterations" },
