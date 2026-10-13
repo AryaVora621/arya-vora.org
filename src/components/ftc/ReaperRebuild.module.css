@@ -3,6 +3,8 @@
   height: 560vh;
   background: var(--surface);
   color: var(--text);
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .stage {
@@ -11,10 +13,11 @@
   height: 100vh;
   height: 100svh;
   display: grid;
-  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
   gap: clamp(24px, 4vw, 64px);
   align-items: center;
   padding-block: 84px 32px;
+  max-width: 100%;
 }
 
 .copy {
@@ -79,7 +82,7 @@
 }
 
 .item[data-state="done"] {
-  color: color-mix(in srgb, var(--text) 75%, var(--muted));
+  color: var(--text);
 }
 
 .item[data-state="active"] {
@@ -107,12 +110,7 @@
 }
 
 .hiddenDesc {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  display: none;
 }
 
 .detail {
@@ -184,6 +182,15 @@
   cursor: grabbing;
 }
 
+.stillBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: url("/ftc/worldsrobo-cad.webp") center / contain no-repeat;
+  pointer-events: none;
+}
+
 .load {
   position: absolute;
   inset: auto 0 16px 0;
@@ -245,6 +252,7 @@
     grid-template-columns: 32px 1fr auto;
   }
   .hiddenDesc {
+    display: block;
     position: static;
     width: auto;
     height: auto;

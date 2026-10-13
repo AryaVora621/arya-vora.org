@@ -6,6 +6,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import styles from "./ReaperRebuild.module.css";
 import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
+import { prefersStill } from "@/components/robopet/gpu";
 import { onThemeChange } from "@/lib/theme";
 
 /*
@@ -129,8 +130,9 @@ export function ReaperRebuild() {
   const trackRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const [isLive, setIsLive] = useState(false);
   const [activeSubsystem, setActiveSubsystem] = useState<string>("drivetrain");
-  const [placedParts, setPlacedParts] = useState(0);
+  const [placedParts, setPlacedParts] = useState(TOTAL_PARTS);
   const [loaded, setLoaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -143,7 +145,28 @@ export function ReaperRebuild() {
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const dragStartAnglesRef = useRef({ yaw: 0, pitch: 0 });
 
+  // Only activate live WebGL when the section enters the viewport and GPU is suitable
   useEffect(() => {
+    const track = trackRef.current;
+    if (!track || prefersStill()) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          setIsLive(true);
+        }
+      },
+      { rootMargin: "100% 0px" },
+    );
+
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isLive) return;
+
     const canvas = canvasRef.current;
     const track = trackRef.current;
     if (!canvas || !track) return;
@@ -464,7 +487,7 @@ export function ReaperRebuild() {
       canvas.removeEventListener("pointercancel", onPointerUp);
       renderer.dispose();
     };
-  }, [motionAllowed]);
+  }, [isLive, motionAllowed]);
 
   const currentSub = SUBSYSTEMS.find((s) => s.key === activeSubsystem) ?? SUBSYSTEMS[0];
 
@@ -485,7 +508,7 @@ export function ReaperRebuild() {
           <ol className={styles.systems}>
             {SUBSYSTEMS.map((sub, idx) => {
               const activeIndex = SUBSYSTEMS.findIndex((s) => s.key === activeSubsystem);
-              const isDone = motionAllowed
+              const isDone = motionAllowed && isLive
                 ? idx < activeIndex || (activeIndex === SUBSYSTEMS.length - 1 && placedParts === TOTAL_PARTS)
                 : true;
               const isActive = sub.key === activeSubsystem;
@@ -520,11 +543,21 @@ export function ReaperRebuild() {
             ref={canvasRef}
             className={styles.canvas}
             data-dragging={isDragging}
+            style={{ opacity: isLive && loaded ? 1 : 0 }}
             aria-label="3D model of Reaper reassembling as you scroll. Drag to rotate."
           />
-          <div className={`${styles.load} ${loaded ? styles.loadDone : ""}`}>
-            Loading 197 CAD components…
-          </div>
+          {(!isLive || !loaded) && (
+            <div
+              className={`${styles.stillBg} theme-tint`}
+              role="img"
+              aria-label="WorldsRobo, the team’s Onshape assembly of Reaper"
+            />
+          )}
+          {isLive && (
+            <div className={`${styles.load} ${loaded ? styles.loadDone : ""}`}>
+              Loading 197 CAD components…
+            </div>
+          )}
         </div>
       </div>
     </section>
