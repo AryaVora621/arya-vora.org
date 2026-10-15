@@ -9,10 +9,10 @@
 - Verification: `npm run build`, `npm run lint`, all 8 Reaper Playwright checks across desktop and iPhone dimensions, and the complete 765-test cross-browser Playwright suite pass.
 
 ## Next action
-- Push local commit `6079a08` to `origin/main` after GitHub authentication is repaired. Both the macOS Keychain credential and the GitHub CLI credential helper received HTTP 403 from the remote.
+- Reaper assembly quality pass is live on `www.arya-vora.org/projects/reaper` from `3f57f89`.
 
 ## Human decisions needed
-- Reauthenticate GitHub with a token that can write repository contents, then ask to retry the push.
+- None.
 
 ---
 
