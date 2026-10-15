@@ -17,7 +17,7 @@ test("Rebuilding Reaper renders the 7 authentic subsystems and placed parts coun
     await expect(rebuild.getByText("152 CAD components across seven primary subsystems")).toBeVisible();
 
     // 7 authentic subsystems listed
-    const items = rebuild.locator("ol li");
+    const items = rebuild.locator("ol").first().locator("li");
     await expect(items).toHaveCount(7);
     await expect(items.nth(0)).toContainText("Drivetrain");
     await expect(items.nth(0)).toContainText("34 parts");
@@ -40,6 +40,41 @@ test("Rebuilding Reaper renders the 7 authentic subsystems and placed parts coun
   await expect(counter).toBeVisible();
 });
 
+test("Rebuilding Reaper exposes the CAD-derived mechanical assembly sequence", async ({ page, isMobile }) => {
+  await page.goto("/projects/reaper");
+
+  const rebuild = page.locator("section[aria-label='Rebuilding Reaper interactive CAD']");
+  if (!isMobile) {
+    await expect(rebuild.getByText("26 CAD-derived mechanical assemblies")).toBeVisible();
+  }
+
+  await expect(rebuild.getByText("Docking now: U-channel base rails")).toBeVisible();
+
+  const assemblyQueue = rebuild.locator("ol[aria-label='Assembly module queue']");
+  await expect(assemblyQueue).toHaveCount(1);
+  await expect(assemblyQueue.getByRole("listitem")).toHaveCount(26);
+  await expect(assemblyQueue).toContainText("U-channel base rails");
+  await expect(assemblyQueue).toContainText("Dual flywheel with weights");
+  await expect(assemblyQueue).toContainText("Control and expansion hubs");
+});
+
+test("Rebuilding Reaper uses the project shell gutter and a feathered 3D viewport", async ({ page }) => {
+  await page.goto("/projects/reaper");
+
+  const rebuild = page.locator("section[aria-label='Rebuilding Reaper interactive CAD']");
+  const sharedShell = page.locator(".site-shell").first();
+  const rebuildBox = await rebuild.boundingBox();
+  const shellBox = await sharedShell.boundingBox();
+
+  expect(rebuildBox).not.toBeNull();
+  expect(shellBox).not.toBeNull();
+  expect(rebuildBox?.x).toBeCloseTo(shellBox?.x ?? 0, 0);
+  expect(rebuildBox?.width).toBeCloseTo(shellBox?.width ?? 0, 0);
+
+  const canvas = rebuild.locator("canvas");
+  await expect(canvas).toHaveCSS("mask-image", /linear-gradient/);
+});
+
 test("prefers-reduced-motion displays complete static assembly and descriptions across all viewports", async ({
   page,
 }) => {
@@ -50,7 +85,7 @@ test("prefers-reduced-motion displays complete static assembly and descriptions 
   await expect(rebuild).toBeVisible();
 
   // In reduced-motion mode, all 7 subsystem items show done state and their descriptions are rendered
-  const items = rebuild.locator("ol li");
+  const items = rebuild.locator("ol").first().locator("li");
   await expect(items).toHaveCount(7);
   for (let i = 0; i < 7; i++) {
     await expect(items.nth(i)).toHaveAttribute("data-state", "done");

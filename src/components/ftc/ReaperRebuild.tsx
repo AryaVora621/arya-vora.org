@@ -8,6 +8,8 @@ import { prefersStill, shouldUseStill } from "@/components/robopet/gpu";
 import { onThemeChange, themeColor } from "@/lib/theme";
 import {
   createReaperModel,
+  REAPER_ASSEMBLIES,
+  reaperAssemblyNodes,
   setReaperColors,
   setReaperFocus,
   setReaperViewport,
@@ -146,6 +148,10 @@ type PartAnimationRecord = {
   end: number;
 };
 
+type AssemblyAnimationRecord = PartAnimationRecord & {
+  assembly: (typeof REAPER_ASSEMBLIES)[number];
+};
+
 export function ReaperRebuild() {
   const motionAllowed = useMotionAllowed();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -153,6 +159,9 @@ export function ReaperRebuild() {
 
   const [isLive, setIsLive] = useState(false);
   const [activeSubsystem, setActiveSubsystem] = useState<ReaperPartId>("drive");
+  const [activeAssembly, setActiveAssembly] = useState<(typeof REAPER_ASSEMBLIES)[number]["id"]>(
+    REAPER_ASSEMBLIES[0].id,
+  );
   const [placedParts, setPlacedParts] = useState(TOTAL_PARTS);
   const [loaded, setLoaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -242,7 +251,7 @@ export function ReaperRebuild() {
         mesh.material = new THREE.MeshBasicMaterial({
           color: 0x888888,
           transparent: true,
-          opacity: 0.045,
+          opacity: 0.075,
           depthWrite: false,
         });
       }
@@ -269,105 +278,31 @@ export function ReaperRebuild() {
     syncTheme();
     const unbindTheme = onThemeChange(syncTheme);
 
-    // Prepare animation trajectories for each subsystem
-    const animRecords: PartAnimationRecord[] = [];
+    // Build each image2threejs assembly as its own mechanism. The parts are source-derived
+    // transform nodes, so a wheel, chain, hood, or hub docks independently instead of seven
+    // generic subsystem chunks sliding home together.
+    const animRecords: AssemblyAnimationRecord[] = [];
+    const nodes = new Map(reaperAssemblyNodes(model).map(({ assembly, node }) => [assembly.id, node]));
 
     SUBSYSTEMS.forEach((sub) => {
-      const group = model.getObjectByName(`reaper-${sub.key}`);
-      if (!group) return;
+      const assemblies = REAPER_ASSEMBLIES.filter((assembly) => assembly.sub === sub.key);
+      const span = (sub.end - sub.start) / assemblies.length;
 
-      const basePos = group.position.clone();
-      const baseQuat = group.quaternion.clone();
-
-      if (sub.key === "protection") {
-        // Protection base group stays centered; side plates and rear shield slide in laterally
-        const leftPlate = model.getObjectByName("reaper-plate-left");
-        const rightPlate = model.getObjectByName("reaper-plate-right");
-        const shield = model.getObjectByName("reaper-shield");
-
-        if (leftPlate) {
-          const lBasePos = leftPlate.position.clone();
-          const lBaseQuat = leftPlate.quaternion.clone();
-          const lDispPos = lBasePos.clone().add(new THREE.Vector3(260, 0, 0));
-          const lDeltaQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -0.15));
-          animRecords.push({
-            obj: leftPlate,
-            basePos: lBasePos,
-            dispPos: lDispPos,
-            baseQuat: lBaseQuat,
-            dispQuat: lBaseQuat.clone().multiply(lDeltaQ),
-            start: sub.start,
-            end: sub.end,
-          });
-        }
-
-        if (rightPlate) {
-          const rBasePos = rightPlate.position.clone();
-          const rBaseQuat = rightPlate.quaternion.clone();
-          const rDispPos = rBasePos.clone().add(new THREE.Vector3(-260, 0, 0));
-          const rDeltaQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0.15));
-          animRecords.push({
-            obj: rightPlate,
-            basePos: rBasePos,
-            dispPos: rDispPos,
-            baseQuat: rBaseQuat,
-            dispQuat: rBaseQuat.clone().multiply(rDeltaQ),
-            start: sub.start,
-            end: sub.end,
-          });
-        }
-
-        if (shield) {
-          const sBasePos = shield.position.clone();
-          const sBaseQuat = shield.quaternion.clone();
-          const sDispPos = sBasePos.clone().add(new THREE.Vector3(0, 80, -240));
-          const sDeltaQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.2, 0, 0));
-          animRecords.push({
-            obj: shield,
-            basePos: sBasePos,
-            dispPos: sDispPos,
-            baseQuat: sBaseQuat,
-            dispQuat: sBaseQuat.clone().multiply(sDeltaQ),
-            start: sub.start,
-            end: sub.end,
-          });
-        }
-      } else {
-        const dispPos = basePos.clone().add(new THREE.Vector3(...sub.dispOffset));
-        const deltaQuat = new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(...sub.dispRot),
+      assemblies.forEach((assembly, index) => {
+        const obj = nodes.get(assembly.id);
+        if (!obj) return;
+        const basePos = obj.position.clone();
+        const baseQuat = obj.quaternion.clone();
+        const start = sub.start + index * span;
+        // Reserve the tail of each slot for the fully docked state. This gives every connection
+        // a clean visual lock-in rather than an uninterrupted glide through the scroll track.
+        const end = start + span * 0.78;
+        const dispPos = basePos.clone().add(new THREE.Vector3(...assembly.offset));
+        const dispQuat = baseQuat.clone().multiply(
+          new THREE.Quaternion().setFromEuler(new THREE.Euler(...assembly.rotation)),
         );
-        const dispQuat = baseQuat.clone().multiply(deltaQuat);
-
-        animRecords.push({
-          obj: group,
-          basePos,
-          dispPos,
-          baseQuat,
-          dispQuat,
-          start: sub.start,
-          end: sub.end,
-        });
-
-        // Additional sub-element motion for shooter hood
-        if (sub.key === "shooter") {
-          const hood = model.getObjectByName("reaper-hood");
-          if (hood) {
-            const hBasePos = hood.position.clone();
-            const hBaseQuat = hood.quaternion.clone();
-            const hDispPos = hBasePos.clone().add(new THREE.Vector3(0, 90, -20));
-            animRecords.push({
-              obj: hood,
-              basePos: hBasePos,
-              dispPos: hDispPos,
-              baseQuat: hBaseQuat,
-              dispQuat: hBaseQuat,
-              start: sub.start,
-              end: sub.end,
-            });
-          }
-        }
-      }
+        animRecords.push({ obj, basePos, dispPos, baseQuat, dispQuat, start, end, assembly });
+      });
     });
 
     setLoaded(true);
@@ -443,6 +378,7 @@ export function ReaperRebuild() {
     // Main render loop
     let lastPlaced = -1;
     let lastActiveSub: ReaperPartId | null = null;
+    let lastActiveAssembly: string | null = null;
     let focusClearedAtEnd = false;
 
     const renderLoop = () => {
@@ -467,34 +403,25 @@ export function ReaperRebuild() {
         }
       }
 
-      // Compute total placed parts across subsystems
+      // Count the source-derived assemblies as they seat. The per-assembly weights preserve the
+      // page's original 152 component total while making the visual progress mechanically honest.
       let currentPlaced = 0;
-      let curSubKey: ReaperPartId = SUBSYSTEMS[0].key;
-
-      SUBSYSTEMS.forEach((sub) => {
-        if (p <= sub.start) {
-          // not started yet
-        } else if (p >= sub.end) {
-          currentPlaced += sub.partCount;
-        } else {
-          curSubKey = sub.key;
-          const subT = (p - sub.start) / (sub.end - sub.start);
-          currentPlaced += Math.round(subT * sub.partCount);
+      let curAssembly = animRecords[0]?.assembly ?? REAPER_ASSEMBLIES[0];
+      for (const record of animRecords) {
+        if (p >= record.start) curAssembly = record.assembly;
+        if (p >= record.end) {
+          currentPlaced += record.assembly.parts;
+        } else if (p > record.start) {
+          const t = (p - record.start) / (record.end - record.start);
+          currentPlaced += Math.round(THREE.MathUtils.clamp(t, 0, 1) * record.assembly.parts);
         }
-      });
+      }
 
       if (p >= 1.0) {
         currentPlaced = TOTAL_PARTS;
       }
 
-      // Check current active subsystem for focus highlighting
-      if (p < 0.99) {
-        for (let i = 0; i < SUBSYSTEMS.length; i++) {
-          if (p >= SUBSYSTEMS[i].start) {
-            curSubKey = SUBSYSTEMS[i].key;
-          }
-        }
-      }
+      const curSubKey = curAssembly.sub;
 
       // Update state if changed
       if (currentPlaced !== lastPlaced) {
@@ -514,13 +441,18 @@ export function ReaperRebuild() {
           setActiveSubsystem(curSubKey);
           setReaperFocus(model, { [curSubKey]: 1.0 }, 0.28);
         }
+        if (curAssembly.id !== lastActiveAssembly) {
+          lastActiveAssembly = curAssembly.id;
+          setActiveAssembly(curAssembly.id);
+        }
       }
 
       // Cinematic camera orbit arc
       const baseAngle = -0.55 + p * 1.35;
       const totalYaw = baseAngle + userYawRef.current;
       const totalPitch = 0.22 + userPitchRef.current;
-      const baseDist = 3.1;
+      // Start wide enough to hold the whole build bay, then tighten as the final silhouette forms.
+      const baseDist = THREE.MathUtils.lerp(4.25, 3.25, p);
       const dist = currentAspect <= 1 ? baseDist / Math.pow(currentAspect, 0.8) : baseDist;
 
       const camX = studio3d.REAPER_TARGET.x + Math.sin(totalYaw) * dist * Math.cos(totalPitch);
@@ -552,6 +484,7 @@ export function ReaperRebuild() {
   }, [isLive, motionAllowed]);
 
   const currentSub = SUBSYSTEMS.find((s) => s.key === activeSubsystem) ?? SUBSYSTEMS[0];
+  const currentAssembly = REAPER_ASSEMBLIES.find((assembly) => assembly.id === activeAssembly) ?? REAPER_ASSEMBLIES[0];
 
   return (
     <section ref={trackRef} className={styles.rebuild} aria-label="Rebuilding Reaper interactive CAD">
@@ -564,7 +497,7 @@ export function ReaperRebuild() {
           </span>
           <h2 className={styles.title}>Rebuilding Reaper</h2>
           <p className={styles.lede}>
-            Scroll to reassemble Reaper from 152 CAD components across seven primary subsystems.
+            Scroll to reassemble Reaper from 152 CAD components across seven primary subsystems and 26 CAD-derived mechanical assemblies.
           </p>
 
           <ol className={styles.systems}>
@@ -587,9 +520,18 @@ export function ReaperRebuild() {
             })}
           </ol>
 
+          <ol className={styles.assemblyQueue} aria-label="Assembly module queue">
+            {REAPER_ASSEMBLIES.map((assembly) => (
+              <li key={assembly.id} data-active={assembly.id === activeAssembly}>
+                {assembly.label}
+              </li>
+            ))}
+          </ol>
+
           {/* Active subsystem detail card */}
           <div className={`${styles.detail} ${styles.detailIn}`} aria-live="polite">
             <h3 className={styles.detailTitle}>{currentSub.title}</h3>
+            <p className={styles.assemblyNow}>Docking now: {currentAssembly.label}</p>
             <p className={styles.detailBody}>{currentSub.body}</p>
             <span className={styles.detailCount}>Subsystem total: {currentSub.partCount} parts</span>
           </div>

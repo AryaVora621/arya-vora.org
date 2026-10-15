@@ -37,6 +37,7 @@
 - [ ] Waiting on Arya: real notchTerm screenshot/recording for the notchTerm feature row
 
 ## Done
+- [x] Reaper assembly quality pass: image2threejs-derived 26-module rebuild, shared project gutters, feathered 3D viewport, and desktop/mobile Playwright coverage.
 - [x] Full site structure with all 5 sections
 - [x] Custom SVG icon system
 - [x] Three.js 3D backgrounds

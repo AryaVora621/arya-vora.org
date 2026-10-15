@@ -1,3 +1,21 @@
+# Checkpoint - Arya Vora Portfolio (2026-10-15 Reaper assembly rebuild)
+
+## Completed
+- Agent: /root
+- Replaced the seven generic subsystem transforms with a source-derived 26-module assembly manifest. Actual assembly nodes now dock independently, including rails, towers, mecanum wheels and rollers, intake, transfer, flywheel and hood, vision, protection, hubs, battery, LEDs, and Pinpoint.
+- Rebuilding Reaper now reports the current docking module, exposes the full accessible 26-module queue, and keeps the established 152-component total accurate during the scroll sequence.
+- The stage now follows the site's shared responsive shell gutters: 56px desktop, 32px tablet, and 20px phone. Its live WebGL canvas has a two-axis edge feather to remove the rectangular cutoff as parts move beyond the build bay.
+- Visual QA used the live Reaper page at desktop width. The new build bay aligns to the same 56px gutter as surrounding project content and the robot's departing parts feather into the page rather than ending at a rectangular canvas boundary.
+- Verification: `npm run build`, `npm run lint`, all 8 Reaper Playwright checks across desktop and iPhone dimensions, and the complete 765-test cross-browser Playwright suite pass.
+
+## Next action
+- Push local commit `6079a08` to `origin/main` after GitHub authentication is repaired. Both the macOS Keychain credential and the GitHub CLI credential helper received HTTP 403 from the remote.
+
+## Human decisions needed
+- Reauthenticate GitHub with a token that can write repository contents, then ask to retry the push.
+
+---
+
 # Checkpoint - Arya Vora Portfolio (2026-09-07 effects/polish pass)
 
 ## Direction (committed)

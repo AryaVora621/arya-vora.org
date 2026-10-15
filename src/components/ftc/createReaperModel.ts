@@ -73,6 +73,50 @@ export const REAPER_PARTS: Record<ReaperPartId, ReaperPartInfo> = {
 
 export const REAPER_PART_IDS = Object.keys(REAPER_PARTS) as ReaperPartId[];
 
+/**
+ * The mechanical assemblies recovered by the img2threejs pass. These are intentionally not a
+ * generic mesh list: each entry maps a source-observed mechanism to one stable pivot so the
+ * rebuild can dock the rails, wheels, chains, hood, and electronics independently.
+ */
+export const REAPER_ASSEMBLIES = [
+  { id: "drive-rails", sub: "drive", label: "U-channel base rails", parts: 6, offset: [0, -220, 126], rotation: [-0.24, 0, 0] },
+  { id: "drive-towers", sub: "drive", label: "U-channel towers", parts: 6, offset: [-238, 78, -42], rotation: [0.08, 0.22, -0.08] },
+  { id: "drive-deck", sub: "drive", label: "Grid plate deck", parts: 4, offset: [0, 236, -84], rotation: [0.22, 0, 0] },
+  { id: "drive-wheels", sub: "drive", label: "Mecanum drive wheels", parts: 8, offset: [250, -36, 24], rotation: [0, -0.28, 0.12] },
+  { id: "drive-rollers", sub: "drive", label: "Mecanum rollers", parts: 6, offset: [260, 82, -72], rotation: [0.16, -0.22, -0.12] },
+  { id: "drive-motors", sub: "drive", label: "Drive gearmotors", parts: 4, offset: [-252, -64, 68], rotation: [-0.12, 0.26, 0.1] },
+  { id: "intake-arms", sub: "intake", label: "Intake pivot arms", parts: 7, offset: [-248, 108, 236], rotation: [-0.42, 0.16, 0.08] },
+  { id: "intake-chain", sub: "intake", label: "Transfer-to-intake chain", parts: 6, offset: [230, 140, 248], rotation: [0.26, -0.22, -0.16] },
+  { id: "intake-roller", sub: "intake", label: "Intake roller shaft", parts: 4, offset: [0, 218, 280], rotation: [0.32, 0, 0] },
+  { id: "intake-mecanum", sub: "intake", label: "Intake mecanum wheels", parts: 7, offset: [272, 14, 254], rotation: [-0.14, -0.24, 0.16] },
+  { id: "intake-gecko", sub: "intake", label: "Intake gecko wheels", parts: 4, offset: [-274, 10, 254], rotation: [0.14, 0.24, -0.16] },
+  { id: "transfer-ramp", sub: "transfer", label: "Servo ramp", parts: 6, offset: [0, 288, 92], rotation: [0.32, 0, 0] },
+  { id: "transfer-gecko", sub: "transfer", label: "Transfer gecko wheel", parts: 5, offset: [258, 184, 86], rotation: [0.14, -0.3, 0.12] },
+  { id: "transfer-motor", sub: "transfer", label: "1150 RPM transfer motor", parts: 5, offset: [-252, 186, 76], rotation: [-0.16, 0.3, -0.12] },
+  { id: "shooter-cheeks", sub: "shooter", label: "Printed housing cheeks", parts: 7, offset: [-242, 264, -24], rotation: [-0.18, 0.3, 0.1] },
+  { id: "shooter-flywheel", sub: "shooter", label: "Dual flywheel with weights", parts: 7, offset: [238, 280, 10], rotation: [0.18, -0.26, -0.08] },
+  { id: "shooter-motors", sub: "shooter", label: "Flywheel motors", parts: 6, offset: [0, 306, -110], rotation: [0.26, 0, 0] },
+  { id: "shooter-hood", sub: "shooter", label: "Angle-adjusting hood", parts: 6, offset: [0, 344, 42], rotation: [-0.3, 0, 0] },
+  { id: "aiming-lens", sub: "aiming", label: "Limelight 3A and lens", parts: 8, offset: [0, 224, 286], rotation: [0.18, 0, 0] },
+  { id: "protection-plates", sub: "protection", label: "Wooden side plates", parts: 8, offset: [300, 42, -92], rotation: [0, -0.32, 0.12] },
+  { id: "protection-shields", sub: "protection", label: "Acrylic hub shield", parts: 5, offset: [0, 214, -260], rotation: [0.18, 0, 0] },
+  { id: "protection-guards", sub: "protection", label: "Bent guard rods", parts: 5, offset: [-298, 54, -78], rotation: [0, 0.3, -0.12] },
+  { id: "electronics-hubs", sub: "electronics", label: "Control and expansion hubs", parts: 8, offset: [0, 172, -300], rotation: [-0.14, 0, 0] },
+  { id: "electronics-battery", sub: "electronics", label: "Battery", parts: 6, offset: [-228, -86, -188], rotation: [0.1, 0.24, 0] },
+  { id: "electronics-leds", sub: "electronics", label: "RGB gate lights", parts: 4, offset: [230, 132, 190], rotation: [-0.2, -0.22, 0.14] },
+  { id: "electronics-pinpoint", sub: "electronics", label: "Pinpoint odometry computer", parts: 4, offset: [0, -104, -230], rotation: [0.18, 0, 0] },
+] as const satisfies readonly {
+  id: string;
+  sub: ReaperPartId;
+  label: string;
+  parts: number;
+  offset: readonly [number, number, number];
+  rotation: readonly [number, number, number];
+}[];
+
+export type ReaperAssemblyId = (typeof REAPER_ASSEMBLIES)[number]["id"];
+export type ReaperAssembly = (typeof REAPER_ASSEMBLIES)[number];
+
 export type ReaperColors = {
   /** Selection highlight (the theme's --accent). */
   accent: THREE.ColorRepresentation;
@@ -650,6 +694,7 @@ function mecanum(
   width: number,
   hand: 1 | -1,
   count: number,
+  rollerGroup = group,
 ) {
   const rollerR = radius * 0.2;
   const ring = radius - rollerR;
@@ -674,7 +719,7 @@ function mecanum(
       const inward = V(0, Math.cos(a), Math.sin(a)).multiplyScalar(-rollerR * 0.55);
       tab.add(inward);
       const m = new THREE.Matrix4().compose(tab, q, V(1, 1, 1));
-      b.add(group, "dark", box(rollerR * 0.9, 2, rollerR * 1.2), m);
+      b.add(rollerGroup, "dark", box(rollerR * 0.9, 2, rollerR * 1.2), m);
     }
   }
   return { matrices, rollerR, rollerLen: width * 1.1 };
@@ -744,7 +789,15 @@ function socketHeads(positions: [number, number, number, THREE.Vector3][]) {
 
 // ---------------------------------------------------------------------------------------------
 
-type PartGroup = THREE.Group & { userData: { part?: ReaperPartInfo; explode?: THREE.Vector3; basePosition?: THREE.Vector3; sub?: ReaperPartId } };
+type PartGroup = THREE.Group & {
+  userData: {
+    part?: ReaperPartInfo;
+    assembly?: ReaperAssembly;
+    explode?: THREE.Vector3;
+    basePosition?: THREE.Vector3;
+    sub?: ReaperPartId;
+  };
+};
 
 function partGroup(id: ReaperPartId, pivot = V(0, 0, 0)): PartGroup {
   const g = new THREE.Group() as PartGroup;
@@ -765,6 +818,16 @@ function childGroup(parent: THREE.Group, name: string, explode: THREE.Vector3, p
   g.userData.basePosition = pivot.clone();
   g.userData.sub = parent.userData.sub as ReaperPartId;
   parent.add(g);
+  return g;
+}
+
+function assemblyGroup(parent: THREE.Group, id: ReaperAssemblyId, pivot = V(0, 0, 0)) {
+  const assembly = REAPER_ASSEMBLIES.find((item) => item.id === id);
+  if (!assembly) throw new Error(`Unknown Reaper assembly: ${id}`);
+  // The rebuild applies its source-derived staging offset itself. Keeping the generic explode
+  // vector at zero means focus/theme updates cannot disturb a component mid-docking.
+  const g = childGroup(parent, `reaper-assembly-${id}`, V(0, 0, 0), pivot);
+  g.userData.assembly = assembly;
   return g;
 }
 
@@ -813,6 +876,36 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
   const electronics = partGroup("electronics");
   root.add(drive, intake, transfer, shooter, aiming, protection, electronics);
 
+  // The image2threejs component tree is kept as actual transform nodes, not just prose metadata.
+  // Each group owns its own merged meshes and can therefore stage, dock, focus, or later detach
+  // independently during the assembly sequence.
+  const driveRails = assemblyGroup(drive, "drive-rails");
+  const driveTowers = assemblyGroup(drive, "drive-towers");
+  const driveDeck = assemblyGroup(drive, "drive-deck");
+  const driveWheels = assemblyGroup(drive, "drive-wheels");
+  const driveRollers = assemblyGroup(drive, "drive-rollers");
+  const driveMotors = assemblyGroup(drive, "drive-motors");
+  const intakeArms = assemblyGroup(intake, "intake-arms");
+  const intakeChain = assemblyGroup(intake, "intake-chain");
+  const intakeRoller = assemblyGroup(intake, "intake-roller");
+  const intakeMecanum = assemblyGroup(intake, "intake-mecanum");
+  const intakeGecko = assemblyGroup(intake, "intake-gecko");
+  const transferRamp = assemblyGroup(transfer, "transfer-ramp");
+  const transferGecko = assemblyGroup(transfer, "transfer-gecko");
+  const transferMotor = assemblyGroup(transfer, "transfer-motor");
+  const shooterCheeks = assemblyGroup(shooter, "shooter-cheeks");
+  const shooterFlywheel = assemblyGroup(shooter, "shooter-flywheel");
+  const shooterMotors = assemblyGroup(shooter, "shooter-motors");
+  const shooterHood = assemblyGroup(shooter, "shooter-hood", V(0, D.axleY, D.axleZ));
+  const aimingLens = assemblyGroup(aiming, "aiming-lens");
+  const protectionPlates = assemblyGroup(protection, "protection-plates");
+  const protectionShields = assemblyGroup(protection, "protection-shields");
+  const protectionGuards = assemblyGroup(protection, "protection-guards");
+  const electronicsHubs = assemblyGroup(electronics, "electronics-hubs");
+  const electronicsBattery = assemblyGroup(electronics, "electronics-battery");
+  const electronicsLeds = assemblyGroup(electronics, "electronics-leds");
+  const electronicsPinpoint = assemblyGroup(electronics, "electronics-pinpoint");
+
   // ----- Drivetrain: U-channel rails and towers, deck plate, mecanum wheels, motors ----------
   {
     const X = V(1, 0, 0);
@@ -821,26 +914,26 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
     for (const s of [-1, 1]) {
       const x = s * D.railX;
       // Base rail along Z, open toward the inside.
-      b.add(drive, "alu", uChannel(D.railZ * 2), orient(V(x, D.railY, 0), Z, V(-s, 0, 0)));
+      b.add(driveRails, "alu", uChannel(D.railZ * 2), orient(V(x, D.railY, 0), Z, V(-s, 0, 0)));
       // Towers, base plate facing out of the robot (front towers face forward, rear face back).
       const towerLen = D.towerTop - (D.railY + 24);
       const towerY = D.railY + 24 + towerLen / 2;
-      b.add(drive, "alu", uChannel(towerLen), orient(V(x, towerY, D.frontTowerZ), Y, V(0, 0, -1)));
-      b.add(drive, "alu", uChannel(towerLen), orient(V(x, towerY, D.rearTowerZ), Y, V(0, 0, 1)));
+      b.add(driveTowers, "alu", uChannel(towerLen), orient(V(x, towerY, D.frontTowerZ), Y, V(0, 0, -1)));
+      b.add(driveTowers, "alu", uChannel(towerLen), orient(V(x, towerY, D.rearTowerZ), Y, V(0, 0, 1)));
       // Top rail between the towers.
       const topLen = D.frontTowerZ - 24 - (D.rearTowerZ + 24);
       const topZ = (D.frontTowerZ - 24 + D.rearTowerZ + 24) / 2;
-      b.add(drive, "alu", uChannel(topLen), orient(V(x, D.towerTop - 24, topZ), Z, V(-s, 0, 0)));
+      b.add(driveTowers, "alu", uChannel(topLen), orient(V(x, D.towerTop - 24, topZ), Z, V(-s, 0, 0)));
     }
     const crossLen = (D.railX - 24) * 2;
-    b.add(drive, "alu", uChannel(crossLen), orient(V(0, D.railY, D.rearTowerZ), X, V(0, 0, 1)));
-    b.add(drive, "alu", uChannel(crossLen), orient(V(0, D.towerTop - 24, D.rearTowerZ), X, V(0, 0, 1)));
+    b.add(driveRails, "alu", uChannel(crossLen), orient(V(0, D.railY, D.rearTowerZ), X, V(0, 0, 1)));
+    b.add(driveTowers, "alu", uChannel(crossLen), orient(V(0, D.towerTop - 24, D.rearTowerZ), X, V(0, 0, 1)));
     // Belly plate between the rails for the Pinpoint, clear of the artifact path above it.
-    b.add(drive, "alu", holePlate(crossLen, 3, 48), at(0, 30, 92));
+    b.add(driveDeck, "alu", holePlate(crossLen, 3, 48), at(0, 30, 92));
 
     // Grid plate over the front towers.
     // Grid plates over the front towers, split to clear the transfer motor.
-    for (const s of [-1, 1]) b.add(drive, "alu", holePlate(84, 3, 84), at(s * 110, D.towerTop + 1.5, 130));
+    for (const s of [-1, 1]) b.add(driveDeck, "alu", holePlate(84, 3, 84), at(s * 110, D.towerTop + 1.5, 130));
 
     // Mecanum wheels in the X pattern.
     const rollers: THREE.Matrix4[] = [];
@@ -848,16 +941,16 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
     for (const sx of [-1, 1])
       for (const sz of [-1, 1]) {
         const hand = (sx > 0) === (sz > 0) ? 1 : -1;
-        const w = mecanum(b, drive, V(sx * D.wheelX, D.wheelR, sz * D.wheelZ), D.wheelR, 38, hand as 1 | -1, 10);
+        const w = mecanum(b, driveWheels, V(sx * D.wheelX, D.wheelR, sz * D.wheelZ), D.wheelR, 38, hand as 1 | -1, 10, driveRollers);
         rollers.push(...w.matrices);
         roller = { r: w.rollerR, len: w.rollerLen };
         // Axle from the bevel box through the rail to the wheel.
-        b.add(drive, "steel", cylX(4, D.wheelX - 80 + 22, 12), at(sx * ((D.wheelX + 80) / 2 + 6), D.wheelR, sz * D.wheelZ));
+        b.add(driveMotors, "steel", cylX(4, D.wheelX - 80 + 22, 12), at(sx * ((D.wheelX + 80) / 2 + 6), D.wheelR, sz * D.wheelZ));
         // Bearing block on the rail.
-        b.add(drive, "dark", box(5, 30, 30), at(sx * (D.railX + 26.5), D.wheelR, sz * D.wheelZ));
-        gearmotorZ(b, drive, sx * 80, D.wheelR, sz * D.wheelZ, (sz > 0 ? -1 : 1) as 1 | -1);
+        b.add(driveMotors, "dark", box(5, 30, 30), at(sx * (D.railX + 26.5), D.wheelR, sz * D.wheelZ));
+        gearmotorZ(b, driveMotors, sx * 80, D.wheelR, sz * D.wheelZ, (sz > 0 ? -1 : 1) as 1 | -1);
       }
-    b.instance(drive, "rubber", rollerGeometry(roller.r, roller.len), rollers);
+    b.instance(driveRollers, "rubber", rollerGeometry(roller.r, roller.len), rollers);
 
     // Socket heads where towers meet rails and plates.
     const heads: [number, number, number, THREE.Vector3][] = [];
@@ -872,30 +965,30 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
         heads.push([s * (D.railX + 24), D.railY + (z % 48 === 0 ? 8 : -8), z, V(s, 0, 0)]);
     }
     for (const x of [-140, -116, 116, 140]) for (const z of [100, 160]) heads.push([x, D.towerTop + 3, z, V(0, 1, 0)]);
-    b.instance(drive, "dark", new THREE.CylinderGeometry(4.2, 4.2, 3.2, 10), socketHeads(heads));
+    b.instance(driveTowers, "dark", new THREE.CylinderGeometry(4.2, 4.2, 3.2, 10), socketHeads(heads));
   }
 
   // ----- Intake: lifting arms on the transfer shaft, chains, roller with mecanum and gecko wheels
   {
     const shaft = D.intakeShaft.clone().sub(D.pivot); // relative to the pivot
     // Shaft and its wheels.
-    b.add(intake, "steel", cylX(4, 392, 12), at(shaft.x, shaft.y, shaft.z));
+    b.add(intakeRoller, "steel", cylX(4, 392, 12), at(shaft.x, shaft.y, shaft.z));
     const rollers: THREE.Matrix4[] = [];
     let roller = { r: 7, len: 28 };
     for (const s of [-1, 1]) {
       for (const x of [128, 160]) {
-        const w = mecanum(b, intake, V(s * x, shaft.y, shaft.z), 40, 28, (s > 0 ? 1 : -1) as 1 | -1, 9);
+        const w = mecanum(b, intakeMecanum, V(s * x, shaft.y, shaft.z), 40, 28, (s > 0 ? 1 : -1) as 1 | -1, 9, intakeMecanum);
         rollers.push(...w.matrices);
         roller = { r: w.rollerR, len: w.rollerLen };
       }
       for (const x of [30, 58]) {
-        b.add(intake, "gecko", cylX(36, 26, 44), at(s * x, shaft.y, shaft.z));
-        b.add(intake, "dark", cylX(15, 28, 20), at(s * x, shaft.y, shaft.z));
+        b.add(intakeGecko, "gecko", cylX(36, 26, 44), at(s * x, shaft.y, shaft.z));
+        b.add(intakeGecko, "dark", cylX(15, 28, 20), at(s * x, shaft.y, shaft.z));
       }
     }
     // Printed bearing block between the two gecko pairs.
-    b.add(intake, "black", box(30, 44, 40), at(0, shaft.y + 6, shaft.z - 6));
-    b.instance(intake, "rubber", rollerGeometry(roller.r, roller.len), rollers);
+    b.add(intakeRoller, "black", box(30, 44, 40), at(0, shaft.y + 6, shaft.z - 6));
+    b.instance(intakeMecanum, "rubber", rollerGeometry(roller.r, roller.len), rollers);
 
     // Arms: perforated plates from the pivot to the shaft, with a chain inside each.
     const armLen = shaft.length();
@@ -905,11 +998,11 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
     const links: THREE.Matrix4[] = [];
     for (const s of [-1, 1]) {
       const plate = holePlate(28, 4, armLen + 44).rotateZ(Math.PI / 2);
-      b.add(intake, "alu", plate, at(s * 97, mid.y, mid.z, -armAngle, 0, 0));
+      b.add(intakeArms, "alu", plate, at(s * 97, mid.y, mid.z, -armAngle, 0, 0));
       // Sprockets at both ends.
       for (const p of [V(0, 0, 0), shaft]) {
-        b.add(intake, "dark", sprocket(16, 17.5, 14.5, 4), at(s * 88, p.y, p.z));
-        b.add(intake, "steel", cylX(5, 10, 10), at(s * 102, p.y, p.z));
+        b.add(intakeChain, "dark", sprocket(16, 17.5, 14.5, 4), at(s * 88, p.y, p.z));
+        b.add(intakeChain, "steel", cylX(5, 10, 10), at(s * 102, p.y, p.z));
       }
       // Chain around a stadium path between the sprockets.
       const r = 16;
@@ -947,7 +1040,7 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
         links.push(new THREE.Matrix4().compose(V(s * 88, p.y, p.z), q, V(1, 1, 1)));
       }
     }
-    b.instance(intake, "steel", linkGeo, links);
+    b.instance(intakeChain, "steel", linkGeo, links);
 
     // Compliant front flaps between the mecanum stacks and the arms, like the CAD's printed guides.
     for (const s of [-1, 1]) {
@@ -957,7 +1050,7 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
       flap.lineTo(58, -6);
       flap.lineTo(12, 16);
       flap.closePath();
-      b.add(intake, "black", sideExtrude(flap, 6, s * 112 + 3), at(0, shaft.y - 4, shaft.z - 30));
+      b.add(intakeArms, "black", sideExtrude(flap, 6, s * 112 + 3), at(0, shaft.y - 4, shaft.z - 30));
     }
   }
 
@@ -976,40 +1069,40 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
       for (let i = top.length - 1; i >= 0; i--) s.lineTo(top[i][0], top[i][1] + lift - thick);
       return s;
     };
-    b.add(transfer, "black", sideExtrude(band(0, 4), 130, 65));
-    for (const s of [-1, 1]) b.add(transfer, "black", sideExtrude(band(26, 26), 4, s * 67 + 2));
+    b.add(transferRamp, "black", sideExtrude(band(0, 4), 130, 65));
+    for (const s of [-1, 1]) b.add(transferRamp, "black", sideExtrude(band(26, 26), 4, s * 67 + 2));
     for (const z of [150, 60, -30, -110])
-      b.add(transfer, "black", box(130, 18, 4), at(0, rampY(z) - 12, z));
+      b.add(transferRamp, "black", box(130, 18, 4), at(0, rampY(z) - 12, z));
 
     // The pivot shaft carries the transfer's gecko wheels; the intake arms hang from it.
     const p = D.pivot;
-    b.add(transfer, "steel", cylX(4, 202, 12), at(0, p.y, p.z));
+    b.add(transferGecko, "steel", cylX(4, 202, 12), at(0, p.y, p.z));
     for (const s of [-1, 1]) {
-      b.add(transfer, "gecko", cylX(34, 30, 44), at(s * 30, p.y, p.z));
-      b.add(transfer, "dark", cylX(15, 32, 20), at(s * 30, p.y, p.z));
+      b.add(transferGecko, "gecko", cylX(34, 30, 44), at(s * 30, p.y, p.z));
+      b.add(transferGecko, "dark", cylX(15, 32, 20), at(s * 30, p.y, p.z));
     }
     // The 1150 RPM motor across the front, under the Limelight, belted down to the shaft.
     const m = D.transferMotor;
-    gearmotor(b, transfer, 54, m.y, m.z, -1, 110);
-    b.add(transfer, "dark", cylX(10, 10, 20), at(64, m.y, m.z));
-    b.add(transfer, "dark", cylX(12, 10, 20), at(64, p.y, p.z));
+    gearmotor(b, transferMotor, 54, m.y, m.z, -1, 110);
+    b.add(transferMotor, "dark", cylX(10, 10, 20), at(64, m.y, m.z));
+    b.add(transferMotor, "dark", cylX(12, 10, 20), at(64, p.y, p.z));
     const beltLen = Math.hypot(m.y - p.y, m.z - p.z);
     const beltAngle = Math.atan2(m.y - p.y, m.z - p.z);
     for (const off of [-11, 11])
       b.add(
-        transfer,
+        transferMotor,
         "rubber",
         box(8, 2, beltLen),
         at(64, (m.y + p.y) / 2 + off * Math.cos(beltAngle), (m.z + p.z) / 2 - off * Math.sin(beltAngle), -beltAngle, 0, 0),
       );
     // Clamp blocks to the front towers.
-    for (const s of [-1, 1]) b.add(transfer, "black", box(44, 40, 30), at(s * 78, m.y, m.z));
+    for (const s of [-1, 1]) b.add(transferMotor, "black", box(44, 40, 30), at(s * 78, m.y, m.z));
 
     // Servo gate at the top of the ramp.
     const gy = rampY(-118);
-    b.add(transfer, "black", box(22, 40, 42), at(80, gy + 30, -118));
-    b.add(transfer, "aluSolid", box(130, 3, 34), at(0, gy + 44, -126, 0.5, 0, 0));
-    b.add(transfer, "steel", cylX(3, 26, 10), at(66, gy + 44, -118));
+    b.add(transferMotor, "black", box(22, 40, 42), at(80, gy + 30, -118));
+    b.add(transferMotor, "aluSolid", box(130, 3, 34), at(0, gy + 44, -126, 0.5, 0, 0));
+    b.add(transferMotor, "steel", cylX(3, 26, 10), at(66, gy + 44, -118));
 
   }
 
@@ -1017,15 +1110,15 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
   {
     const y = D.axleY;
     const z = D.axleZ;
-    b.add(shooter, "steel", cylX(4, 250, 12), at(0, y, z));
+    b.add(shooterFlywheel, "steel", cylX(4, 250, 12), at(0, y, z));
     for (const s of [-1, 1]) {
-      b.add(shooter, "tread", cylX(48, 28, 64), at(s * 16, y, z));
-      b.add(shooter, "dark", cylX(30, 30, 32), at(s * 16, y, z));
+      b.add(shooterFlywheel, "tread", cylX(48, 28, 64), at(s * 16, y, z));
+      b.add(shooterFlywheel, "dark", cylX(30, 30, 32), at(s * 16, y, z));
       // Flywheel weights on the outer faces, and shaft collars.
-      b.add(shooter, "steel", cylX(36, 6, 40), at(s * 34, y, z));
-      b.add(shooter, "steel", cylX(9, 8, 16), at(s * 44, y, z));
-      b.add(shooter, "steel", cylX(9, 8, 16), at(s * 62, y, z));
-      gearmotor(b, shooter, s * 86, y, z, s as 1 | -1, 74);
+      b.add(shooterFlywheel, "steel", cylX(36, 6, 40), at(s * 34, y, z));
+      b.add(shooterFlywheel, "steel", cylX(9, 8, 16), at(s * 44, y, z));
+      b.add(shooterFlywheel, "steel", cylX(9, 8, 16), at(s * 62, y, z));
+      gearmotor(b, shooterMotors, s * 86, y, z, s as 1 | -1, 74);
     }
     // Housing: a printed box whose top sits just above the axle, open over the flywheel. The
     // Limelight mounts on its front face.
@@ -1035,22 +1128,22 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
     const back = -90;
     const hw = 80;
     const hh = ht - hb;
-    b.add(shooter, "black", box(hw * 2, hh, 6), at(0, (ht + hb) / 2, front - 3));
-    b.add(shooter, "black", box(hw * 2, hh, 6), at(0, (ht + hb) / 2, back + 3));
+    b.add(shooterCheeks, "black", box(hw * 2, hh, 6), at(0, (ht + hb) / 2, front - 3));
+    b.add(shooterCheeks, "black", box(hw * 2, hh, 6), at(0, (ht + hb) / 2, back + 3));
     for (const s of [-1, 1]) {
       // Side walls with bearing bosses; bottom strips either side of the flywheel's slot.
-      b.add(shooter, "black", box(22, hh, front - back), at(s * (hw - 11), (ht + hb) / 2, (front + back) / 2));
-      b.add(shooter, "black", cylX(22, 6, 28), at(s * (hw + 3), y, z));
-      b.add(shooter, "black", box(hw - 50, 5, front - back), at(s * (hw + 50) / 2, hb + 2.5, (front + back) / 2));
-      b.add(shooter, "black", box(hw - 58, 5, front - back), at(s * (hw + 58) / 2, ht - 2.5, (front + back) / 2));
+      b.add(shooterCheeks, "black", box(22, hh, front - back), at(s * (hw - 11), (ht + hb) / 2, (front + back) / 2));
+      b.add(shooterCheeks, "black", cylX(22, 6, 28), at(s * (hw + 3), y, z));
+      b.add(shooterCheeks, "black", box(hw - 50, 5, front - back), at(s * (hw + 50) / 2, hb + 2.5, (front + back) / 2));
+      b.add(shooterCheeks, "black", box(hw - 58, 5, front - back), at(s * (hw + 58) / 2, ht - 2.5, (front + back) / 2));
     }
-    b.add(shooter, "black", box(116, 5, 34), at(0, ht - 2.5, front - 17));
+    b.add(shooterCheeks, "black", box(116, 5, 34), at(0, ht - 2.5, front - 17));
 
     // Hood, pivoting on the flywheel axle: a thin curved plate over and behind the wheel, held
     // between two side plates that follow its curve and are bolted through into its edges, a
     // front frame with an arched opening the artifact leaves through, and a clear poly shield
     // over the top. The printed plates have chamfered edges.
-    const hood = childGroup(shooter, "reaper-hood", V(0, 80, 0), V(0, y, z));
+    const hood = shooterHood;
     const H = D.hoodTop - y; // hood height above the axle
     const dR = H - 16; // the curved plate's inner radius about the axle
     const deg = Math.PI / 180;
@@ -1133,8 +1226,8 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
     b.add(hood, "black", box(132, 8, 32), at(0, H - 4, -24));
 
     // Hood servo on the right of the housing, behind the motor, with a link to the wall.
-    b.add(shooter, "black", box(20, 40, 38), at(-92, ht + 4, -62));
-    b.add(shooter, "steel", cylX(4, 10, 10), at(-104, ht + 14, -62));
+    b.add(shooterMotors, "black", box(20, 40, 38), at(-92, ht + 4, -62));
+    b.add(shooterMotors, "steel", cylX(4, 10, 10), at(-104, ht + 14, -62));
     b.add(hood, "aluSolid", box(4, 6, 64), at(-78, 22, -56, 0.9, 0, 0));
   }
 
@@ -1142,7 +1235,7 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
   {
     aiming.position.set(0, D.limelightY, D.housingFront + 12);
     aiming.userData.basePosition = aiming.position.clone();
-    const holder = childGroup(aiming, "reaper-limelight-body", V(0, 0, 0));
+    const holder = aimingLens;
     holder.rotation.x = -0.12;
     b.add(holder, "black", box(82, 50, 24), at(0, 0, 0));
     b.add(holder, "dark", box(76, 44, 1.5), at(0, 0, 12.4));
@@ -1177,7 +1270,7 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
       return s;
     };
     for (const s of [-1, 1]) {
-      const side = childGroup(protection, s > 0 ? "reaper-plate-left" : "reaper-plate-right", V(s * 170, 0, 0));
+      const side = childGroup(protectionPlates, s > 0 ? "reaper-plate-left" : "reaper-plate-right", V(0, 0, 0));
       b.add(side, "wood", sideExtrude(plateShape(), 6, s > 0 ? D.plateX + 6 : -D.plateX, 16));
       // Team number plate on the outer face.
       const label = new THREE.PlaneGeometry(150, 46);
@@ -1195,7 +1288,7 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
       }
       // Bent guard rod over the top and down the front edge.
       b.add(
-        side,
+        protectionGuards,
         "black",
         tube(
           [
@@ -1216,9 +1309,9 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
         [300, 120],
         [140, 236],
       ])
-        b.add(side, "dark", cylX(5, 18, 10), at(s * 209, yy, zz));
+        b.add(protectionGuards, "dark", cylX(5, 18, 10), at(s * 209, yy, zz));
     }
-    const shield = childGroup(protection, "reaper-shield", V(0, 40, -130));
+    const shield = protectionShields;
     b.add(shield, "acrylic", box(214, 236, 3), at(0, 190, -197));
     for (const [x, yy] of [
       [-98, 80],
@@ -1241,36 +1334,36 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
     const hubScrews: [number, number, number, THREE.Vector3][] = [];
     const hub = (cy: number, label: "control" | "expansion") => {
       const face = -188;
-      b.add(electronics, "board", box(143, 103, 20), at(0, cy, -178));
-      for (const sy of [-1, 1]) b.add(electronics, "hubLid", box(143, 5, 2.4), at(0, cy + sy * 49, face - 1.2));
-      for (const sx of [-1, 1]) b.add(electronics, "hubLid", box(5, 93, 2.4), at(sx * 69, cy, face - 1.2));
+      b.add(electronicsHubs, "board", box(143, 103, 20), at(0, cy, -178));
+      for (const sy of [-1, 1]) b.add(electronicsHubs, "hubLid", box(143, 5, 2.4), at(0, cy + sy * 49, face - 1.2));
+      for (const sx of [-1, 1]) b.add(electronicsHubs, "hubLid", box(5, 93, 2.4), at(sx * 69, cy, face - 1.2));
       const plate = new THREE.PlaneGeometry(96, 24);
       const uv = plate.getAttribute("uv");
       for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * 0.5 + (label === "control" ? 0.5 : 0));
-      b.add(electronics, "hubLabel", plate, at(-10, cy + 20, face - 0.1, 0, Math.PI, 0));
-      b.add(electronics, "black", box(126, 16, 1), at(0, cy - 22, face - 0.5));
+      b.add(electronicsHubs, "hubLabel", plate, at(-10, cy + 20, face - 0.1, 0, Math.PI, 0));
+      b.add(electronicsHubs, "black", box(126, 16, 1), at(0, cy - 22, face - 0.5));
       for (let i = 0; i < 11; i++) ports.push(at(-55 + i * 11, cy - 22, face - 1.6));
       for (const sy of [-1, 1])
         for (let i = 0; i < 9; i++) headers.push(at(-56 + i * 14, cy + sy * 52.6, -180, 0, 0, sy > 0 ? 0 : Math.PI));
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) hubScrews.push([sx * 60, cy + sy * 40, face, V(0, 0, -1)]);
-      b.add(electronics, "emitter", box(4, 4, 1.5), at(56, cy - 38, face - 0.8));
+      b.add(electronicsHubs, "emitter", box(4, 4, 1.5), at(56, cy - 38, face - 0.8));
     };
     hub(241, "control");
     hub(131, "expansion");
-    b.instance(electronics, "black", box(8, 9, 3), ports);
-    b.instance(electronics, "black", box(10, 3, 9), headers);
-    b.instance(electronics, "dark", new THREE.CylinderGeometry(3, 3, 1.6, 8), socketHeads(hubScrews));
+    b.instance(electronicsHubs, "black", box(8, 9, 3), ports);
+    b.instance(electronicsHubs, "black", box(10, 3, 9), headers);
+    b.instance(electronicsHubs, "dark", new THREE.CylinderGeometry(3, 3, 1.6, 8), socketHeads(hubScrews));
     // Battery under the ramp, laid flat.
-    b.add(electronics, "board", box(78, 42, 152), at(0, 30, -40));
-    b.add(electronics, "band", box(79, 18, 100), at(0, 34, -40));
+    b.add(electronicsBattery, "board", box(78, 42, 152), at(0, 30, -40));
+    b.add(electronicsBattery, "band", box(79, 18, 100), at(0, 34, -40));
     // goBILDA Pinpoint odometry computer.
-    b.add(electronics, "black", box(42, 12, 42), at(0, 38, 92));
-    b.add(electronics, "emitter", box(3, 2, 3), at(14, 45, 104));
+    b.add(electronicsPinpoint, "black", box(42, 12, 42), at(0, 38, 92));
+    b.add(electronicsPinpoint, "emitter", box(3, 2, 3), at(14, 45, 104));
     // RGB gate lights on the housing's outer faces, near the front.
     for (const s of [-1, 1]) {
-      b.add(electronics, "black", box(14, 22, 22), at(s * 87, D.limelightY + 10, D.housingFront - 16));
+      b.add(electronicsLeds, "black", box(14, 22, 22), at(s * 87, D.limelightY + 10, D.housingFront - 16));
       b.add(
-        electronics,
+        electronicsLeds,
         "emitter",
         new THREE.SphereGeometry(8, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2),
         at(s * 94, D.limelightY + 10, D.housingFront - 16, 0, 0, -s * (Math.PI / 2)),
@@ -1288,7 +1381,7 @@ export function createReaperModel(options: ReaperModelOptions = {}): THREE.Group
       ["cableLight", [[10, 270, -170], [60, 276, -60], [40, 300, 60], [20, 318, 88]]],
       ["cable", [[0, 21, 92], [40, 30, 40], [40, 80, -150], [0, 120, -168]]],
     ];
-    for (const [key, pts] of runs) b.add(electronics, key, tube(pts, 2.2, 48, 6));
+    for (const [key, pts] of runs) b.add(electronicsHubs, key, tube(pts, 2.2, 48, 6));
   }
 
   // ----- Merge batches into meshes -------------------------------------------------------------
@@ -1459,6 +1552,14 @@ export function setReaperViewport(model: THREE.Object3D, width: number, height: 
   );
 }
 
+/** Stable, source-derived transform nodes for the 26 meso assemblies. */
+export function reaperAssemblyNodes(model: THREE.Object3D) {
+  return REAPER_ASSEMBLIES.flatMap((assembly) => {
+    const node = model.getObjectByName(`reaper-assembly-${assembly.id}`) as PartGroup | undefined;
+    return node ? [{ assembly, node }] : [];
+  });
+}
+
 // ---------------------------------------------------------------------------------------------
 // Runtime controls
 
@@ -1539,7 +1640,7 @@ export function setReaperColors(model: THREE.Object3D, colors: Partial<ReaperCol
 
 /** Tilt the hood about the flywheel axle, in radians (positive raises the exit). */
 export function setReaperHood(model: THREE.Object3D, angle: number) {
-  const hood = model.getObjectByName("reaper-hood");
+  const hood = model.getObjectByName("reaper-assembly-shooter-hood");
   if (hood) hood.rotation.x = -angle;
 }
 
