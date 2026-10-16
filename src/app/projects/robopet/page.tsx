@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getProject } from "@/data/projects";
 import { RoboPetFilm } from "@/components/robopet/RoboPetFilm";
 import { RoboPetShort } from "@/components/robopet/RoboPetShort";
-import { RoboPetExploded } from "@/components/robopet/RoboPetExploded";
+import { RoboPetExplainer } from "@/components/robopet/explainer/RoboPetExplainer";
 import { RoboPetBuildLog } from "@/components/robopet/RoboPetBuildLog";
 import type { CustomBlocks } from "@/components/projects/ProjectBlocks";
 import { ProjectView, projectPageMetadata } from "../_view/project-view";
@@ -18,7 +18,7 @@ import { ProjectView, projectPageMetadata } from "../_view/project-view";
 const ROBOPET_BLOCKS: CustomBlocks = {
   "robopet-film": RoboPetFilm,
   "robopet-short": RoboPetShort,
-  "robopet-exploded": RoboPetExploded,
+  "robopet-exploded": RoboPetExplainer,
   "robopet-build-log": RoboPetBuildLog,
 };
 

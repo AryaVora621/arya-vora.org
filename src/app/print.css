@@ -212,7 +212,7 @@
     inset: auto !important;
     height: 3.6in !important;
     margin: 16px 0 0 !important;
-    background: url("/robopet/exploded-still.webp") center / contain no-repeat;
+    background: url("/robopet/explainer/exploded-mono.webp") center / contain no-repeat;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     break-inside: avoid;

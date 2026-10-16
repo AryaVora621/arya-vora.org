@@ -1252,6 +1252,10 @@ test("keyboard focus reaches the film link and then the part buttons, on screen 
 
   for (let i = 1; i < count; i++) {
     await page.keyboard.press(TAB);
+    // When transitioning between part groups, Tab encounters the group's summary disclosure.
+    if (await page.evaluate(() => document.activeElement?.tagName.toLowerCase() === "summary")) {
+      await page.keyboard.press(TAB);
+    }
     await expect(parts.nth(i)).toBeFocused();
     await expect.poll(async () => (await focusedControlIsUsable(page)).why, { timeout: 8000 }).toBe("");
   }
@@ -1289,6 +1293,144 @@ test("exploded part buttons set aria-pressed and fill the live detail panel", as
   await page.keyboard.press("Space");
   await expect(keyed).toHaveAttribute("aria-pressed", "false");
   await expect(detail.getByRole("heading", { level: 3 })).toHaveCount(0);
+});
+
+test("explainer in live 3D mode: Explode toggles, mode buttons work, wheel zoom locks until active", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await page.goto("/?force3d");
+  const section = page.locator("#exploded");
+  await expect(section).toHaveAttribute("data-mode", "live");
+
+  // Scroll to section to trigger lazy load
+  await section.scrollIntoViewIfNeeded();
+  await scrollIsStill(page);
+  await page.waitForFunction(
+    () => (window as unknown as { __explainerReady?: boolean }).__explainerReady === true,
+    { timeout: 15000 },
+  );
+
+  const bExplode = page.locator("#bExplode");
+  const bXray = page.locator("#bXray");
+  const bPower = page.locator("#bPower");
+  const bSignal = page.locator("#bSignal");
+  const bReset = page.locator("#bReset");
+
+  // Explode button toggles aria-pressed and data-exploded
+  await expect(bExplode).toHaveAttribute("aria-pressed", "false");
+  await bExplode.click();
+  await expect(bExplode).toHaveAttribute("aria-pressed", "true");
+  await expect(section).toHaveAttribute("data-exploded", "true");
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { explainer: { model: { explode: number } } }).explainer.model
+          .explode,
+    ),
+  ).toBeGreaterThan(0);
+
+  await bExplode.click();
+  await expect(bExplode).toHaveAttribute("aria-pressed", "false");
+  await expect(section).toHaveAttribute("data-exploded", "false");
+
+  // Mode buttons toggle
+  await bXray.click();
+  await expect(bXray).toHaveAttribute("aria-pressed", "true");
+  await bXray.click();
+  await expect(bXray).toHaveAttribute("aria-pressed", "false");
+
+  await bPower.click();
+  await expect(bPower).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".explainer-legend")).toBeVisible();
+  await expect(page.locator(".explainer-legend")).toContainText("Power");
+
+  await bSignal.click();
+  await expect(bSignal).toHaveAttribute("aria-pressed", "true");
+  await expect(bPower).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".explainer-legend")).toContainText("Signal");
+
+  await bSignal.click();
+  await expect(bSignal).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".explainer-legend")).toBeHidden();
+
+  // Reset button resets camera and view
+  await bReset.click();
+
+  // Keyboard shortcuts
+  await page.keyboard.press("e");
+  await expect(bExplode).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("e");
+  await expect(bExplode).toHaveAttribute("aria-pressed", "false");
+
+  await page.keyboard.press("x");
+  await expect(bXray).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("x");
+  await expect(bXray).toHaveAttribute("aria-pressed", "false");
+
+  // Wheel zoom lock: zoom is disabled until stage is clicked
+  const zoomInitiallyEnabled = await page.evaluate(
+    () =>
+      (window as unknown as { explainer: { controls: { enableZoom: boolean } } }).explainer
+        .controls.enableZoom,
+  );
+  expect(zoomInitiallyEnabled).toBe(false);
+
+  // Click canvas to activate
+  await page.locator("#gl").click({ position: { x: 50, y: 50 } });
+  const zoomActive = await page.evaluate(
+    () =>
+      (window as unknown as { explainer: { controls: { enableZoom: boolean } } }).explainer
+        .controls.enableZoom,
+  );
+  expect(zoomActive).toBe(true);
+
+  // Press Escape to deactivate
+  await page.keyboard.press("Escape");
+  const zoomAfterEsc = await page.evaluate(
+    () =>
+      (window as unknown as { explainer: { controls: { enableZoom: boolean } } }).explainer
+        .controls.enableZoom,
+  );
+  expect(zoomAfterEsc).toBe(false);
+});
+
+test("explainer axe passes in live and static modes, in both themes", async ({ page }) => {
+  test.slow();
+  // Static mode in mono
+  await page.goto("/");
+  await page.locator("#exploded").scrollIntoViewIfNeeded();
+  let results = await new AxeBuilder({ page }).include("#exploded").withTags(AXE_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+
+  // Static mode in violet
+  await arriveWithTheme(page, "violet");
+  await page.goto("/");
+  await page.locator("#exploded").scrollIntoViewIfNeeded();
+  results = await new AxeBuilder({ page }).include("#exploded").withTags(AXE_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+
+  // Live mode in mono
+  await arriveWithTheme(page, "mono");
+  await page.goto("/?force3d");
+  await page.locator("#exploded").scrollIntoViewIfNeeded();
+  await page.waitForFunction(
+    () => (window as unknown as { __explainerReady?: boolean }).__explainerReady === true,
+    { timeout: 15000 },
+  );
+  results = await new AxeBuilder({ page }).include("#exploded").withTags(AXE_TAGS).analyze();
+  expect(results.violations).toEqual([]);
+
+  // Live mode in violet
+  await arriveWithTheme(page, "violet");
+  await page.goto("/?force3d");
+  await page.locator("#exploded").scrollIntoViewIfNeeded();
+  await page.waitForFunction(
+    () => (window as unknown as { __explainerReady?: boolean }).__explainerReady === true,
+    { timeout: 15000 },
+  );
+  results = await new AxeBuilder({ page }).include("#exploded").withTags(AXE_TAGS).analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test("turning on reduced motion after load puts the film and exploded view into their static layouts", async ({
