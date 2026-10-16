@@ -26,7 +26,7 @@ import {
 // switch, which every page shares, is tested here on the home page.
 
 // Page order from the v9 contract, top to bottom.
-const SECTION_ORDER = ["top", "ftc", "robopet", "exploded", "projects", "about", "contact"];
+const SECTION_ORDER = ["top", "ftc", "robopet", "short", "exploded", "projects", "about", "contact"];
 
 // Reaper and roboPet have sections of their own on the home page, so the preview grid holds
 // every other project.
@@ -126,6 +126,53 @@ test("the home page features Reaper and roboPet, each with a way to its full pag
   );
   expect(film).toBeLessThan(exploded);
   expect(exploded).toBeLessThan(link);
+});
+
+test("the 41-second roboPet short renders on the home page with poster, controls, captions, no autoplay, a 9:16 box, and 200 assets", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  const section = page.locator("#short");
+  await expect(section).toBeAttached();
+  await expect(section.getByRole("heading", { level: 2, name: "Boot sequence" })).toBeVisible();
+
+  const video = section.locator("video");
+  await expect(video).toBeAttached();
+  await expect(video).toHaveAttribute("controls", "");
+  await expect(video).toHaveAttribute("playsinline", "");
+  await expect(video).toHaveAttribute("preload", "none");
+  await expect(video).not.toHaveAttribute("autoplay");
+  await expect(video).toHaveAttribute("aria-label", "roboPet 41-second boot sequence short film");
+
+  const poster = await video.getAttribute("poster");
+  expect(poster).toBe("/robopet/short/robopet-short-poster.webp");
+  const posterRes = await request.get(poster!);
+  expect(posterRes.status()).toBe(200);
+  expect(posterRes.headers()["content-type"]).toContain("image/webp");
+
+  const src = (await video.getAttribute("src")) || (await video.locator("source").getAttribute("src"));
+  expect(src).toBe("/robopet/short/robopet-short.mp4");
+  const videoRes = await request.get(src!);
+  expect(videoRes.status()).toBe(200);
+  expect(videoRes.headers()["content-type"]).toContain("video/mp4");
+
+  const track = video.locator('track[kind="captions"]');
+  await expect(track).toHaveCount(1);
+  await expect(track).toHaveAttribute("srclang", "en");
+  await expect(track).toHaveAttribute("label", "English");
+  await expect(track).toHaveAttribute("default", "");
+  const trackSrc = await track.getAttribute("src");
+  expect(trackSrc).toBe("/robopet/short/robopet-short.en.vtt");
+  const trackRes = await request.get(trackSrc!);
+  expect(trackRes.status()).toBe(200);
+
+  const frame = section.locator(".short-frame");
+  const box = await frame.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThan(0);
+  expect(box!.height).toBeGreaterThan(0);
+  expect(box!.width / box!.height).toBeCloseTo(9 / 16, 1);
 });
 
 test("the project previews show every other project as a picture, a title and a line", async ({
@@ -1186,10 +1233,24 @@ test("keyboard focus reaches the film link and then the part buttons, on screen 
   await expect.poll(async () => (await focusedControlIsUsable(page)).why, { timeout: 8000 }).toBe("");
   await expect(page.locator(".film-link")).toHaveAttribute("href", /github\.com\/AryaVora621\/roboPet/);
 
+  // From the film link, Tab reaches the short film's video, then the part buttons.
+  await page.keyboard.press(TAB);
+  await expect(page.locator("#short video")).toBeFocused();
+  await expect.poll(async () => (await focusedControlIsUsable(page)).why, { timeout: 8000 }).toBe("");
+
   const parts = page.getByRole("list", { name: "roboPet parts" }).getByRole("button");
   const count = await parts.count();
   expect(count).toBeGreaterThanOrEqual(6);
-  for (let i = 0; i < count; i++) {
+
+  // Advance past any native video controls until the first part button takes focus.
+  for (let step = 0; step < 10; step++) {
+    if (await parts.first().evaluate((el) => el === document.activeElement)) break;
+    await page.keyboard.press(TAB);
+  }
+  await expect(parts.first()).toBeFocused();
+  await expect.poll(async () => (await focusedControlIsUsable(page)).why, { timeout: 8000 }).toBe("");
+
+  for (let i = 1; i < count; i++) {
     await page.keyboard.press(TAB);
     await expect(parts.nth(i)).toBeFocused();
     await expect.poll(async () => (await focusedControlIsUsable(page)).why, { timeout: 8000 }).toBe("");

@@ -648,6 +648,53 @@ test("roboPet's meta row shows once, under the header or after the film", async 
   }
 });
 
+test("the 41-second roboPet short renders on /projects/robopet with poster, controls, captions, no autoplay, a 9:16 box, and 200 assets", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/projects/robopet");
+  const section = page.locator("#short");
+  await expect(section).toBeAttached();
+  await expect(section.getByRole("heading", { name: "Boot sequence" })).toBeVisible();
+
+  const video = section.locator("video");
+  await expect(video).toBeAttached();
+  await expect(video).toHaveAttribute("controls", "");
+  await expect(video).toHaveAttribute("playsinline", "");
+  await expect(video).toHaveAttribute("preload", "none");
+  await expect(video).not.toHaveAttribute("autoplay");
+  await expect(video).toHaveAttribute("aria-label", "roboPet 41-second boot sequence short film");
+
+  const poster = await video.getAttribute("poster");
+  expect(poster).toBe("/robopet/short/robopet-short-poster.webp");
+  const posterRes = await request.get(poster!);
+  expect(posterRes.status()).toBe(200);
+  expect(posterRes.headers()["content-type"]).toContain("image/webp");
+
+  const src = (await video.getAttribute("src")) || (await video.locator("source").getAttribute("src"));
+  expect(src).toBe("/robopet/short/robopet-short.mp4");
+  const videoRes = await request.get(src!);
+  expect(videoRes.status()).toBe(200);
+  expect(videoRes.headers()["content-type"]).toContain("video/mp4");
+
+  const track = video.locator('track[kind="captions"]');
+  await expect(track).toHaveCount(1);
+  await expect(track).toHaveAttribute("srclang", "en");
+  await expect(track).toHaveAttribute("label", "English");
+  await expect(track).toHaveAttribute("default", "");
+  const trackSrc = await track.getAttribute("src");
+  expect(trackSrc).toBe("/robopet/short/robopet-short.en.vtt");
+  const trackRes = await request.get(trackSrc!);
+  expect(trackRes.status()).toBe(200);
+
+  const frame = section.locator(".short-frame");
+  const box = await frame.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThan(0);
+  expect(box!.height).toBeGreaterThan(0);
+  expect(box!.width / box!.height).toBeCloseTo(9 / 16, 1);
+});
+
 // A software cover is a 3200px window. Drawn whole at a phone's width its UI text was 4 to 7px
 // tall; on a phone each is cropped to one feature (src/components/projects/coverCrops.ts), drawn at
 // a scale that puts its text at about 9.5px or more, on the project's page, on the index and on the
