@@ -45,16 +45,15 @@ export const robopet: Project = {
   ],
   blocks: [
     // The page opens on the film, straight under the header. Where the project stands follows it,
-    // then the 41-second boot sequence short film, the parts, the build log and the CAD.
+    // then the parts, the build log and the CAD.
     //
     // Each story has one home on this page. The film is shared with the home page, which has no
     // build log, so it keeps its four beats and its outro as they are, and the servo counts, the
-    // two lost servos and the orientation cube can come up there a second time. The boot sequence
-    // short provides a simulated boot run of the systems. The parts view takes `brief` and gives
-    // each part's role or rating, leaving the incidents to the build log. Where it stands has what
-    // is mounted on the chassis now and the one bench test the log does not cover; the build log
-    // has the dated work (the print, the I2C chunks, the crossed UART wires, the servo tester and
-    // the swapped power wires).
+    // two lost servos and the orientation cube can come up there a second time. The parts view
+    // takes `brief` and gives each part's role or rating, leaving the incidents to the build log.
+    // Where it stands has what is mounted on the chassis now and the one bench test the log does
+    // not cover; the build log has the dated work (the print, the I2C chunks, the crossed UART
+    // wires, the servo tester and the swapped power wires).
     { kind: "custom", component: "robopet-film", props: { hideIntro: true } },
     {
       kind: "text",
@@ -65,7 +64,6 @@ export const robopet: Project = {
         "The film above and the parts view below show the planned robot as a concept render, not the printed frame.",
       ],
     },
-    { kind: "custom", component: "robopet-short" },
     { kind: "custom", component: "robopet-exploded", props: { brief: true } },
     { kind: "custom", component: "robopet-build-log" },
     {

@@ -21,7 +21,6 @@ export type CustomComponent =
   | "reaper-results"
   | "reaper-role"
   | "robopet-film"
-  | "robopet-short"
   | "robopet-exploded"
   | "robopet-build-log"
   | "software-visual";

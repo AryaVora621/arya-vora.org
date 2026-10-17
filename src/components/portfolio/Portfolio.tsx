@@ -3,7 +3,6 @@ import { socialLinks } from "@/data/portfolio";
 import { FooterNav, PortfolioNav } from "./PortfolioNav";
 import Link from "next/link";
 import { RoboPetFilm } from "@/components/robopet/RoboPetFilm";
-import { RoboPetShort } from "@/components/robopet/RoboPetShort";
 import { RoboPetExplainer } from "@/components/robopet/explainer/RoboPetExplainer";
 import { HeroRobot } from "@/components/robopet/HeroRobot";
 import { milestones } from "@/components/home/milestones";
@@ -103,7 +102,6 @@ export function Portfolio() {
         </section>
         <ReaperHighlight />
         <RoboPetFilm />
-        <RoboPetShort />
         <RoboPetExplainer />
         <div className="home-robopet-more">
           <div className="site-shell">
