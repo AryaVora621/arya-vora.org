@@ -1,3 +1,17 @@
+# Checkpoint - Arya Vora Portfolio (2026-10-27 Privacy and Terms pages)
+
+## Completed
+- Added /privacy and /terms pages for Mira Hermes Google Cloud OAuth verification.
+- Verification: npm run build, npm run lint, local curl 200 checks on /, /privacy, /terms, and Playwright test suite pass.
+
+## Next action
+- Deploy to Vercel and verify live endpoints.
+
+## Human decisions needed
+- None.
+
+---
+
 # Checkpoint - Arya Vora Portfolio (2026-10-15 Reaper assembly rebuild)
 
 ## Completed
