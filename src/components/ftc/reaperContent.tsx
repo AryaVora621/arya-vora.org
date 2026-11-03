@@ -301,6 +301,8 @@ export type Row = {
    * row stays in the full ledger.
    */
   highlight?: boolean;
+  /** A playoff final, not a qualification record. The /ftc totals count qualification only. */
+  final?: boolean;
 };
 export type Season = { id: string; title: string; note: string; rows: Row[] };
 
@@ -351,6 +353,7 @@ export const SEASONS: Season[] = [
       },
       {
         highlight: true,
+        final: true,
         date: "2026-03-15",
         event: "New Jersey Championship, final",
         record: "0-2",

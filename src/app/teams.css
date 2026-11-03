@@ -1,0 +1,835 @@
+/*
+  The team pages, /ftc and /frc, imported by src/app/(teams)/layout.tsx only. Colors and type
+  are the site's tokens (portfolio.css), so both themes work unchanged.
+
+  The HUD chrome takes after igloo.inc, in black and white: corner brackets drawn with
+  gradients, mono labels, a single hairline sweep across the frame on load, tabular numerals
+  that count up and a title that decodes. Every effect starts from the final state in the server
+  HTML or is a CSS entrance on the first frame, and the global reduced-motion rule in
+  globals.css cuts each one to a single frame.
+*/
+
+.teams-route {
+  --team-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --team-bracket: 18px;
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Hero                                                                                        */
+/* ------------------------------------------------------------------------------------------ */
+
+.team-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: center;
+  gap: 56px;
+  /* The first screen, less the nav, but never so tall on a big monitor that the numbers below
+     drift far from it. */
+  min-height: min(calc(100svh - 84px), 820px);
+  padding-block: 32px 56px;
+}
+.team-hero-copy {
+  min-width: 0;
+}
+.team-title {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+.team-title-number {
+  font-size: clamp(72px, 10.5vw, 168px);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.team-title-name {
+  font-size: var(--text-h2);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--muted);
+}
+.team-lede {
+  margin-top: 32px;
+  max-width: 36em;
+}
+.team-lede p {
+  font-size: var(--text-lead);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.team-lede p + p {
+  margin-top: 16px;
+}
+
+/* The facts frame: four corner brackets and one sweep. */
+.team-hud,
+.team-cad-frame {
+  position: relative;
+}
+.team-hud {
+  margin-top: 40px;
+  padding: 22px 24px;
+}
+.team-hud::before,
+.team-cad::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --b: var(--team-bracket);
+  background:
+    linear-gradient(var(--text), var(--text)) top left / var(--b) 1px no-repeat,
+    linear-gradient(var(--text), var(--text)) top left / 1px var(--b) no-repeat,
+    linear-gradient(var(--text), var(--text)) top right / var(--b) 1px no-repeat,
+    linear-gradient(var(--text), var(--text)) top right / 1px var(--b) no-repeat,
+    linear-gradient(var(--text), var(--text)) bottom left / var(--b) 1px no-repeat,
+    linear-gradient(var(--text), var(--text)) bottom left / 1px var(--b) no-repeat,
+    linear-gradient(var(--text), var(--text)) bottom right / var(--b) 1px no-repeat,
+    linear-gradient(var(--text), var(--text)) bottom right / 1px var(--b) no-repeat;
+  animation: team-brackets-in 0.9s var(--team-ease) 0.2s backwards;
+}
+.team-hud::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  animation: team-sweep 1.3s cubic-bezier(0.65, 0, 0.35, 1) 0.45s both;
+}
+.team-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+.team-facts dt {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.team-facts dd {
+  margin-top: 6px;
+  font-size: var(--text-lead);
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The load sequence: the name, the lede and the frame rise in after the title starts decoding. */
+.team-title-name,
+.team-lede,
+.team-hud {
+  animation: team-rise 0.9s var(--team-ease) backwards;
+}
+.team-title-name {
+  animation-delay: 0.08s;
+}
+.team-lede {
+  animation-delay: 0.16s;
+}
+.team-hud {
+  animation-delay: 0.26s;
+}
+.team-hero-art {
+  min-width: 0;
+  animation: team-fade 1.2s var(--team-ease) 0.2s backwards;
+}
+
+@keyframes team-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+@keyframes team-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes team-brackets-in {
+  from {
+    opacity: 0;
+    inset: 10px;
+  }
+}
+/* It runs once, so animating top (the height of the frame is not known here) costs a few
+   layouts on load and nothing after. */
+@keyframes team-sweep {
+  0% {
+    opacity: 0;
+    top: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    top: calc(100% - 1px);
+  }
+}
+
+/* The art beside the hero: the live Reaper or the FRC CAD render. */
+.team-model .reaper-dock {
+  width: min(100%, 620px);
+  margin-inline: auto;
+}
+.team-model-hint {
+  margin-top: 8px;
+  text-align: center;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.team-cad {
+  position: relative;
+  margin: 0;
+  padding: 20px;
+}
+.team-cad-frame {
+  overflow: hidden;
+}
+.team-cad-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Numbers                                                                                     */
+/* ------------------------------------------------------------------------------------------ */
+
+.team-stats {
+  padding-bottom: var(--section-gap);
+}
+.team-stats dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+.team-stats dl > div {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.team-stats dt {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.team-stats dd {
+  font-size: clamp(48px, 6.2vw, 96px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.team-stat-sep {
+  color: var(--muted);
+}
+.team-stats-note {
+  margin-top: 20px;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Sections                                                                                    */
+/* ------------------------------------------------------------------------------------------ */
+
+.team-section {
+  padding-block: var(--section-gap);
+  border-top: 1px solid var(--line);
+}
+.team-section-head {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  column-gap: 16px;
+  align-items: baseline;
+}
+.team-section-head > h2,
+.team-section-head > p {
+  grid-column: 2;
+}
+.team-section-index {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.team-prose {
+  margin-top: 28px;
+  max-width: 40em;
+}
+.team-prose p {
+  font-size: var(--text-lead);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.team-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 28px 0 0;
+  padding: 0;
+}
+.team-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+.team-links a:hover {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Seasons: a grid, or a pinned horizontal rail (SeasonRail)                                   */
+/* ------------------------------------------------------------------------------------------ */
+
+.team-seasons {
+  padding-bottom: 0;
+}
+.team-rail {
+  padding-bottom: var(--section-gap);
+}
+.team-rail .team-section-head {
+  margin-bottom: 40px;
+}
+.team-rail-hud {
+  display: none;
+}
+.team-rail-track {
+  position: relative;
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+.team-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 22px 0 8px;
+  border-top: 1px solid var(--line);
+  transition: border-color 0.3s ease;
+}
+.team-card[data-current] {
+  border-top-color: var(--accent);
+}
+.team-card:hover {
+  border-top-color: var(--text);
+}
+.team-card-index {
+  font-size: clamp(56px, 5vw, 80px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--muted);
+  transition: color 0.4s var(--team-ease);
+}
+.team-card:hover .team-card-index,
+.team-card:focus-within .team-card-index {
+  color: var(--text);
+}
+.team-card-numbers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.team-card-numbers dt {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  color: var(--muted);
+}
+.team-card-numbers dd {
+  margin-top: 4px;
+  font-size: clamp(32px, 3vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.team-card h3 {
+  margin-top: 18px;
+  font-size: var(--text-h3);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.team-card h3 .mono {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.team-card-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.team-card-meta dt {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  color: var(--muted);
+}
+.team-card-meta dd {
+  margin-top: 2px;
+  font-weight: 700;
+}
+.team-card-meta a {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+.team-card-meta a:hover {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+.team-card-lines {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+}
+.team-card-lines li {
+  padding-block: 10px;
+  border-top: 1px solid var(--line);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Pinned (SeasonRail adds .is-rail on a wide window with motion allowed). */
+.team-rail.is-rail {
+  height: 100svh;
+  padding-block: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+.team-rail.is-rail .team-section-head {
+  margin-bottom: 0;
+}
+.team-rail.is-rail .team-rail-hud {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+}
+.team-rail-of {
+  color: var(--muted);
+}
+.team-rail-meter {
+  position: relative;
+  flex: 1;
+  height: 1px;
+  margin-left: 14px;
+  background: var(--line);
+}
+.team-rail-meter > span {
+  position: absolute;
+  inset: 0;
+  background: var(--text);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.team-rail.is-rail .team-rail-window {
+  overflow: clip;
+}
+.team-rail.is-rail .team-rail-track {
+  display: flex;
+  width: 100%;
+  margin-inline: 0;
+  gap: 32px;
+  padding-inline: max(56px, calc((100% - 1320px) / 2));
+  will-change: transform;
+}
+/* A flex container's end padding is not always counted in its scroll width, so a spacer holds
+   the gutter after the last card. */
+.team-rail.is-rail .team-rail-track::after {
+  content: "";
+  flex: 0 0 1px;
+}
+.team-rail.is-rail .team-card {
+  flex: 0 0 min(500px, 38vw);
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Awards, roles, timeline                                                                     */
+/* ------------------------------------------------------------------------------------------ */
+
+.team-awards,
+.team-timeline,
+.team-role-grid {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+}
+.team-awards li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 8.5em minmax(0, 1fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px 24px;
+  min-height: 64px;
+  padding-block: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.team-awards li:first-child {
+  border-top: 1px solid var(--line);
+}
+/* A hairline that runs the length of the row under the pointer. */
+.team-awards li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--text);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.6s var(--team-ease);
+}
+.team-awards li:hover::after {
+  transform: scaleX(1);
+}
+.team-awards time {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.team-award-name {
+  font-size: var(--text-lead);
+  font-weight: 700;
+  line-height: 1.3;
+}
+.team-award-event {
+  color: var(--muted);
+}
+
+.team-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.team-role-grid li {
+  display: flex;
+  flex-direction: column;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.team-role-title {
+  font-size: var(--text-lead);
+  font-weight: 800;
+  line-height: 1.2;
+}
+.team-role-text {
+  margin-top: 10px;
+  max-width: 34ch;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.team-timeline li {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 24px;
+  padding-block: 18px;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.55;
+}
+.team-timeline li:first-child {
+  border-top: 1px solid var(--line);
+}
+.team-timeline .mono {
+  font-size: var(--text-caption);
+  color: var(--muted);
+  padding-top: 0.2em;
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Ledgers                                                                                     */
+/* ------------------------------------------------------------------------------------------ */
+
+.team-ledger {
+  margin-top: 36px;
+}
+.team-ledger-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.team-ledger-tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 8px 16px 10px 0;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  transition: color 0.2s ease, border-color 0.3s var(--team-ease);
+}
+.team-ledger-tabs button:hover {
+  color: var(--text);
+}
+.team-ledger-tabs button[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.team-ledger-tabs .mono {
+  font-size: var(--text-lead);
+  font-weight: 700;
+}
+.team-ledger-tab-note {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+.team-ledger-panel:not([data-active]) {
+  display: none;
+}
+.team-ledger-panel:focus-visible {
+  outline-offset: 8px;
+}
+.team-ledger .ftc-table {
+  margin-top: 24px;
+}
+/* The caption repeats the tab, so it stays for screen readers and the print sheet only. */
+.team-ledger .ftc-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.team-ledger-panel tbody tr {
+  animation: team-row-in 0.55s var(--team-ease) backwards;
+}
+.team-ledger-panel tbody tr:nth-child(2) { animation-delay: 0.04s; }
+.team-ledger-panel tbody tr:nth-child(3) { animation-delay: 0.08s; }
+.team-ledger-panel tbody tr:nth-child(4) { animation-delay: 0.12s; }
+.team-ledger-panel tbody tr:nth-child(5) { animation-delay: 0.16s; }
+.team-ledger-panel tbody tr:nth-child(6) { animation-delay: 0.2s; }
+.team-ledger-panel tbody tr:nth-child(7) { animation-delay: 0.24s; }
+.team-ledger-panel tbody tr:nth-child(n + 8) { animation-delay: 0.28s; }
+@keyframes team-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+/* Without script the tabs cannot switch, so every season shows, stacked, with its caption. */
+@media (scripting: none) {
+  .team-ledger-tabs {
+    display: none;
+  }
+  .team-ledger-panel:not([data-active]) {
+    display: block;
+  }
+  .team-ledger .ftc-table caption {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+  .team-ledger .ftc-table {
+    margin-top: 48px;
+  }
+}
+
+.team-frc-seasons .ftc-table:first-child {
+  margin-top: 32px;
+}
+.team-frc-table thead th:nth-child(1) {
+  width: 55%;
+}
+.team-frc-table thead th:nth-child(2) {
+  width: auto;
+}
+.team-frc-about {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.team-frc-place {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* One-shot entrances (TeamReveal)                                                             */
+/* ------------------------------------------------------------------------------------------ */
+
+/* .reveal-ready goes on only once script runs with motion allowed, and an item is marked .is-in
+   the moment it reaches the window, so nothing waits on script to be readable. */
+.reveal-ready :is(
+    .team-stats dl > div,
+    .team-awards > li,
+    .team-role-grid > li,
+    .team-timeline > li,
+    .ftc-roles > li,
+    .team-frc-table,
+    .team-ledger,
+    .team-prose,
+    .team-links
+  ) {
+  transition:
+    opacity 0.7s ease,
+    transform 0.9s var(--team-ease);
+  transition-delay: calc(var(--reveal-i, 0) * 70ms);
+}
+.reveal-ready
+  :is(
+    .team-stats dl > div,
+    .team-awards > li,
+    .team-role-grid > li,
+    .team-timeline > li,
+    .ftc-roles > li,
+    .team-frc-table,
+    .team-ledger,
+    .team-prose,
+    .team-links
+  ):not(.is-in) {
+  opacity: 0;
+  transform: translateY(32px);
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Smaller windows                                                                             */
+/* ------------------------------------------------------------------------------------------ */
+
+@media (max-width: 1100px) {
+  .team-rail-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 48px;
+  }
+  .team-awards li {
+    grid-template-columns: 8.5em minmax(0, 1fr);
+  }
+  .team-award-event {
+    grid-column: 2;
+  }
+}
+@media (max-width: 1023px) {
+  .team-hero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: 40px;
+  }
+  .team-hero-art {
+    max-width: 560px;
+    width: 100%;
+    margin-inline: auto;
+  }
+}
+@media (max-width: 760px) {
+  .teams-route {
+    --team-bracket: 14px;
+  }
+  .team-rail-track {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .team-title-number {
+    font-size: clamp(56px, 19vw, 96px);
+  }
+  .team-hud {
+    padding: 18px;
+  }
+  .team-facts,
+  .team-stats dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .team-stats dd {
+    font-size: clamp(44px, 14vw, 64px);
+  }
+  .team-section-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .team-section-head > h2,
+  .team-section-head > p,
+  .team-section-index {
+    grid-column: 1;
+  }
+  .team-section-index {
+    grid-row: auto;
+    margin-bottom: 10px;
+  }
+  .team-role-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .team-awards li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .team-award-event {
+    grid-column: 1;
+  }
+  .team-timeline li {
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    gap: 12px;
+  }
+  .team-ledger-tabs button {
+    padding-right: 12px;
+  }
+}
+
+@media print {
+  .team-rail-hud,
+  .team-ledger-tabs {
+    display: none !important;
+  }
+  .team-ledger-panel:not([data-active]) {
+    display: block;
+  }
+  .teams-route *,
+  .teams-route *::before,
+  .teams-route *::after {
+    animation: none !important;
+  }
+}

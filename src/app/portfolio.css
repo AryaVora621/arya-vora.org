@@ -644,38 +644,37 @@ body {
     margin-inline-start: -8px;
   }
 }
-@media (max-width: 560px) {
-  /* The six links take a row of their own under the wordmark. The space between two words
-     shrinks with the screen (16px down to 8px) so they stay on one row down to 340px, and it
-     is padding on the links rather than a gap: each link's hit area reaches halfway to its
-     neighbours, so even "Home" is 44px wide or more and no two areas overlap. The negative
-     margins keep the first and last words flush with the page edges. */
+@media (max-width: 640px) {
+  /* The eight links take two rows of four under the wordmark, in columns, so neither row is
+     left with one or two words. The space between two columns shrinks with the screen (24px
+     down to 12px), and it is padding on the links rather than a gap: each link's hit area
+     reaches halfway to its neighbours, so even "FTC" is 44px wide or more and no two areas
+     overlap. The columns spread to the full width, and the negative margins keep the first and
+     last columns flush with the page edges. */
   .nav-inner .nav-links {
-    --nav-gap: clamp(8px, 20vw - 62px, 16px);
+    --nav-gap: clamp(12px, 10vw - 14px, 24px);
     flex: 1 1 100%;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
+    justify-content: space-between;
     column-gap: 0;
     margin-inline: calc(var(--nav-gap) / -2);
   }
   .nav-links a {
-    font-size: var(--text-caption);
     padding-inline: calc(var(--nav-gap) / 2);
   }
 }
-/* Below 340px one row would need the words closer than 8px, so the links take two rows of
-   three in columns, rather than leaving "Games" alone on a second row. */
+@media (max-width: 560px) {
+  .nav-links a {
+    font-size: var(--text-caption);
+  }
+}
+/* Below 340px three rows of 44px targets (the switch row and two link rows) make the nav 132px
+   tall, so it keeps no space of its own between them or below them. */
 @media (max-width: 339px) {
-  /* Three rows of 44px targets already make the nav 132px tall here, so it keeps no space of its
-     own between them or below them: 140px in all, not 152px. */
   .nav-inner {
     padding-block: 8px 0;
     row-gap: 0;
-  }
-  .nav-inner .nav-links {
-    --nav-gap: 24px;
-    display: grid;
-    grid-template-columns: repeat(3, max-content);
   }
 }
 @media (max-width: 380px) {

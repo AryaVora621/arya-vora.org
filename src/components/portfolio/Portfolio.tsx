@@ -67,8 +67,11 @@ export function Portfolio() {
                   link to their project pages, as the header's roboPet link does, so a link
                   name means one place. */}
               <p className="hero-description">
-                I captain {glue(`${ftcTeam.program} team ${ftcTeam.number}`)},{" "}
-                {ftcTeam.name}, and I’m in the class of {profile.classYear} at{" "}
+                I captain{" "}
+                <Link href="/ftc" prefetch={false}>
+                  {glue(`${ftcTeam.program} team ${ftcTeam.number}`)}
+                </Link>
+                , {ftcTeam.name}, and I’m in the class of {profile.classYear} at{" "}
                 {school} in {profile.city}. I do my CAD in Onshape.
               </p>
               <p className="hero-description">
@@ -159,8 +162,12 @@ export function Portfolio() {
               </p>
               <p>
                 Every event of my seasons on {ftcTeam.name}, with the records, is on{" "}
-                <Link href="/projects/reaper" prefetch={false}>
-                  the Reaper page
+                <Link href="/ftc" prefetch={false}>
+                  the FTC page
+                </Link>
+                , and my part on the Warhawks is on{" "}
+                <Link href="/frc" prefetch={false}>
+                  the FRC page
                 </Link>
                 .
               </p>

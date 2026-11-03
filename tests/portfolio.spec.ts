@@ -39,6 +39,8 @@ const NAV = [
   ["Home", "#top"],
   ["Projects", "/projects"],
   ["roboPet", "/projects/robopet"],
+  ["FTC", "/ftc"],
+  ["FRC", "/frc"],
   ["About", "#about"],
   ["Contact", "#contact"],
   ["Games", "https://games.arya-vora.org"],
@@ -389,11 +391,11 @@ for (const width of [1280, 881, 880, 600, 390, 320]) {
   });
 }
 
-// On a phone the six header links share one row from 340px up (below that, two rows of three,
-// never "Games" alone), each is a 44px touch target whose area meets its neighbours' without
+// On a phone the eight header links sit in two rows of four, in columns (never one or two words
+// alone on a row), each is a 44px touch target whose area meets its neighbours' without
 // overlapping, and the footer's short "Top" is 44px wide too.
 for (const width of [320, 340, 375, 390]) {
-  test(`header links at ${width}px: one row from 340px, and 44px touch targets`, async ({ page }) => {
+  test(`header links at ${width}px: two rows of four, and 44px touch targets`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/");
     const links = page.getByRole("navigation", { name: "Main navigation" }).locator(".nav-links a");
@@ -404,11 +406,9 @@ for (const width of [320, 340, 375, 390]) {
         return { top: Math.round(box.top), left: box.left, right: box.right, width: box.width, height: box.height };
       }),
     );
-    // The rule is about the width the page has, not the window's: desktop WebKit keeps a 10px
-    // classic scrollbar inside the window, so a 340px window gives the page 330px, the media query
-    // sees 330px, and six 44px targets could not share a row there anyway.
-    const available = await page.evaluate(() => document.documentElement.clientWidth);
-    expect(new Set(boxes.map((box) => box.top)).size).toBe(available < 340 ? 2 : 1);
+    const rows = new Map<number, number>();
+    for (const box of boxes) rows.set(box.top, (rows.get(box.top) ?? 0) + 1);
+    expect([...rows.values()]).toEqual([4, 4]);
     for (const [i, box] of boxes.entries()) {
       expect(box.width).toBeGreaterThanOrEqual(44);
       expect(box.height).toBeGreaterThanOrEqual(44);
@@ -575,6 +575,8 @@ test("metadata, social card, icons, sitemap, and internal link targets resolve",
   expect(listed).toEqual([
     "https://www.arya-vora.org/",
     "https://www.arya-vora.org/projects",
+    "https://www.arya-vora.org/ftc",
+    "https://www.arya-vora.org/frc",
     ...PROJECTS.map((project) => `https://www.arya-vora.org/projects/${project.slug}`),
   ]);
   const robots = await (await request.get("/robots.txt")).text();
