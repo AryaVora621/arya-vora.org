@@ -308,6 +308,19 @@ export type Season = { id: string; title: string; note: string; rows: Row[] };
 
 export const SEASONS: Season[] = [
   {
+    id: "2026",
+    title: "2026-27",
+    note: "BIOBUZZ, the season under way",
+    rows: [
+      {
+        date: "2026-10-31",
+        event: "League meet, Piscataway NJ",
+        record: "3-3",
+        result: "Ranked 12th of 17",
+      },
+    ],
+  },
+  {
     id: "2025",
     title: "2025-26",
     note: "DECODE, with Reaper",
@@ -316,7 +329,7 @@ export const SEASONS: Season[] = [
         date: "2025-11-15",
         event: "League meet, Randolph NJ",
         record: "5-1",
-        result: "Ranked 1st of 13",
+        result: "Ranked 1st of 12",
       },
       {
         date: "2025-12-13",
@@ -328,20 +341,20 @@ export const SEASONS: Season[] = [
         date: "2026-01-17",
         event: "League meet, Piscataway NJ",
         record: "4-1",
-        result: "Ranked 2nd of 23",
+        result: "Ranked 2nd of 22",
       },
       {
         highlight: true,
         date: "2026-02-14",
         event: "Upper Central League Tournament, Hillside NJ",
         record: "4-1",
-        result: "Inspire Award, 2nd place. Ranked 4th of 23.",
+        result: "Inspire Award, 2nd place. Ranked 4th of 23. First team selected, 1-2 in the playoffs.",
       },
       {
         date: "2026-02-20",
         event: "US Governors Cup, Washington DC",
         record: "4-1",
-        result: "Ranked 5th of 51. Alliance captain, 1-2 in the playoffs.",
+        result: "Ranked 5th of 50. Alliance captain, 1-2 in the playoffs.",
       },
       {
         highlight: true,
@@ -383,7 +396,7 @@ export const SEASONS: Season[] = [
         date: "2024-12-14",
         event: "League meet, Somerset NJ",
         record: "3-2",
-        result: "Ranked 6th of 24",
+        result: "Ranked 6th of 22",
       },
       {
         date: "2025-01-18",
@@ -395,7 +408,7 @@ export const SEASONS: Season[] = [
         date: "2025-02-15",
         event: "Upper Central League Tournament, Union NJ",
         record: "3-2",
-        result: "Think Award, 1st place. Inspire Award, 3rd place. Ranked 4th of 25.",
+        result: "Think Award, 1st place. Inspire Award, 3rd place. Ranked 4th of 25. Reached the final as the first team selected.",
       },
       {
         date: "2025-03-16",
@@ -622,7 +635,7 @@ export function LedgerRows({ rows }: { rows: readonly Row[] }) {
 export function ResultsTables() {
   return (
     <>
-      {/* .ftc-table is the shared look. .ftc-ledger marks the three season tables only, so
+      {/* .ftc-table is the shared look. .ftc-ledger marks the season tables only, so
           the highlights table that leads Results is not counted as a season. */}
       <table className="ftc-table ftc-highlights">
         <caption className="ftc-visually-hidden">Highlights of 2025-26, newest first</caption>

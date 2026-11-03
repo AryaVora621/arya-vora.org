@@ -4,15 +4,16 @@ import { SEASONS } from "@/components/ftc/reaperContent";
   Facts for the two team pages, /ftc and /frc. Add a line only with a source.
 
   FTC 23786 MakEMinds. The event ledger is SEASONS in src/components/ftc/reaperContent.tsx
-  (FIRST's event pages and FTCScout, checked 2026-10-08); everything counted below is derived
+  (FIRST's event pages and FTCScout, checked 2026-10-08 and again 2026-11-03); everything counted below is derived
   from it, so the totals can never drift from the table. Roles come from the same file (ROLES).
   The four FLL teams MakEMinds mentored: the team's 2025-26 engineering portfolio, page 3.
   E.M.E.R.G.E.: the 2024-25 engineering portfolio ("founded by FRC team 2554 and FTC team
   MakEMinds as a robotics student council for local teams ... in the Edison-Metuchen area").
 
-  FRC 2554 The Warhawks. This session's sandbox could not open The Blue Alliance, FIRST's event
-  pages or the team site directly, so the FRC rows were read on 2026-11-03 from search excerpts
-  of those pages:
+  FRC 2554 The Warhawks. Every FRC row was checked on 2026-11-03 against The Blue Alliance
+  (thebluealliance.com/team/2554/2024, /2025, /2026 and /history: rank, alliance, playoff round,
+  awards, event towns) and Statbotics (api.statbotics.io/v3/team_events: qualification records,
+  and the game breakdowns behind each "about" line). The first draft came from search excerpts of:
     frc-events.firstinspires.org/team/2554 and /2025/team/2554 (rookie year 2008, John P Stevens
       High School, Edison NJ, FIRST Mid-Atlantic; 2025 Quality Award and District Event Finalist
       at Seneca, Team Sustainability Award at Centennial, no awards at the District Championship)
@@ -23,7 +24,6 @@ import { SEASONS } from "@/components/ftc/reaperContent";
       Challenge global semifinalist with Visualeyes)
     firstinspires.org press release for REBUILT (2026 game: score fuel, cross obstacles, climb
       the tower).
-  TODO(Arya): open thebluealliance.com/team/2554 and check every FRC row before this ships.
   Individual awards (Dean's List, Woody Flowers, Leadership) name other students, so they stay
   off the page.
 
@@ -83,7 +83,8 @@ export type SeasonCard = {
 };
 
 // One card per season, oldest first. The role is ROLES' for the year; the lines restate ledger
-// rows in a few words. The 2026-27 card says only what is confirmed: the game and the captaincy.
+// rows in a few words. The 2026-27 card says only what is confirmed: the game, the captaincy and
+// the events played so far.
 export const FTC_SEASON_CARDS: readonly SeasonCard[] = [
   {
     id: "2023",
@@ -126,7 +127,7 @@ export const FTC_SEASON_CARDS: readonly SeasonCard[] = [
     years: "2026-27",
     game: "BIOBUZZ",
     role: "Captain",
-    lines: ["I captain the team this season", "Season under way"],
+    lines: ["I captain the team this season", "Ranked 12th of 17 at the first league meet, 3-3"],
     current: true,
   },
 ];
@@ -153,9 +154,21 @@ export const FRC_SEASONS: readonly FrcSeason[] = [
     game: "REBUILT",
     about: "Two alliances score fuel, cross obstacles and climb the tower.",
     events: [
-      { event: "FMA District Seneca Event", place: "Tabernacle NJ", result: "Gracious Professionalism Award" },
-      { event: "FMA District Bensalem Event", place: "Bensalem PA", result: "Competed" },
-      { event: "FIRST Mid-Atlantic District Championship", place: "Bethlehem PA", result: "Qualified and competed" },
+      {
+        event: "FMA District Seneca Event",
+        place: "Tabernacle NJ",
+        result: "Ranked 22nd of 32. Second pick of alliance 5, out in playoff round 5. Gracious Professionalism Award.",
+      },
+      {
+        event: "FMA District Bensalem Event",
+        place: "Bensalem PA",
+        result: "Ranked 30th of 34. Second pick of alliance 6, out in playoff round 4.",
+      },
+      {
+        event: "FIRST Mid-Atlantic District Championship",
+        place: "Bethlehem PA",
+        result: "Qualified and competed. Ranked 66th of 66.",
+      },
     ],
   },
   {
@@ -163,9 +176,34 @@ export const FRC_SEASONS: readonly FrcSeason[] = [
     game: "REEFSCAPE",
     about: "Robots score coral on the reef and algae in the net, then climb the barge.",
     events: [
-      { event: "FMA District Seneca Event", result: "District event finalist. Quality Award." },
-      { event: "FMA District Centennial Event", result: "Team Sustainability Award" },
-      { event: "FIRST Mid-Atlantic District Championship", result: "Qualified and competed" },
+      {
+        event: "FMA District Seneca Event",
+        place: "Tabernacle NJ",
+        result: "Ranked 3rd of 33. Alliance 3 captain, district event finalist. Quality Award.",
+      },
+      {
+        event: "FMA District Centennial Event",
+        place: "Warminster PA",
+        result: "Ranked 11th of 30. First pick of alliance 5, out in playoff round 2. Team Sustainability Award.",
+      },
+      {
+        event: "FIRST Mid-Atlantic District Championship",
+        place: "Bethlehem PA",
+        result: "Qualified and competed. Ranked 17th of 60.",
+      },
+    ],
+  },
+  {
+    year: "2024",
+    game: "CRESCENDO",
+    about: "Robots score notes in the speaker and amp, then climb onstage and score in the trap.",
+    events: [
+      {
+        event: "FMA District Allentown Event",
+        place: "Allentown NJ",
+        result: "Ranked 19th of 27. Second pick of alliance 8, out in playoff round 2.",
+      },
+      { event: "FMA District Bensalem Event", place: "Bensalem PA", result: "Ranked 35th of 35." },
     ],
   },
 ];

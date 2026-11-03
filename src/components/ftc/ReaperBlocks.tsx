@@ -268,7 +268,7 @@ export function ReaperIterationsBlock({ heading = "Iterations" }: ReaperBlockPro
   );
 }
 
-/** The season's highlights, then every event of three seasons behind a disclosure. */
+/** The season's highlights, then every event of every season behind a disclosure. */
 export function ReaperResultsBlock({ heading = "Results" }: ReaperBlockProps) {
   const titleId = useId();
   return (

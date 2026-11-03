@@ -146,12 +146,12 @@ export default function FtcPage() {
               <dl className="team-card-numbers">
                 <div>
                   <dt>Events</dt>
-                  <dd className="mono">{card.current ? "TBA" : totals.events}</dd>
+                  <dd className="mono">{card.current && totals.events === 0 ? "TBA" : totals.events}</dd>
                 </div>
                 <div>
                   <dt>Record</dt>
                   <dd className="mono">
-                    {card.current ? "TBA" : `${totals.wins}-${totals.losses}`}
+                    {card.current && totals.events === 0 ? "TBA" : `${totals.wins}-${totals.losses}`}
                   </dd>
                 </div>
               </dl>

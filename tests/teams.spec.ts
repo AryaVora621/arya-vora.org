@@ -110,9 +110,11 @@ test("the FTC season tabs switch with a click and with the arrow keys", async ({
   const visibleRows = page.locator(".team-ledger-panel[data-active] tbody tr");
   await expect(visibleRows).toHaveCount(SEASONS[0].rows.length);
 
-  await tabs.nth(2).click();
-  await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
-  await expect(visibleRows).toHaveCount(SEASONS[2].rows.length);
+  // The last tab, so ArrowRight below has to wrap round to the first.
+  const last = SEASONS.length - 1;
+  await tabs.nth(last).click();
+  await expect(tabs.nth(last)).toHaveAttribute("aria-selected", "true");
+  await expect(visibleRows).toHaveCount(SEASONS[last].rows.length);
 
   await page.keyboard.press("ArrowRight");
   await expect(tabs.first()).toBeFocused();

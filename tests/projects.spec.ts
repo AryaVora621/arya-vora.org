@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { PROJECTS } from "../src/data/projects";
 import { shareDescription } from "../src/app/projects/project-metadata";
+import { SEASONS } from "../src/components/ftc/reaperContent";
 import {
   AXE_TAGS,
   THEMES,
@@ -533,7 +534,7 @@ test("the Reaper page shows its photos, and the season ledger opens from the key
   await summary.focus();
   await page.keyboard.press("Enter");
   await expect(all).toHaveAttribute("open", "");
-  await expect(all.locator("table.ftc-ledger")).toHaveCount(3);
+  await expect(all.locator("table.ftc-ledger")).toHaveCount(SEASONS.length);
   // The heading promises a count; the tables have to deliver exactly that many rows.
   await expect(all.locator("table.ftc-ledger tbody tr")).toHaveCount(announced);
   await expect(all.getByRole("row", { name: /FIRST Championship, Ross Division/ })).toContainText("5-5");
@@ -572,7 +573,7 @@ test("project pages keep their content without JavaScript", async ({ browser, ba
     await expect(page.locator('div[hidden][id^="S:"]')).toHaveCount(0);
   }
   await page.goto("/projects/reaper");
-  await expect(page.locator("table.ftc-ledger")).toHaveCount(3);
+  await expect(page.locator("table.ftc-ledger")).toHaveCount(SEASONS.length);
   await context.close();
 });
 
@@ -856,7 +857,7 @@ test("printing /projects/reaper keeps the model figure and opens the season ledg
   const all = page.locator("details.ftc-all");
   await expect(all).toBeVisible();
   await expect(all).not.toHaveAttribute("open", "");
-  await expect(all.locator("table.ftc-ledger")).toHaveCount(3);
+  await expect(all.locator("table.ftc-ledger")).toHaveCount(SEASONS.length);
   await expect(all.locator("table.ftc-ledger").first()).toBeVisible();
   await expect(all.locator("table.ftc-ledger tbody tr").last()).toBeVisible();
   const pdf = await page.pdf({ format: "Letter" });
