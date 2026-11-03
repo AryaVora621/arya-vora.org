@@ -964,7 +964,12 @@ html[data-theme="violet"] .film-poster-violet {
     display: none;
   }
   .explainer-legend {
-    display: none;
+    left: 12px;
+    right: 12px;
+    bottom: calc(52px + env(safe-area-inset-bottom));
+    max-width: calc(100% - 24px);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(4px);
   }
   .explainer-detail {
     left: 8px;

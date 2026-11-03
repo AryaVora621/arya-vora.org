@@ -118,7 +118,8 @@ test("the home page features Reaper and roboPet, each with a way to its full pag
 
   // The roboPet film and its parts, then the link on.
   await expect(page.locator("#robopet .film-beat")).toHaveCount(4);
-  await expect(page.getByRole("list", { name: "roboPet parts" })).toBeAttached();
+  // On phones the parts list is inside a bottom sheet (hidden until opened); includeHidden checks DOM attachment.
+  await expect(page.getByRole("list", { name: "roboPet parts", includeHidden: true })).toBeAttached();
   const more = page.getByRole("link", { name: "The full roboPet page" });
   await expect(more).toHaveAttribute("href", "/projects/robopet");
   const [film, exploded, link] = await Promise.all(
@@ -1139,6 +1140,8 @@ test("axe finds no violations in scroll-driven mode, inside the film and the exp
 test("axe finds no violations in Violet with motion on, and after the cross-fade back to B&W", async ({
   page,
 }) => {
+  // Two whole-page axe scans of the busiest page; beside the rest of the suite they can pass 30 s.
+  test.slow();
   await arriveWithTheme(page, "violet");
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "violet");
@@ -1171,7 +1174,12 @@ test("axe finds no violations in Violet with motion on, and after the cross-fade
 test("keyboard focus reaches the film link and then the part buttons, on screen and uncovered", async ({
   page,
   browserName,
+  isMobile,
 }) => {
+  // On phones the parts list is inside a bottom sheet, not in the desktop tab sequence.
+  test.skip(isMobile, "on phones the parts list is in a bottom sheet");
+  // Tabbing through all 92 parts takes about 25s in WebKit, so allow extra time.
+  test.slow();
   // Safari on macOS only tabs to form controls unless Option is held, so WebKit on a Mac needs
   // Alt+Tab to reach a link. That is a setting of the browser, not of the page.
   const TAB = browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
@@ -1204,8 +1212,19 @@ test("keyboard focus reaches the film link and then the part buttons, on screen 
 
 test("exploded part buttons set aria-pressed and fill the live detail panel", async ({ page }) => {
   await page.goto("/");
-  const parts = page.getByRole("list", { name: "roboPet parts" });
-  const buttons = parts.getByRole("button");
+  // On phones the parts list is in a bottom sheet; includeHidden matches attached list and #bParts opens it.
+  const bParts = page.locator("#bParts");
+  const openPartsSheet = async () => {
+    if (
+      (await bParts.isVisible()) &&
+      !(await page.locator("#parts").evaluate((el) => el.classList.contains("open")))
+    ) {
+      await bParts.click();
+    }
+  };
+  await openPartsSheet();
+  const parts = page.getByRole("list", { name: "roboPet parts", includeHidden: true });
+  const buttons = parts.getByRole("button", { includeHidden: true });
   const detail = page.locator("#exploded .exploded-detail");
   await expect(detail).toHaveAttribute("aria-live", "polite");
   // The list stays hidden until the page is live, so wait for the first button.
@@ -1214,7 +1233,9 @@ test("exploded part buttons set aria-pressed and fill the live detail panel", as
   expect(labels.length).toBeGreaterThanOrEqual(6);
 
   for (const label of [labels[0], labels[labels.length - 1]]) {
-    const button = parts.getByRole("button", { name: label, exact: true });
+    await openPartsSheet();
+    // On phones selecting a part closes the bottom sheet, so includeHidden is needed to assert state.
+    const button = parts.getByRole("button", { name: label, exact: true, includeHidden: true });
     await button.scrollIntoViewIfNeeded();
     await scrollIsStill(page);
     await button.click();
@@ -1226,11 +1247,14 @@ test("exploded part buttons set aria-pressed and fill the live detail panel", as
   }
 
   // The keyboard works the same way, and a second press clears the selection.
-  const keyed = parts.getByRole("button", { name: labels[2], exact: true });
+  await openPartsSheet();
+  const keyed = parts.getByRole("button", { name: labels[2], exact: true, includeHidden: true });
   await keyed.focus();
   await page.keyboard.press("Enter");
   await expect(keyed).toHaveAttribute("aria-pressed", "true");
   await expect(detail.getByRole("heading", { level: 3, name: labels[2], exact: true })).toBeVisible();
+  await openPartsSheet();
+  await keyed.focus();
   await page.keyboard.press("Space");
   await expect(keyed).toHaveAttribute("aria-pressed", "false");
   await expect(detail.getByRole("heading", { level: 3 })).toHaveCount(0);
@@ -1238,7 +1262,12 @@ test("exploded part buttons set aria-pressed and fill the live detail panel", as
 
 test("explainer in live 3D mode: Explode toggles, mode buttons work, wheel zoom locks until active", async ({
   page,
+  browserName,
 }) => {
+  // Headless Chromium draws WebGL in software, so it reaches live mode only through ?force3d, and
+  // beside the rest of the suite its main thread starves for minutes. WebKit and Firefox run this
+  // on the GPU in seconds and cover the live explainer, phone layout included.
+  test.skip(browserName === "chromium", "software WebGL in headless Chromium");
   test.setTimeout(180_000);
   await page.goto("/?force3d");
   const section = page.locator("#exploded");
@@ -1336,11 +1365,12 @@ test("explainer in live 3D mode: Explode toggles, mode buttons work, wheel zoom 
   expect(zoomAfterEsc).toBe(false);
 });
 
-test("explainer axe passes in live and static modes, in both themes", async ({ page }) => {
+test("explainer axe passes in live and static modes, in both themes", async ({ page, browserName }) => {
   test.slow();
   // Static mode in mono
   await page.goto("/");
   await page.locator("#exploded").scrollIntoViewIfNeeded();
+  await scrollIsStill(page);
   let results = await new AxeBuilder({ page }).include("#exploded").withTags(AXE_TAGS).analyze();
   expect(results.violations).toEqual([]);
 
@@ -1348,13 +1378,19 @@ test("explainer axe passes in live and static modes, in both themes", async ({ p
   await arriveWithTheme(page, "violet");
   await page.goto("/");
   await page.locator("#exploded").scrollIntoViewIfNeeded();
+  await scrollIsStill(page);
   results = await new AxeBuilder({ page }).include("#exploded").withTags(AXE_TAGS).analyze();
   expect(results.violations).toEqual([]);
+
+  // Headless Chromium draws WebGL in software and reaches live mode only through ?force3d, where
+  // its main thread starves beside the rest of the suite. WebKit and Firefox check live mode.
+  if (browserName === "chromium") return;
 
   // Live mode in mono
   await arriveWithTheme(page, "mono");
   await page.goto("/?force3d");
   await page.locator("#exploded").scrollIntoViewIfNeeded();
+  await scrollIsStill(page);
   await page.waitForFunction(
     () => (window as unknown as { __explainerReady?: boolean }).__explainerReady === true,
     { timeout: 15000 },
@@ -1366,6 +1402,7 @@ test("explainer axe passes in live and static modes, in both themes", async ({ p
   await arriveWithTheme(page, "violet");
   await page.goto("/?force3d");
   await page.locator("#exploded").scrollIntoViewIfNeeded();
+  await scrollIsStill(page);
   await page.waitForFunction(
     () => (window as unknown as { __explainerReady?: boolean }).__explainerReady === true,
     { timeout: 15000 },

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type * as THREE from "three";
 import { onThemeChange, themeColor } from "@/lib/theme";
+import { useMotionAllowed } from "@/lib/hooks/useMotionAllowed";
 import { prefersStill, shouldUseStill } from "../gpu";
 import { PartText } from "../PartText";
 import { ThemeStill } from "../ThemeStill";
@@ -90,10 +91,13 @@ export function RoboPetExplainer({ brief = false }: RoboPetExplainerProps = {}) 
     setActive: () => {},
   });
 
+  const motionAllowed = useMotionAllowed();
   const selectedPart = selectedPartId ? partSpec.get(selectedPartId) ?? null : null;
   const noWebGL = failed || stillOnly;
-  const showStill = noWebGL || lost || !ready;
-  const live = !noWebGL;
+  // Reduced motion gets the stills, as software GL does, and turning it on mid-visit tears the
+  // scene down (the effect below depends on motionAllowed).
+  const live = !noWebGL && motionAllowed;
+  const showStill = !live || lost || !ready;
 
   // Sync state changes with the 3D model
   const onTogglePart = (id: string) => {
@@ -111,7 +115,7 @@ export function RoboPetExplainer({ brief = false }: RoboPetExplainerProps = {}) 
     const section = sectionRef.current;
     const stage = stageRef.current;
     const canvas = canvasRef.current;
-    if (!section || !stage || !canvas || prefersStill()) return;
+    if (!section || !stage || !canvas || prefersStill() || !motionAllowed) return;
 
     let disposed = false;
     let cleanup = () => {};
@@ -1197,7 +1201,7 @@ export function RoboPetExplainer({ brief = false }: RoboPetExplainerProps = {}) 
       loadObserver.disconnect();
       cleanup();
     };
-  }, []);
+  }, [motionAllowed]);
 
   // Filter facts depending on brief mode
   const activeFacts: readonly Fact[] = selectedPart
@@ -1257,6 +1261,8 @@ export function RoboPetExplainer({ brief = false }: RoboPetExplainerProps = {}) 
                 className="explainer-parts-body"
                 aria-label="roboPet parts"
                 data-ready={hydrated}
+                // Firefox makes a scrolling list a tab stop of its own; the part buttons are the stops.
+                tabIndex={-1}
               >
                 {GROUPS.map((group) => {
                   const groupParts = PARTS.filter((p) => p.group === group.id);
