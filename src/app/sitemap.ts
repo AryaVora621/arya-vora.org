@@ -3,7 +3,7 @@ import { PROJECTS } from "@/data/projects";
 
 const SITE = "https://www.arya-vora.org";
 
-// The home page, the projects index, the two team pages and one page per project. The home page's sections (#about,
+// The home page, the projects index, the two team pages, coaching and one page per project. The home page's sections (#about,
 // #contact) are places on one page, not URLs of their own. /games is left out: its canonical
 // address is games.arya-vora.org, a separate host.
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/projects`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE}/ftc`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE}/frc`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE}/coaching`, changeFrequency: "monthly", priority: 0.6 },
     ...PROJECTS.map((project) => ({
       url: `${SITE}/projects/${project.slug}`,
       changeFrequency: "monthly" as const,

@@ -41,6 +41,7 @@ const NAV = [
   ["roboPet", "/projects/robopet"],
   ["FTC", "/ftc"],
   ["FRC", "/frc"],
+  ["Coaching", "/coaching"],
   ["About", "#about"],
   ["Contact", "#contact"],
   ["Games", "https://games.arya-vora.org"],
@@ -392,11 +393,11 @@ for (const width of [1280, 881, 880, 600, 390, 320]) {
   });
 }
 
-// On a phone the eight header links sit in two rows of four, in columns (never one or two words
+// On a phone the nine header links sit in two rows of five and four, in columns (never one or two words
 // alone on a row), each is a 44px touch target whose area meets its neighbours' without
 // overlapping, and the footer's short "Top" is 44px wide too.
 for (const width of [320, 340, 375, 390]) {
-  test(`header links at ${width}px: two rows of four, and 44px touch targets`, async ({ page }) => {
+  test(`header links at ${width}px: two rows of five and four, and 44px touch targets`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/");
     const links = page.getByRole("navigation", { name: "Main navigation" }).locator(".nav-links a");
@@ -409,7 +410,7 @@ for (const width of [320, 340, 375, 390]) {
     );
     const rows = new Map<number, number>();
     for (const box of boxes) rows.set(box.top, (rows.get(box.top) ?? 0) + 1);
-    expect([...rows.values()]).toEqual([4, 4]);
+    expect([...rows.values()]).toEqual([5, 4]);
     for (const [i, box] of boxes.entries()) {
       expect(box.width).toBeGreaterThanOrEqual(44);
       expect(box.height).toBeGreaterThanOrEqual(44);
@@ -578,6 +579,7 @@ test("metadata, social card, icons, sitemap, and internal link targets resolve",
     "https://www.arya-vora.org/projects",
     "https://www.arya-vora.org/ftc",
     "https://www.arya-vora.org/frc",
+    "https://www.arya-vora.org/coaching",
     ...PROJECTS.map((project) => `https://www.arya-vora.org/projects/${project.slug}`),
   ]);
   const robots = await (await request.get("/robots.txt")).text();

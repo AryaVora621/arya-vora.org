@@ -645,23 +645,26 @@ body {
   }
 }
 @media (max-width: 640px) {
-  /* The eight links take two rows of four under the wordmark, in columns, so neither row is
+  /* The nine links take two rows, five and four, under the wordmark, in columns, so neither row is
      left with one or two words. The space between two columns shrinks with the screen (24px
-     down to 12px), and it is padding on the links rather than a gap: each link's hit area
+     down to 10px), and it is padding on the links rather than a gap: each link's hit area
      reaches halfway to its neighbours, so even "FTC" is 44px wide or more and no two areas
      overlap. The columns spread to the full width, and the negative margins keep the first and
      last columns flush with the page edges. */
   .nav-inner .nav-links {
-    --nav-gap: clamp(12px, 10vw - 14px, 24px);
+    --nav-gap: clamp(10px, 5vw - 7px, 24px);
     flex: 1 1 100%;
     display: grid;
-    grid-template-columns: repeat(4, max-content);
+    grid-template-columns: repeat(5, max-content);
     justify-content: space-between;
     column-gap: 0;
     margin-inline: calc(var(--nav-gap) / -2);
   }
   .nav-links a {
     padding-inline: calc(var(--nav-gap) / 2);
+    /* "FRC" is narrower than 44px at this gap; the target stays 44px wide. */
+    min-width: 44px;
+    justify-content: center;
   }
 }
 @media (max-width: 560px) {

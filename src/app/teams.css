@@ -52,6 +52,11 @@
   letter-spacing: -0.025em;
   color: var(--muted);
 }
+.team-hero-plain {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  padding-block: 56px;
+}
 .team-lede {
   margin-top: 32px;
   max-width: 36em;
@@ -554,6 +559,23 @@
   font-size: var(--text-lead);
   font-weight: 800;
   line-height: 1.2;
+}
+.team-role-when {
+  margin-top: 6px;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+.team-resume-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.team-resume-grid .team-role-text {
+  max-width: 44ch;
+}
+.team-resume-line {
+  display: block;
+}
+.team-resume-line + .team-resume-line {
+  margin-top: 8px;
 }
 .team-role-text {
   margin-top: 10px;

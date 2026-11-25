@@ -36,6 +36,7 @@ const NAV: readonly NavItem[] = [
   { label: "roboPet", href: "/projects/robopet" },
   { label: "FTC", href: "/ftc" },
   { label: "FRC", href: "/frc" },
+  { label: "Coaching", href: "/coaching" },
   { label: "About", href: "/#about", section: true },
   { label: "Contact", href: "/#contact", section: true },
   { label: "Games", href: "https://games.arya-vora.org", external: true },
@@ -57,9 +58,9 @@ function currentFor(item: NavItem, pathname: string): Current {
 // own stylesheet, the stylesheet of a project's write-up. A page that does not use them never
 // applies them, and Chrome warns on it that the file "was preloaded but not used". These two are
 // fetched when the pointer reaches the link or a finger touches it instead, which is still ahead
-// of the click. The team pages are the same: their layout brings teams.css. Projects, which every
+// of the click. The team pages and /coaching are the same: their layout brings teams.css. Projects, which every
 // page shares, keeps the default.
-const ON_INTENT = new Set(["/", "/ftc", "/frc"]);
+const ON_INTENT = new Set(["/", "/ftc", "/frc", "/coaching"]);
 const prefetchOnIntent = (href: string) => (ON_INTENT.has(href) || href.startsWith("/projects/") ? false : undefined);
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {

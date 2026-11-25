@@ -340,6 +340,7 @@ test("the nav, the footer and the home link work from a project page", async ({ 
     ["roboPet", "/projects/robopet"],
     ["FTC", "/ftc"],
     ["FRC", "/frc"],
+    ["Coaching", "/coaching"],
     ["About", "/#about"],
     ["Contact", "/#contact"],
     ["Games", "https://games.arya-vora.org"],

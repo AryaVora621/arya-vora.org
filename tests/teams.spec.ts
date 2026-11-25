@@ -18,6 +18,7 @@ import {
 const PAGES = [
   { path: "/ftc", name: "FTC 23786, MakEMinds", nav: "FTC" },
   { path: "/frc", name: "FRC 2554, The Warhawks", nav: "FRC" },
+  { path: "/coaching", name: "Coaching", nav: "Coaching" },
 ] as const;
 
 const mainNav = (page: Page) => page.getByRole("navigation", { name: "Main navigation" });
@@ -79,8 +80,10 @@ for (const team of PAGES) {
       await expect(page.locator(".team-ledger table")).toHaveCount(SEASONS.length);
       for (const table of await page.locator(".team-ledger table").all()) await expect(table).toBeVisible();
       await expect(page.locator(".team-ledger-tabs")).toBeHidden();
-    } else {
+    } else if (team.path === "/frc") {
       await expect(page.locator(".team-frc-table")).toHaveCount(FRC_SEASONS.length);
+    } else {
+      await expect(page.getByRole("link", { name: "Download the resume (PDF)" })).toBeVisible();
     }
     await context.close();
   });
