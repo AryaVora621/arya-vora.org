@@ -14,7 +14,7 @@ import { projectMetadata } from "@/app/projects/project-metadata";
 */
 
 const description =
-  "How I coach younger students in robotics: the FIRST LEGO League team I coached, Code Ninjas, my teams and clubs, and a one-page resume.";
+  "How I have coached younger students in robotics: the FIRST LEGO League team I coached, Code Ninjas, my teams and clubs, and a one-page resume.";
 
 export const metadata: Metadata = projectMetadata({
   title: "Coaching",
